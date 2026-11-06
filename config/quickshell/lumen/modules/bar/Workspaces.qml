@@ -23,6 +23,11 @@ Grid {
     columns: vertical ? 1 : 99
     spacing: 4
 
+    // Scroll over the workspaces to switch desktops.
+    WheelHandler {
+        onWheel: event => Bspwm.cycleDesktop(event.angleDelta.y < 0)
+    }
+
     component PageArrow: Rectangle {
         id: arrow
         property bool forward: true

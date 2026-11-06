@@ -21,6 +21,8 @@ Rectangle {
         acceptedButtons: Qt.AllButtons
     }
 
+    HoverHandler { onHoveredChanged: Panels.popupHovered = hovered }
+
     ColumnLayout {
         id: col
         anchors.left: parent.left

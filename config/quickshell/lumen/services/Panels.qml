@@ -39,6 +39,26 @@ Singleton {
     // it; don't reopen in that case.
     property string lastClosed: ""
     property real lastClosedAt: 0
+    property real openedAt: 0
+
+    // Where the pointer is, so a click there doesn't count as "outside".
+    property bool popupHovered: false
+    property bool barHovered: false
+
+    // lumen-settings kbswitch reports mouse clicks while this file exists.
+    readonly property string flagFile: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/lumen-popup-open"
+    onPopupChanged: {
+        if (popup !== "") openedAt = Date.now();
+        Quickshell.execDetached(popup !== "" ? ["touch", flagFile] : ["rm", "-f", flagFile]);
+        if (popup === "") popupHovered = false;
+    }
+
+    // A mouse click somewhere on screen (from the input watcher).
+    function click() {
+        if (popup === "" || popupHovered || barHovered) return;
+        if (Date.now() - openedAt < 300) return;   // the click that opened it
+        closePopup();
+    }
 
     function togglePopup(name, screen, anchor) {
         const scr = screen ?? focusedScreen();
@@ -75,9 +95,5 @@ Singleton {
         return Quickshell.screens.find(s => m && s.name === m.name) ?? Quickshell.screens[0];
     }
 
-    // Focusing a window closes any popup.
-    Connections {
-        target: Bspwm
-        function onFocusedClassChanged() { root.closePopup(); }
-    }
+    Component.onCompleted: Quickshell.execDetached(["rm", "-f", flagFile])
 }

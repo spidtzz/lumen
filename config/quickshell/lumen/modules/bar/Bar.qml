@@ -65,9 +65,7 @@ PanelWindow {
         border.color: Theme.line
         border.width: 1
 
-        WheelHandler {
-            onWheel: event => Bspwm.cycleDesktop(event.angleDelta.y < 0)
-        }
+        HoverHandler { onHoveredChanged: Panels.barHovered = hovered }
 
         // ---- start: launcher + focused app ----
         Grid {

@@ -79,6 +79,7 @@ The full list is in [`config/sxhkd/sxhkdrc`](config/sxhkd/sxhkdrc).
   your notifications.
 
 Popups and notifications are drawn above all windows and close when you click elsewhere.
+Scrolling over the workspaces switches desktops.
 
 lumen is its own notification server, so no dunst or mako is needed.
 
@@ -100,7 +101,8 @@ Lock — your choice in Settings) without another key. Left or right keys, in an
 Because a third key cancels the switch, AltGr shortcuts such as Persian's half-space
 (ZWNJ) and AltGr+Shift characters keep working. A small watcher (`lumen-settings
 kbswitch`, using `xinput`) handles this instead of XKB's `grp:` options, which break
-in layouts that use Right Alt for extra characters.
+in layouts that use Right Alt for extra characters. The same watcher tells the shell
+about mouse clicks while a bar popup is open, so clicking elsewhere closes it.
 
 ## Settings
 
@@ -112,7 +114,7 @@ in layouts that use Right Alt for extra characters.
 | Displays | resolution, refresh rate, rotation, primary, arrangement — undone after 15 s unless kept | xrandr |
 | Sound | output and input device, volume, mute | PipeWire (built into Quickshell) |
 | Network | wired and Wi-Fi, connect with password | NetworkManager (nmcli) |
-| Keyboard & Mouse | up to four layouts (e.g. English + Persian) and the switch keys, key repeat, pointer speed, natural scrolling, tap to click | setxkbmap, xset, xinput |
+| Keyboard & Mouse | up to four layouts (e.g. English + Persian) and the switch keys, key repeat, focus follows mouse, pointer speed, natural scrolling, tap to click | setxkbmap, xset, xinput, bspwm |
 | Date & Time | time zone, network time, 24-hour clock | timedatectl |
 | Users | profile picture, password, lock after idle, test the lock screen | lumen-avatar, passwd, xss-lock |
 | About | system details, copy to clipboard | |
@@ -168,7 +170,7 @@ lumen-theme set bar_position left
 | Quickshell | reads settings + palette files | yes |
 | GTK 3 / plain GTK 4 | adw-gtk3 + named-colour overrides in `gtk.css` | yes, via xsettingsd |
 | libadwaita (GTK 4) | same colours as CSS variables; light/dark and accent via the settings portal | light/dark yes, colours on next launch |
-| Qt 6 | qt6ct palette (Fusion style) | on next launch |
+| Qt 6 | Qt's GTK3 theme (follows the GTK colours, reports light/dark to apps) | yes |
 | KDE apps (Dolphin…) | `kdeglobals` colour scheme | on next launch |
 | kitty | `theme.conf` | yes |
 | bspwm | border colours | yes |

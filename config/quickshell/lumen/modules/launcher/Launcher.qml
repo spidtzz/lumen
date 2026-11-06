@@ -229,5 +229,14 @@ FloatingWindow {
         }
     }
 
-    Component.onCompleted: input.forceActiveFocus()
+    // With focus-follows-mouse, nudging the mouse onto another window would
+    // move focus and close the launcher; pause it while the launcher is open.
+    Component.onCompleted: {
+        input.forceActiveFocus();
+        Quickshell.execDetached(["bspc", "config", "focus_follows_pointer", "false"]);
+    }
+    Component.onDestruction: {
+        if (Theme.conf.focus_follows_mouse !== "false")
+            Quickshell.execDetached(["bspc", "config", "focus_follows_pointer", "true"]);
+    }
 }

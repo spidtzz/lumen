@@ -122,6 +122,13 @@ FloatingWindow {
 
                     Item { Layout.fillHeight: true }
 
+                    Btn {
+                        Layout.fillWidth: true
+                        text: "Quit Settings"
+                        icon: "x"
+                        variant: "ghost"
+                        onClicked: Panels.settingsOpen = false
+                    }
                     Txt {
                         Layout.leftMargin: 6
                         text: "Esc to close · Ctrl+Tab next page"

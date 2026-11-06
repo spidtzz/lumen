@@ -4,7 +4,7 @@
 # Usage:
 #   lumen-settings get [key]            print one setting, or all of them
 #   lumen-settings set <key> <value>    validate, save and apply a setting
-#   lumen-settings apply [what]         session | theme | input | compositor | display | idle
+#   lumen-settings apply [what]         session | theme | input | compositor | display | idle | wm
 #   lumen-settings keys                 list settings with their allowed values
 #   lumen-settings display-save <args>  remember xrandr arguments for next login
 #   lumen-settings layout-next          switch to the next keyboard layout
@@ -37,6 +37,7 @@ SCHEMA=(
 	"mono_font~JetBrains Mono~^[A-Za-z0-9 ._-]{1,64}$~theme"
 	"clock_24h~true~^(true|false)$~-"
 	"compositor~true~^(true|false)$~compositor"
+	"focus_follows_mouse~true~^(true|false)$~wm"
 	"bar_workspaces~5~^([3-9]|10)$~-"
 	"tray_grouped~true~^(true|false)$~-"
 	"idle_lock~10~^(0|5|10|15|30|60)$~idle"
@@ -106,8 +107,7 @@ apply_input() {
 	# grp:* options: those break when a layout (like Persian) uses Right Alt
 	# for extra characters, and they hide which layout is active.
 	if has setxkbmap; then
-		setxkbmap -layout "${CONF[kb_layouts]}" $(kb_options)
-		notify_keyboard
+		set_layouts "${CONF[kb_layouts]}"
 	fi
 	has xset && xset r rate "${CONF[repeat_delay]}" "${CONF[repeat_rate]}"
 
@@ -127,14 +127,12 @@ apply_input() {
 	return 0
 }
 
-# XKB options: none, except that Caps Lock does nothing when it's the
-# layout switch key.
-kb_options() {
-	if [[ ${CONF[kb_switch]} == caps && ${CONF[kb_layouts]} == *,* ]]; then
-		printf '%s\n' -option "" -option caps:none
-	else
-		printf '%s\n' -option ""
-	fi
+# Load layouts (the first is active). XKB options are cleared, except that
+# Caps Lock does nothing when it's the layout switch key.
+set_layouts() {
+	local args=(-layout "$1" -option "")
+	[[ ${CONF[kb_switch]} == caps && $1 == *,* ]] && args+=(-option caps:none)
+	setxkbmap "${args[@]}" && notify_keyboard
 }
 
 # Tell the bar which layout is active now.
@@ -161,8 +159,7 @@ layout_set() {
 		[[ ${list[$i]} == "$want" ]] || continue
 		rotated=("${list[@]:$i}" "${list[@]:0:$i}")
 		local IFS=,
-		setxkbmap -layout "${rotated[*]}" $(kb_options)
-		notify_keyboard
+		set_layouts "${rotated[*]}"
 		return 0
 	done
 	die "layout not in use: $want"
@@ -185,14 +182,17 @@ layout_hotkey() {
 	return 0
 }
 
-# Watches raw key events and switches layout the way Windows does: when the
+# Watches raw input events. Mouse clicks close bar popups (see above).
+# Keys: switches layout the way Windows does: when the
 # combination (Alt+Shift, Ctrl+Shift or Caps Lock alone) is pressed and
 # released without any other key. Works with left or right keys in every
 # layout, and AltGr+Shift+key still types characters (the third key cancels).
 # Keycodes are the standard evdev ones.
 kbswitch() {
 	has xinput || die "xinput is needed for layout switching"
-	stdbuf -oL xinput test-xi2 --root | awk -v cmd="$0 layout-hotkey" '
+	stdbuf -oL xinput test-xi2 --root | awk -v cmd="$0 layout-hotkey" \
+		-v flag="${XDG_RUNTIME_DIR:-/tmp}/lumen-popup-open" \
+		-v click="qs -c lumen ipc call panels click" '
 		function isalt(k) { return k == 64 || k == 108 }
 		function isshift(k) { return k == 50 || k == 62 }
 		function isctrl(k) { return k == 37 || k == 105 }
@@ -201,6 +201,15 @@ kbswitch() {
 			for (k in down) { c++; if (isalt(k)) a++; else if (isshift(k)) s++; else if (isctrl(k)) x++ }
 			nalt = a; nshift = s; nctrl = x
 			return c
+		}
+		# Mouse clicks: tell the shell while a bar popup is open (the shell
+		# creates the flag file), so a click elsewhere closes it.
+		/RawButtonPress/ { t = 3; next }
+		/^[[:space:]]+detail:/ && t == 3 {
+			t = 0
+			b = $2 + 0
+			if (b >= 1 && b <= 3 && (getline line < flag) >= 0) { close(flag); system(click " >/dev/null 2>&1 &") }
+			next
 		}
 		/RawKeyPress/ { t = 1; next }
 		/RawKeyRelease/ { t = 2; next }
@@ -265,6 +274,13 @@ apply_idle() {
 	xset -dpms 2>/dev/null || true
 }
 
+# Window manager behaviour.
+apply_wm() {
+	has bspc && bspc query -M >/dev/null 2>&1 || return 0
+	load
+	bspc config focus_follows_pointer "${CONF[focus_follows_mouse]}"
+}
+
 apply_what() {
 	case $1 in
 		theme) apply_theme ;;
@@ -272,7 +288,8 @@ apply_what() {
 		compositor) apply_compositor ;;
 		display) apply_display ;;
 		idle) apply_idle ;;
-		session) apply_display; apply_input; apply_theme; apply_compositor; apply_idle ;;
+		wm) apply_wm ;;
+		session) apply_display; apply_input; apply_theme; apply_compositor; apply_idle; apply_wm ;;
 		-) ;;
 		*) die "unknown target: $1 (session, theme, input, compositor, display)" ;;
 	esac

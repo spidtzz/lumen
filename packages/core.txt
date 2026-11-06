@@ -38,7 +38,6 @@ noto-fonts
 # Theming: GTK 3/4, Qt, cursor, live reload, light/dark for libadwaita apps
 adw-gtk-theme
 adwaita-cursors
-qt6ct
 xsettingsd
 dconf
 xdg-desktop-portal-gtk

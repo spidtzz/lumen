@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # lumen-theme — apply the lumen theme to Quickshell, GTK 3/4 (incl. libadwaita),
-# Qt (qt6ct + KDE apps), kitty, bspwm, the login screen and the X root window.
+# Qt (via Qt's GTK3 theme + KDE apps), kitty, bspwm, the login screen and the
+# X root window.
 #
 # Usage:
 #   lumen-theme apply [--quiet]        regenerate and apply everything
@@ -170,8 +171,7 @@ write_gtk() {
 		EOF
 	} | own "$CONFIG_HOME/gtk-4.0/gtk.css"
 
-	local ver dark=0
-	[[ $mode == dark ]] && dark=1
+	local ver
 	for ver in 3.0 4.0; do
 		own "$CONFIG_HOME/gtk-$ver/settings.ini" <<-EOF
 			$MARK
@@ -181,7 +181,6 @@ write_gtk() {
 			gtk-font-name=$font $font_size
 			gtk-cursor-theme-name=Adwaita
 			gtk-cursor-theme-size=24
-			gtk-application-prefer-dark-theme=$dark
 		EOF
 	done
 }
@@ -236,54 +235,6 @@ write_gsettings() {
 }
 
 # ---------------------------------------------------------------- Qt
-write_qt() {
-	local scheme=$CONFIG_HOME/qt6ct/colors/lumen.conf c
-	# QPalette roles in order: WindowText Button Light Midlight Dark Mid Text
-	# BrightText ButtonText Base Window Shadow Highlight HighlightedText Link
-	# LinkVisited AlternateBase NoRole ToolTipBase ToolTipText PlaceholderText Accent
-	local active=() disabled=()
-	for c in ink field panel field deep line ink '#ffffff' ink panel bg '#000000' \
-		accent on_accent accent accent field bg ink bg muted accent; do
-		[[ $c == \#* ]] && active+=("$(argb "$c")") || active+=("$(argb "${P[$c]}")")
-	done
-	disabled=("${active[@]}")
-	disabled[0]=$(argb "${P[muted]}")
-	disabled[6]=$(argb "${P[muted]}")
-	disabled[8]=$(argb "${P[muted]}")
-	disabled[12]=$(argb "${P[line]}")
-	local IFS=,
-	own "$scheme" <<-EOF
-		$MARK
-		[ColorScheme]
-		active_colors=${active[*]}
-		disabled_colors=${disabled[*]}
-		inactive_colors=${active[*]}
-	EOF
-	unset IFS
-
-	own "$CONFIG_HOME/qt6ct/qt6ct.conf" <<-EOF
-		$MARK
-		[Appearance]
-		color_scheme_path=$scheme
-		custom_palette=true
-		icon_theme=$(icon_theme)
-		standard_dialogs=default
-		style=Fusion
-
-		[Fonts]
-		fixed="$mono_font,$font_size,-1,5,50,0,0,0,0,0"
-		general="$font,$font_size,-1,5,50,0,0,0,0,0"
-
-		[Interface]
-		activate_item_on_single_click=1
-		menus_have_icons=true
-		show_shortcuts_in_context_menus=true
-		toolbutton_style=4
-		underline_shortcut=1
-		wheel_scroll_lines=3
-	EOF
-}
-
 # KDE apps (Dolphin, Kate, ...) colour parts of their UI from kdeglobals
 # rather than the Qt palette, so mirror the palette there too.
 write_kdeglobals() {
@@ -410,7 +361,6 @@ apply() {
 	write_gtk
 	write_xsettingsd
 	write_gsettings
-	write_qt
 	write_kdeglobals
 	write_kitty
 	write_sddm

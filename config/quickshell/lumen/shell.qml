@@ -70,6 +70,7 @@ ShellRoot {
         target: "panels"
         function toggle(name: string): void { Panels.togglePopup(name, null, null); }
         function close(): void { Panels.closePopup(); }
+        function click(): void { Panels.click(); }
     }
 
     // Called by lumen-avatar after the picture changes.

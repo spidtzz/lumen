@@ -116,6 +116,15 @@ Page {
         title: "Mouse & touchpad"
 
         SettingRow {
+            label: "Focus follows mouse"
+            description: "Windows get keyboard focus when the pointer moves onto them, without clicking."
+            Toggle {
+                checked: Theme.conf.focus_follows_mouse !== "false"
+                onToggled: c => Theme.setValue("focus_follows_mouse", c)
+            }
+        }
+
+        SettingRow {
             label: "Pointer speed"
             LSlider {
                 id: speed

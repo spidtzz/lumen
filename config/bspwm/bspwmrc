@@ -51,6 +51,7 @@ bspc rule -a 'Xdg-desktop-portal-gtk' state=floating
 bspc rule -a 'Polkit-gnome-authentication-agent-1' state=floating
 bspc rule -a '*:*:lumen Settings' state=floating center=on
 bspc rule -a '*:*:lumen Launcher' state=floating center=on sticky=on border=off layer=above focus=on
+bspc rule -a '*:*:lumen Clipboard' state=floating center=on sticky=on border=off layer=above focus=on
 
 # ---- Session ----------------------------------------------------------------
 xsetroot -cursor_name left_ptr
@@ -67,6 +68,9 @@ pgrep -f "$POLKIT_AGENT" >/dev/null || { [ -x "$POLKIT_AGENT" ] && "$POLKIT_AGEN
 
 # Keyboard layout switching (Settings > Keyboard & Mouse).
 pgrep -f 'lumen-settings kbswitch' >/dev/null || lumen-settings kbswitch >/dev/null 2>&1 &
+
+# Clipboard history (super + v).
+pgrep -f 'lumen-clipboard daemon' >/dev/null || lumen-clipboard daemon >/dev/null 2>&1 &
 
 # Lock on idle (Settings > Users) and before suspend.
 pgrep -x xss-lock >/dev/null || xss-lock --transfer-sleep-lock -- lumen-lock &

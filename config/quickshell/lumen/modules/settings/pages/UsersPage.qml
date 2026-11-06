@@ -104,6 +104,22 @@ Page {
     }
 
     Card {
+        title: "Privacy"
+        SettingRow {
+            label: "Clipboard history"
+            description: "Keep what you copy (text and images) for super + V. Copies from password managers are never kept."
+            Toggle {
+                checked: Theme.conf.clipboard_history !== "false"
+                onToggled: c => Theme.setValue("clipboard_history", c)
+            }
+        }
+        SettingRow {
+            label: "Clear clipboard history"
+            Btn { text: "Clear"; variant: "ghost"; onClicked: Quickshell.execDetached(["lumen-clipboard", "clear"]) }
+        }
+    }
+
+    Card {
         title: "Password"
         SettingRow {
             label: "Change password"

@@ -18,6 +18,7 @@ FloatingWindow {
         { id: "appearance", label: "Appearance", icon: "droplet", file: "AppearancePage.qml" },
         { id: "bar", label: "Bar", icon: "layout", file: "BarPage.qml" },
         { id: "wallpaper", label: "Wallpaper", icon: "image", file: "WallpaperPage.qml" },
+        { id: "notifications", label: "Notifications", icon: "bell", file: "NotificationsPage.qml" },
         { id: "display", label: "Displays", icon: "monitor", file: "DisplayPage.qml" },
         { id: "sound", label: "Sound", icon: "volume", file: "SoundPage.qml" },
         { id: "network", label: "Network", icon: "wifi", file: "NetworkPage.qml" },

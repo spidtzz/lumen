@@ -42,6 +42,7 @@ Backups of anything replaced go to `~/.local/state/lumen/backups/<date>/`.
 | --- | --- |
 | `super + Return` | Terminal (kitty) |
 | `super + space` | App launcher |
+| `super + v` | Clipboard history |
 | `super + n` | Quick settings |
 | `super + c` | Calendar |
 | `super + shift + l` | Lock the screen |
@@ -78,10 +79,20 @@ The full list is in [`config/sxhkd/sxhkdrc`](config/sxhkd/sxhkdrc).
   shut down); toggles for Wi-Fi, dark style, Do Not Disturb and effects; volume; and
   your notifications.
 
-Popups and notifications are drawn above all windows and close when you click elsewhere.
+Popups and notifications are drawn above all windows. Click elsewhere, or the same
+button again, to close them. Notifications can appear in any corner or edge centre
+(Settings › Notifications).
 Scrolling over the workspaces switches desktops.
 
 lumen is its own notification server, so no dunst or mako is needed.
+
+## Clipboard history
+
+`super + v` opens your recent copies, text and images, with a full preview of the
+selected one. Enter copies it back, Delete removes it. The newest 60 are kept in
+`~/.cache/lumen/clipboard` (readable only by you); copies from password managers are
+never kept, and history can be turned off in Settings › Users. Uses `clipnotify` and
+`xclip` from the official repositories.
 
 ## Lock screen
 
@@ -116,7 +127,8 @@ about mouse clicks while a bar popup is open, so clicking elsewhere closes it.
 | Network | wired and Wi-Fi, connect with password | NetworkManager (nmcli) |
 | Keyboard & Mouse | up to four layouts (e.g. English + Persian) and the switch keys, key repeat, focus follows mouse, pointer speed, natural scrolling, tap to click | setxkbmap, xset, xinput, bspwm |
 | Date & Time | time zone, network time, 24-hour clock | timedatectl |
-| Users | profile picture, password, lock after idle, test the lock screen | lumen-avatar, passwd, xss-lock |
+| Notifications | pop-up position, Do Not Disturb, clear history, test notification | |
+| Users | profile picture, password, lock after idle, test the lock screen, clipboard history | lumen-avatar, passwd, xss-lock |
 | About | system details, copy to clipboard | |
 
 Everything is stored in `~/.config/lumen/settings.conf` and applied again at login.
@@ -189,6 +201,7 @@ packages/               package lists per profile
 bin/lumen-settings      settings storage, validation and appliers
 bin/lumen-theme         theme engine (bash)
 bin/lumen-lock          lock screen launcher with i3lock fallback
+bin/lumen-clipboard     clipboard history
 bin/lumen-avatar        profile picture
 bin/lumen-session       session start-up (SDDM and startx)
 config/                 → ~/.config  (bspwm, sxhkd, picom, kitty, quickshell, portals)

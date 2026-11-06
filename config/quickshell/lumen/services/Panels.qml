@@ -24,7 +24,17 @@ Singleton {
     property bool launcherOpen: false
     function toggleLauncher() {
         popup = "";
+        clipboardOpen = false;
         launcherOpen = !launcherOpen;
+    }
+
+    // ---- clipboard history ----
+    property bool clipboardOpen: false
+    property int clipboardRevision: 0   // bumped when lumen-clipboard records something
+    function toggleClipboard() {
+        popup = "";
+        launcherOpen = false;
+        clipboardOpen = !clipboardOpen;
     }
 
     // ---- bar popups: "", "calendar", "qs", "tray", "traymenu", "keyboard" ----

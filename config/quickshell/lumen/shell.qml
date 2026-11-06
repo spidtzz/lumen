@@ -5,6 +5,7 @@ import qs.services
 import qs.modules.bar
 import qs.modules.settings
 import qs.modules.launcher
+import qs.modules.clipboard
 
 // lumen — a desktop shell for bspwm.
 // Run with: quickshell -c lumen   (bspwmrc starts it automatically)
@@ -51,6 +52,19 @@ ShellRoot {
         function toggle(): void { Panels.toggleSettings(); }
         function open(page: string): void { Panels.openSettings(page); }
         function close(): void { Panels.settingsOpen = false; }
+    }
+
+    // Clipboard history, created when opened.
+    LazyLoader {
+        active: Panels.clipboardOpen
+        ClipboardWindow {}
+    }
+
+    // super + v; lumen-clipboard calls "changed" after recording a copy.
+    IpcHandler {
+        target: "clipboard"
+        function toggle(): void { Panels.toggleClipboard(); }
+        function changed(): void { Panels.clipboardRevision++; }
     }
 
     // super + space

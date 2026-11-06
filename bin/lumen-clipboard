@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+# lumen-clipboard — clipboard history for the lumen shell (super + v).
+#
+# Usage:
+#   lumen-clipboard daemon        record clipboard changes (bspwmrc runs this)
+#   lumen-clipboard list          entries, newest first: id<TAB>type<TAB>size<TAB>preview
+#   lumen-clipboard path <id>     file holding an entry
+#   lumen-clipboard copy <id>     put an entry back on the clipboard
+#   lumen-clipboard delete <id>   remove an entry
+#   lumen-clipboard clear         remove every entry
+#
+# Text and PNG images are kept in ~/.cache/lumen/clipboard (the newest 60).
+# Copies from password managers are never recorded, and history can be turned
+# off in Settings > Users ("clipboard_history").
+set -uo pipefail
+
+DIR=${XDG_CACHE_HOME:-$HOME/.cache}/lumen/clipboard
+MAX=60
+MAX_TEXT=$((2 * 1024 * 1024))    # larger text isn't kept
+MAX_IMAGE=$((20 * 1024 * 1024))
+
+die() { printf 'lumen-clipboard: %s\n' "$*" >&2; exit 1; }
+has() { command -v "$1" >/dev/null 2>&1; }
+
+mkdir -p "$DIR"
+chmod 700 "$DIR" 2>/dev/null
+
+valid_id() { [[ $1 =~ ^[0-9]+\.(txt|png)$ ]] || die "invalid id: $1"; }
+
+newest() { ls -1 "$DIR" 2>/dev/null | sort -rn | head -1; }
+
+notify_shell() { has qs && { qs -c lumen ipc call clipboard changed >/dev/null 2>&1 & } || true; }
+
+enabled() {
+	[[ $("$(dirname "$(readlink -f "$0")")/lumen-settings" get clipboard_history 2>/dev/null) != false ]]
+}
+
+# Save the current clipboard as a new entry (unless it repeats the newest).
+capture() {
+	local targets id tmp ext last
+	targets=$(xclip -o -selection clipboard -t TARGETS 2>/dev/null) || return 0
+	# Password managers mark their copies; KeePassXC, Bitwarden and others.
+	if grep -qiE 'x-kde-passwordManagerHint|password' <<<"$targets"; then return 0; fi
+
+	tmp=$(mktemp "$DIR/.new.XXXXXX")
+	if grep -qx 'image/png' <<<"$targets"; then
+		ext=png
+		xclip -o -selection clipboard -t image/png >"$tmp" 2>/dev/null
+		(($(stat -c %s "$tmp") <= MAX_IMAGE)) || { rm -f "$tmp"; return 0; }
+	elif grep -qxE 'UTF8_STRING|STRING|text/plain(;charset=utf-8)?' <<<"$targets"; then
+		ext=txt
+		xclip -o -selection clipboard >"$tmp" 2>/dev/null
+		(($(stat -c %s "$tmp") <= MAX_TEXT)) || { rm -f "$tmp"; return 0; }
+		# Ignore empty or whitespace-only text.
+		grep -q '[^[:space:]]' "$tmp" || { rm -f "$tmp"; return 0; }
+	else
+		rm -f "$tmp"
+		return 0
+	fi
+	[[ -s $tmp ]] || { rm -f "$tmp"; return 0; }
+
+	last=$(newest)
+	if [[ -n $last && $last == *.$ext ]] && cmp -s "$tmp" "$DIR/$last"; then
+		rm -f "$tmp"
+		return 0
+	fi
+	id="$(date +%s%N).$ext"
+	mv "$tmp" "$DIR/$id"
+
+	# Keep the newest $MAX.
+	ls -1 "$DIR" | sort -rn | tail -n +$((MAX + 1)) | while read -r old; do rm -f "$DIR/$old"; done
+	notify_shell
+}
+
+case ${1:-} in
+	daemon)
+		has clipnotify || die "clipnotify is not installed"
+		has xclip || die "xclip is not installed"
+		rm -f "$DIR"/.new.* 2>/dev/null
+		while clipnotify -s clipboard 2>/dev/null || clipnotify; do
+			enabled && capture
+		done
+		;;
+	list)
+		ls -1 "$DIR" 2>/dev/null | sort -rn | while read -r id; do
+			f=$DIR/$id
+			[[ -f $f ]] || continue
+			size=$(stat -c %s "$f")
+			if [[ $id == *.png ]]; then
+				printf '%s\timage\t%s\t\n' "$id" "$size"
+			else
+				# First 160 characters on one line.
+				preview=$(head -c 600 "$f" | tr '\n\t\r' '   ' | sed 's/  */ /g; s/^ //' | cut -c1-160)
+				printf '%s\ttext\t%s\t%s\n' "$id" "$size" "$preview"
+			fi
+		done
+		;;
+	path)
+		valid_id "${2:-}"
+		printf '%s\n' "$DIR/$2"
+		;;
+	copy)
+		valid_id "${2:-}"
+		f=$DIR/$2
+		[[ -f $f ]] || die "no such entry"
+		if [[ $2 == *.png ]]; then
+			xclip -selection clipboard -t image/png -i "$f"
+		else
+			xclip -selection clipboard -i "$f"
+		fi
+		# The daemon records it again as the newest entry.
+		rm -f "$f"
+		;;
+	delete)
+		valid_id "${2:-}"
+		rm -f "$DIR/$2"
+		notify_shell
+		;;
+	clear)
+		rm -f "$DIR"/*.txt "$DIR"/*.png
+		notify_shell
+		;;
+	*) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; [[ -z ${1:-} || $1 == -h || $1 == --help ]] ;;
+esac

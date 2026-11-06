@@ -38,6 +38,8 @@ SCHEMA=(
 	"clock_24h~true~^(true|false)$~-"
 	"compositor~true~^(true|false)$~compositor"
 	"focus_follows_mouse~true~^(true|false)$~wm"
+	"clipboard_history~true~^(true|false)$~-"
+	"notif_position~top-right~^(top|bottom)-(left|center|right)$~-"
 	"bar_workspaces~5~^([3-9]|10)$~-"
 	"tray_grouped~true~^(true|false)$~-"
 	"idle_lock~10~^(0|5|10|15|30|60)$~idle"
@@ -246,7 +248,10 @@ apply_compositor() {
 	# Software rendering in virtual machines: virtual GPUs often show black
 	# windows with picom's GPU backend.
 	if systemd-detect-virt -q 2>/dev/null; then
-		picom -b --backend xrender --log-file "$STATE/picom.log"
+		# Virtual GPUs also miss partial redraws (windows flashing black when
+		# popups appear), so redraw the whole screen each frame there.
+		picom -b --backend xrender --no-use-damage --log-file "$STATE/picom.log" 2>/dev/null ||
+			picom -b --backend xrender --log-file "$STATE/picom.log"
 	else
 		picom -b --log-file "$STATE/picom.log" ||
 			picom -b --backend xrender --log-file "$STATE/picom.log"

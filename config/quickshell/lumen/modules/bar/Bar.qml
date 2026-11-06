@@ -119,8 +119,9 @@ PanelWindow {
     }
 
     // ---- popups: calendar, quick settings, tray, menus ----
-    // A popup window is always drawn above other windows, and grabFocus closes
-    // it when you click anywhere else.
+    // A popup window is always drawn above other windows. Clicks elsewhere
+    // close it via Panels.click() (reported by the input watcher); there's no
+    // pointer grab, so the bar button that opened it can close it again.
     PopupWindow {
         id: popupHost
 
@@ -131,11 +132,10 @@ PanelWindow {
         anchor.rect: bar.popupRect(implicitWidth, implicitHeight, Panels.popupAnchor)
         implicitWidth: content ? content.implicitWidth : 1
         implicitHeight: content ? content.implicitHeight : 1
-        grabFocus: true
+        grabFocus: false
         color: "transparent"
         visible: false
 
-        // Set imperatively: a click outside sets visible = false by itself.
         function sync() {
             const show = mine && content !== null;
             if (visible !== show) visible = show;
@@ -163,17 +163,27 @@ PanelWindow {
     }
 
     // ---- notification popups (on the focused screen) ----
+    // Corner or edge from Settings > Notifications, kept clear of the bar.
     PopupWindow {
         id: notifHost
 
         readonly property int w: 380
+        readonly property var pos: (Theme.conf.notif_position || "top-right").split("-")
         anchor.window: bar
         anchor.rect: {
-            const g = Theme.gap;
-            if (bar.edge === "top") return Qt.rect(bar.width - w - g, bar.height + 4, 1, 1);
-            if (bar.edge === "bottom") return Qt.rect(bar.width - w - g, -implicitHeight - 4, 1, 1);
-            if (bar.edge === "left") return Qt.rect(bar.screen.width - w - g, g, 1, 1);
-            return Qt.rect(-w - 4, g, 1, 1);
+            const g = Theme.gap, t = Theme.barThickness;
+            const sw = bar.screen.width, sh = bar.screen.height, h = implicitHeight;
+            // The free area of the screen, in screen coordinates.
+            const left = (bar.edge === "left" ? t + 4 : g);
+            const right = sw - (bar.edge === "right" ? t + 4 : g);
+            const top = (bar.edge === "top" ? t + 4 : g);
+            const bottom = sh - (bar.edge === "bottom" ? t + 4 : g);
+            const x = pos[1] === "left" ? left : pos[1] === "center" ? (sw - w) / 2 : right - w;
+            const y = pos[0] === "bottom" ? bottom - h : top;
+            // This bar window's position on the screen.
+            const ox = bar.edge === "right" ? sw - t : 0;
+            const oy = bar.edge === "bottom" ? sh - t : 0;
+            return Qt.rect(x - ox, y - oy, 1, 1);
         }
         implicitWidth: w
         implicitHeight: Math.max(1, notifStack.implicitHeight)

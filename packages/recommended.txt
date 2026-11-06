@@ -5,3 +5,6 @@ papirus-icon-theme
 
 # Standard home folders (Documents, Downloads, ...)
 xdg-user-dirs
+
+# notify-send, for scripts and the test button in Settings > Notifications
+libnotify

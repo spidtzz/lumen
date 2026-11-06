@@ -15,6 +15,10 @@ xorg-xinput
 # Password prompts for system settings
 polkit-gnome
 
+# Clipboard history (super + v)
+clipnotify
+xclip
+
 # Lock screen: locks on idle and before suspend; i3lock is the safety net
 # if the lumen lock screen ever stops unexpectedly
 xss-lock

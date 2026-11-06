@@ -50,6 +50,23 @@ function d2j(jdn) {
     return { y: jy, m: 7 + div(k, 30), d: mod(k, 30) + 1 };
 }
 
+function j2d(jy, jm, jd) {
+    const r = jalCal(jy);
+    return g2d(r.gy, 3, r.march) + (jm - 1) * 31 - div(jm, 7) * (jm - 7) + jd - 1;
+}
+
+function monthLength(jy, jm) {
+    if (jm <= 6) return 31;
+    if (jm <= 11) return 30;
+    return jalCal(jy).leap === 0 ? 30 : 29;
+}
+
+// Shamsi y/m/d -> JS Date
+function toDate(jy, jm, jd) {
+    const g = d2g(j2d(jy, jm, jd));
+    return new Date(g.y, g.m - 1, g.d);
+}
+
 const MONTHS_FA = ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"];
 const MONTHS_EN = ["Farvardin", "Ordibehesht", "Khordad", "Tir", "Mordad", "Shahrivar", "Mehr", "Aban", "Azar", "Dey", "Bahman", "Esfand"];
 const DIGITS_FA = "۰۱۲۳۴۵۶۷۸۹";

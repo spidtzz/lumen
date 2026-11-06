@@ -24,19 +24,12 @@ notify_shell() {
 	command -v qs >/dev/null && qs -c lumen ipc call avatar changed >/dev/null 2>&1 || true
 }
 
-# sudo in a terminal; a graphical password prompt (polkit) from the Settings app.
-as_root() {
-	if [[ -t 0 ]]; then sudo "$@"; else pkexec "$@"; fi
-}
-
 sync_sddm() {
 	[[ -d $FACES_DIR ]] || return 0 # SDDM not installed
 	if [[ -f $FACE ]]; then
-		as_root install -m 644 "$FACE" "$SDDM_FACE" && say "login screen picture updated" ||
-			die "couldn't update the login screen picture (password prompt cancelled?)"
+		sudo install -m 644 "$FACE" "$SDDM_FACE" && say "login screen picture updated"
 	elif [[ -e $SDDM_FACE ]]; then
-		as_root rm -f "$SDDM_FACE" && say "login screen picture removed" ||
-			die "couldn't remove the login screen picture"
+		sudo rm -f "$SDDM_FACE" && say "login screen picture removed"
 	fi
 }
 

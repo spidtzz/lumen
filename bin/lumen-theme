@@ -4,7 +4,7 @@
 #
 # Usage:
 #   lumen-theme apply [--quiet]        regenerate and apply everything
-#   lumen-theme set <key> <value>      same as lumen-settings set
+#   lumen-theme set <key> <value>      mode | accent | bar_position, then apply
 #   lumen-theme toggle-mode            light <-> dark
 #   lumen-theme cycle-accent           next accent colour
 #   lumen-theme get [key]              print current settings
@@ -44,6 +44,20 @@ load_settings() {
 	contains "$accent" "${ACCENTS[@]}" || accent=blue
 	contains "$bar_position" "${POSITIONS[@]}" || bar_position=top
 	[[ $font_size =~ ^[0-9]+$ ]] || font_size=10
+}
+
+save_settings() {
+	mkdir -p "${SETTINGS%/*}"
+	# Write in place (not via rename) so Quickshell's file watcher keeps working.
+	cat >"$SETTINGS" <<-EOF
+		# lumen settings — edited by lumen-theme and the Settings app.
+		mode=$mode
+		accent=$accent
+		bar_position=$bar_position
+		font=$font
+		font_size=$font_size
+		mono_font=$mono_font
+	EOF
 }
 
 # ---------------------------------------------------------------- palette
@@ -382,19 +396,14 @@ apply_bspwm() {
 }
 
 apply_root() {
-	[[ -n ${DISPLAY:-} ]] || return 0
-	# picom only draws a background that's published as a root pixmap, which
-	# hsetroot does; plain xsetroot would leave the desktop black under picom.
-	if has hsetroot; then
-		hsetroot -solid "${P[bg]}" >/dev/null 2>&1 || true
-	elif has xsetroot; then
-		xsetroot -solid "${P[bg]}" 2>/dev/null || true
-	fi
+	[[ -n ${DISPLAY:-} ]] && has xsetroot || return 0
+	xsetroot -solid "${P[bg]}" 2>/dev/null || true
 }
 
 apply() {
 	load_settings
 	load_palette
+	[[ -f $SETTINGS ]] || save_settings
 	write_gtk
 	write_xsettingsd
 	write_gsettings
@@ -409,10 +418,6 @@ apply() {
 }
 
 # ---------------------------------------------------------------- CLI
-# Settings are stored by lumen-settings; these commands are shortcuts to it.
-SETTINGS_BIN=$(dirname "$(readlink -f "$0")")/lumen-settings
-[[ -x $SETTINGS_BIN ]] || SETTINGS_BIN=lumen-settings
-
 cmd=${1:-apply}
 shift || true
 case $cmd in
@@ -420,20 +425,41 @@ case $cmd in
 		[[ ${1:-} == --quiet ]] && QUIET=1
 		apply
 		;;
-	set) exec "$SETTINGS_BIN" set "$@" ;;
-	get) exec "$SETTINGS_BIN" get "$@" ;;
+	set)
+		[[ $# -eq 2 ]] || die "usage: lumen-theme set <mode|accent|bar_position> <value>"
+		load_settings
+		case $1 in
+			mode) contains "$2" "${MODES[@]}" || die "mode must be one of: ${MODES[*]}" ;;
+			accent) contains "$2" "${ACCENTS[@]}" || die "accent must be one of: ${ACCENTS[*]}" ;;
+			bar_position) contains "$2" "${POSITIONS[@]}" || die "bar_position must be one of: ${POSITIONS[*]}" ;;
+			*) die "unknown key: $1" ;;
+		esac
+		printf -v "$1" '%s' "$2"
+		save_settings
+		[[ $1 == bar_position ]] || apply # the bar follows settings.conf by itself
+		;;
 	toggle-mode)
 		load_settings
-		[[ $mode == dark ]] && next=light || next=dark
-		exec "$SETTINGS_BIN" set mode "$next"
+		[[ $mode == dark ]] && mode=light || mode=dark
+		save_settings
+		apply
 		;;
 	cycle-accent)
 		load_settings
-		next=blue
 		for i in "${!ACCENTS[@]}"; do
-			[[ ${ACCENTS[$i]} == "$accent" ]] && { next=${ACCENTS[$(((i + 1) % ${#ACCENTS[@]}))]}; break; }
+			[[ ${ACCENTS[$i]} == "$accent" ]] && { accent=${ACCENTS[$(((i + 1) % ${#ACCENTS[@]}))]}; break; }
 		done
-		exec "$SETTINGS_BIN" set accent "$next"
+		save_settings
+		apply
+		;;
+	get)
+		load_settings
+		if [[ -n ${1:-} ]]; then
+			contains "$1" "${KEYS[@]}" || die "unknown key: $1"
+			printf '%s\n' "${!1}"
+		else
+			for k in "${KEYS[@]}"; do printf '%s=%s\n' "$k" "${!k}"; done
+		fi
 		;;
 	list)
 		echo "mode: ${MODES[*]}"

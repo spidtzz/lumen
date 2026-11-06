@@ -3,7 +3,6 @@ import Quickshell
 import Quickshell.Io
 import qs.services
 import qs.modules.bar
-import qs.modules.settings
 
 // lumen — a desktop shell for bspwm.
 // Run with: quickshell -c lumen   (bspwmrc starts it automatically)
@@ -29,20 +28,6 @@ ShellRoot {
     }
 
     Component.onCompleted: syncPadding()
-
-    // Settings app, created when opened and freed when closed.
-    LazyLoader {
-        active: Panels.settingsOpen
-        SettingsWindow {}
-    }
-
-    // super + comma, or: qs -c lumen ipc call settings open display
-    IpcHandler {
-        target: "settings"
-        function toggle(): void { Panels.toggleSettings(); }
-        function open(page: string): void { Panels.openSettings(page); }
-        function close(): void { Panels.settingsOpen = false; }
-    }
 
     // Called by lumen-avatar after the picture changes.
     IpcHandler {

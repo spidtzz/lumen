@@ -45,7 +45,7 @@ Page {
             Rectangle {
                 width: 64; height: 64; radius: 18
                 color: Theme.accent
-                Txt { anchors.centerIn: parent; text: "l"; size: 36; strong: true; color: Theme.accentFg }
+                Icon { anchors.centerIn: parent; name: "lumen"; size: 40; stroke: 2.2; color: Theme.accentFg }
             }
             ColumnLayout {
                 spacing: 2

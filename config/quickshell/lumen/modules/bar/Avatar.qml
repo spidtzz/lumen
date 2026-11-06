@@ -58,7 +58,7 @@ Item {
         Text {
             anchors.centerIn: parent
             text: Theme.userName.length > 0 ? Theme.userName.charAt(0).toUpperCase() : "?"
-            color: Theme.accentFg
+            color: Theme.onAccent
             font.family: Theme.fontFamily
             font.pixelSize: root.size * 0.48
             font.weight: Font.Bold

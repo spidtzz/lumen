@@ -1,0 +1,2 @@
+# lumen lock screen: check the password only.
+auth required pam_unix.so

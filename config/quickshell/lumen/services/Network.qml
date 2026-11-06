@@ -59,6 +59,14 @@ Singleton {
         return out;
     }
 
+    // Keep the bar's network icon current.
+    Timer {
+        interval: 10000
+        repeat: true
+        running: root.available
+        onTriggered: root.refresh()
+    }
+
     Process {
         id: check
         command: ["sh", "-c", "command -v nmcli"]

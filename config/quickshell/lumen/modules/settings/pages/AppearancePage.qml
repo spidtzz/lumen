@@ -5,7 +5,7 @@ import qs.components
 
 Page {
     title: "Appearance"
-    description: "Colours, the bar and effects. Changes apply to the shell, apps and the login screen."
+    description: "Colours, text and effects. Changes apply to the shell, apps and the login screen."
 
     readonly property var accents: [
         { id: "blue", label: "Blue", light: "#2867e4", dark: "#71a3ff" },
@@ -55,37 +55,6 @@ Page {
                         strong: Theme.accentName === modelData.id
                     }
                 }
-            }
-        }
-    }
-
-    Card {
-        title: "Bar"
-        SettingRow {
-            label: "Position"
-            description: "Also: super + shift + arrow keys."
-            Seg {
-                options: [
-                    { label: "Top", value: "top" }, { label: "Bottom", value: "bottom" },
-                    { label: "Left", value: "left" }, { label: "Right", value: "right" }
-                ]
-                value: Theme.barPosition
-                onPicked: v => Theme.setValue("bar_position", v)
-            }
-        }
-        SettingRow {
-            label: "24-hour clock"
-            Toggle {
-                checked: Theme.clock24h
-                onToggled: c => Theme.setValue("clock_24h", c)
-            }
-        }
-        SettingRow {
-            label: "Shamsi date"
-            description: "Show the Persian calendar date when you hover over the clock."
-            Toggle {
-                checked: Theme.shamsiDate
-                onToggled: c => Theme.setValue("shamsi_date", c)
             }
         }
     }

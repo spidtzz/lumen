@@ -81,6 +81,29 @@ Page {
     }
 
     Card {
+        title: "Lock screen"
+        SettingRow {
+            label: "Lock after"
+            description: "Locks when the computer has been idle this long, and always before suspend. Shortcut: super + shift + L."
+            Dropdown {
+                implicitWidth: 180
+                options: [
+                    { label: "5 minutes", value: "5" }, { label: "10 minutes", value: "10" },
+                    { label: "15 minutes", value: "15" }, { label: "30 minutes", value: "30" },
+                    { label: "1 hour", value: "60" }, { label: "Never", value: "0" }
+                ]
+                value: Theme.conf.idle_lock || "10"
+                onPicked: v => Theme.setValue("idle_lock", v)
+            }
+        }
+        SettingRow {
+            label: "Try the lock screen"
+            description: "Opens it in test mode: Esc closes it without a password."
+            Btn { text: "Test"; icon: "lock"; onClicked: Quickshell.execDetached(["lumen-lock", "--test"]) }
+        }
+    }
+
+    Card {
         title: "Password"
         SettingRow {
             label: "Change password"

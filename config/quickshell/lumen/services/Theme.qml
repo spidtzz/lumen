@@ -21,12 +21,6 @@ Singleton {
     property string fontFamily: "Space Grotesk"
     property string monoFamily: "JetBrains Mono"
     property int fontSize: 10
-    readonly property real fontScale: fontSize / 10   // shell text follows the font size setting
-
-    // Every key in settings.conf (see `lumen-settings keys`), as strings.
-    property var conf: ({})
-    readonly property bool clock24h: conf.clock_24h !== "false"
-    readonly property bool shamsiDate: conf.shamsi_date === "true"
 
     // ---- palette (same names as the UI demo) ----
     property color bg: "#070f1f"
@@ -36,7 +30,7 @@ Singleton {
     property color muted: "#97a5be"
     property color line: "#25334c"
     property color accent: "#71a3ff"
-    property color accentFg: "#081123"
+    property color onAccent: "#081123"
     property color danger: "#f75d59"
     property color success: "#53be70"
     property color warning: "#edb345"
@@ -64,7 +58,7 @@ Singleton {
     Behavior on muted { ColorAnimation { duration: root.animNormal } }
     Behavior on line { ColorAnimation { duration: root.animNormal } }
     Behavior on accent { ColorAnimation { duration: root.animNormal } }
-    Behavior on accentFg { ColorAnimation { duration: root.animNormal } }
+    Behavior on onAccent { ColorAnimation { duration: root.animNormal } }
 
     function parseConf(text) {
         const out = {};
@@ -79,13 +73,9 @@ Singleton {
         return out;
     }
 
-    // Save and apply a setting. The change comes back through the file
-    // watcher below; `conf` is updated right away so controls feel instant.
+    // Run a lumen-theme command (used by the Settings app and theme picker).
     function setValue(key, value) {
-        const c = Object.assign({}, conf);
-        c[key] = String(value);
-        conf = c;
-        Quickshell.execDetached(["lumen-settings", "set", key, String(value)]);
+        Quickshell.execDetached(["lumen-theme", "set", key, value]);
     }
 
     FileView {
@@ -95,7 +85,6 @@ Singleton {
         onFileChanged: reload()
         onLoaded: {
             const c = root.parseConf(text());
-            root.conf = c;
             if (c.mode === "light" || c.mode === "dark")
                 root.mode = c.mode;
             if (c.accent)
@@ -120,7 +109,7 @@ Singleton {
             const p = root.parseConf(text());
             const map = {
                 bg: "bg", panel: "panel", field: "field", ink: "ink", muted: "muted",
-                line: "line", accent: "accent", on_accent: "accentFg",
+                line: "line", accent: "accent", on_accent: "onAccent",
                 danger: "danger", success: "success", warning: "warning"
             };
             for (const key in map)

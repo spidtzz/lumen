@@ -1,7 +1,6 @@
 import QtQuick
 import Quickshell
 import qs.services
-import "../../components/Jalali.js" as Jalali
 
 // Time (and date on hover). Stacked hours/minutes on a vertical bar.
 Rectangle {
@@ -23,14 +22,11 @@ Rectangle {
         id: label
         anchors.centerIn: parent
         horizontalAlignment: Text.AlignHCenter
-        readonly property string time: Qt.formatDateTime(clock.date, Theme.clock24h ? "HH:mm" : "h:mm AP")
-        readonly property string date: Theme.shamsiDate ? Jalali.format(clock.date, true)
-                                                        : Qt.formatDateTime(clock.date, "ddd d MMM")
-        text: root.vertical ? Qt.formatDateTime(clock.date, Theme.clock24h ? "HH\nmm" : "hh\nmm")
-            : hover.hovered ? date + "  ·  " + time
-            : time
+        text: root.vertical ? Qt.formatDateTime(clock.date, "HH\nmm")
+            : hover.hovered ? Qt.formatDateTime(clock.date, "ddd d MMM  ·  HH:mm")
+            : Qt.formatDateTime(clock.date, "HH:mm")
         font.family: Theme.fontFamily
-        font.pixelSize: Math.round(14 * Theme.fontScale)
+        font.pixelSize: 14
         font.weight: Font.Bold
         color: Theme.ink
     }

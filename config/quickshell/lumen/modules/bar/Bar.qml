@@ -2,7 +2,6 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import qs.services
-import qs.components
 
 // One bar per screen. It sits on the edge chosen in settings.conf
 // (top, bottom, left or right) as a floating rounded panel.
@@ -73,8 +72,6 @@ PanelWindow {
             Avatar {
                 size: 26
                 Layout.alignment: Qt.AlignCenter
-                HoverHandler { cursorShape: Qt.PointingHandCursor }
-                TapHandler { onTapped: Panels.toggleSettings() }
             }
         }
     }

@@ -3,8 +3,8 @@
 A lightweight desktop for **bspwm on X11**, built with [Quickshell](https://quickshell.outfoxxed.me).
 One theme — seven accent colours in light and dark — applied to the shell, GTK 3, GTK 4/libadwaita, Qt and KDE apps, kitty and bspwm.
 
-> **Status: stage 2 of 4.** Session, login screen, installer, theme system, bar and Settings app work.
-> Coming next: app launcher, notifications, shortcut viewer.
+> **Status: stage 1 of 4.** Session, login screen, installer, theme system and a basic bar work.
+> Coming next: app launcher, notifications, shortcut viewer, Settings app.
 
 ## Goals
 
@@ -42,7 +42,6 @@ Backups of anything replaced go to `~/.local/state/lumen/backups/<date>/`.
 | Keys | Action |
 | --- | --- |
 | `super + Return` | Terminal (kitty) |
-| `super + comma` | Settings (or click your picture in the bar) |
 | `super + q` | Close window |
 | `super + 1…9` / `super + shift + 1…9` | Go to / send to desktop |
 | `super + h j k l` | Focus window in a direction |
@@ -55,31 +54,6 @@ Backups of anything replaced go to `~/.local/state/lumen/backups/<date>/`.
 | `super + alt + r` / `super + alt + q` | Restart bspwm / log out |
 
 The full list is in [`config/sxhkd/sxhkdrc`](config/sxhkd/sxhkdrc).
-
-## Settings
-
-| Page | What you can change | Uses |
-| --- | --- | --- |
-| Appearance | light/dark, accent, bar position, clock, text size, compositor | lumen-theme |
-| Displays | resolution, refresh rate, rotation, primary, arrangement — undone after 15 s unless kept | xrandr |
-| Sound | output and input device, volume, mute | PipeWire (built into Quickshell) |
-| Network | wired and Wi-Fi, connect with password | NetworkManager (nmcli) |
-| Keyboard & Mouse | up to four layouts (e.g. English + Persian) and the switch shortcut, key repeat, pointer speed, natural scrolling, tap to click | setxkbmap, xset, xinput |
-| Date & Time | time zone, network time, 24-hour clock, Shamsi date | timedatectl |
-| Users | profile picture, password | lumen-avatar, passwd |
-| About | system details, copy to clipboard | |
-
-Everything is stored in `~/.config/lumen/settings.conf` and applied again at login.
-From a terminal:
-
-```sh
-lumen-settings keys                      # every setting and its allowed values
-lumen-settings set kb_layouts us,ir
-lumen-settings set kb_switch alt_shift
-qs -c lumen ipc call settings open display
-```
-
-System changes (time zone, login-screen picture) show a password prompt (polkit-gnome).
 
 ## Login screen and profile picture
 
@@ -136,7 +110,6 @@ Palettes are generated from the original oklch design values by `tools/gen-palet
 ```
 install.sh              installer
 packages/               package lists per profile
-bin/lumen-settings      settings storage, validation and appliers
 bin/lumen-theme         theme engine (bash)
 bin/lumen-avatar        profile picture
 bin/lumen-session       session start-up (SDDM and startx)

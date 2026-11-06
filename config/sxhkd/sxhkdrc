@@ -1,0 +1,120 @@
+# lumen — keyboard shortcuts (sxhkd)
+#
+# The shortcut viewer (super + /) reads this file. Describe a binding with
+#   # @group <Group>      starts a group (applies to the bindings below it)
+#   # <description>       the line directly above a binding
+# Reload after editing with super + Escape.
+
+# @group Apps
+
+# Open a terminal
+super + Return
+	kitty
+
+# Open the app launcher
+super + space
+	qs -c lumen ipc call launcher toggle
+
+# Show keyboard shortcuts
+super + slash
+	qs -c lumen ipc call shortcuts toggle
+
+# Open Settings
+super + comma
+	qs -c lumen ipc call settings toggle
+
+# @group Theme
+
+# Switch between light and dark
+super + shift + d
+	lumen-theme toggle-mode
+
+# Next accent colour
+super + shift + a
+	lumen-theme cycle-accent
+
+# Move the bar to the top, right, bottom or left edge
+super + shift + {Up,Right,Down,Left}
+	lumen-theme set bar_position {top,right,bottom,left}
+
+# @group Session
+
+# Reload keyboard shortcuts
+super + Escape
+	pkill -USR1 -x sxhkd
+
+# Restart bspwm
+super + alt + r
+	bspc wm -r
+
+# Log out
+super + alt + q
+	bspc quit
+
+# @group Windows
+
+# Close the window
+super + q
+	bspc node -c
+
+# Force-kill the window
+super + shift + q
+	bspc node -k
+
+# Focus the window in a direction
+super + {h,j,k,l}
+	bspc node -f {west,south,north,east}
+
+# Focus the window in a direction
+super + {Left,Down,Up,Right}
+	bspc node -f {west,south,north,east}
+
+# Swap with the window in a direction
+super + ctrl + {h,j,k,l}
+	bspc node -s {west,south,north,east}
+
+# Make the window tiled, floating or fullscreen
+super + {t,s,f}
+	bspc node -t {tiled,floating,fullscreen}
+
+# Toggle monocle layout
+super + m
+	bspc desktop -l next
+
+# Swap with the biggest window
+super + g
+	bspc node -s biggest.window
+
+# Grow the window
+super + alt + {h,j,k,l}
+	bspc node -z {left -20 0,bottom 0 20,top 0 -20,right 20 0}
+
+# Shrink the window
+super + alt + shift + {h,j,k,l}
+	bspc node -z {right -20 0,top 0 20,bottom 0 -20,left 20 0}
+
+# Choose where the next window opens
+super + ctrl + alt + {h,j,k,l}
+	bspc node -p {west,south,north,east}
+
+# Cancel the next-window placement
+super + ctrl + alt + space
+	bspc node -p cancel
+
+# @group Desktops
+
+# Go to desktop 1-9
+super + {1-9}
+	bspc desktop -f '^{1-9}'
+
+# Send the window to desktop 1-9
+super + shift + {1-9}
+	bspc node -d '^{1-9}'
+
+# Go to the previous desktop
+super + Tab
+	bspc desktop -f last
+
+# Go to the next or previous occupied desktop
+super + bracket{left,right}
+	bspc desktop -f {prev,next}.local.occupied

@@ -1,0 +1,30 @@
+# Always installed. Official Arch repositories only (no AUR).
+
+# X11 session
+xorg-server
+xorg-xinit
+xorg-xrandr
+xorg-xsetroot
+
+# Window manager and hotkeys
+bspwm
+sxhkd
+
+# Shell (built with X11 support in Arch's package)
+quickshell
+
+# Compositor: rounded corners, shadows, fades
+picom
+
+# Terminal and fonts (Noto covers Persian/Arabic and other scripts)
+kitty
+ttf-jetbrains-mono
+noto-fonts
+
+# Theming: GTK 3/4, Qt, cursor, live reload, light/dark for libadwaita apps
+adw-gtk-theme
+adwaita-cursors
+qt6ct
+xsettingsd
+dconf
+xdg-desktop-portal-gtk

@@ -1,0 +1,22 @@
+#!/bin/sh
+# lumen-session — starts the lumen desktop.
+# Used by both SDDM (via /usr/share/xsessions/lumen.desktop) and startx
+# (via ~/.xinitrc). The installer also places a copy in /usr/local/bin.
+
+export PATH="$HOME/.local/bin:$PATH"
+export XDG_CURRENT_DESKTOP=lumen
+export XDG_SESSION_DESKTOP=lumen
+export XDG_SESSION_TYPE=x11
+export QT_QPA_PLATFORMTHEME=qt6ct
+export XCURSOR_THEME=Adwaita
+export XCURSOR_SIZE=24
+
+# Let D-Bus-activated services (portals, notifications) see this session.
+dbus-update-activation-environment --systemd \
+	DISPLAY XAUTHORITY PATH XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP \
+	XDG_SESSION_TYPE QT_QPA_PLATFORMTHEME XCURSOR_THEME XCURSOR_SIZE 2>/dev/null
+
+# Inside a virtual machine: clipboard sharing and auto-resize.
+command -v spice-vdagent >/dev/null && spice-vdagent
+
+exec bspwm

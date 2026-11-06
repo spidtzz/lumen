@@ -1,0 +1,67 @@
+#!/bin/sh
+# lumen — bspwm configuration
+# bspwm re-runs this file on "super + alt + r", so every launcher below is
+# guarded against starting a second copy.
+
+export PATH="$HOME/.local/bin:$PATH"
+
+pgrep -x sxhkd >/dev/null || sxhkd &
+
+# ---- Desktops ---------------------------------------------------------------
+# One monitor gets desktops 1-9. With two, the first gets 1-5 and the second
+# 6-9; any further monitor gets a single desktop.
+i=0
+count=$(bspc query -M | wc -l)
+for mon in $(bspc query -M --names); do
+	i=$((i + 1))
+	if [ "$count" -eq 1 ]; then
+		bspc monitor "$mon" -d 1 2 3 4 5 6 7 8 9
+	elif [ "$i" -eq 1 ]; then
+		bspc monitor "$mon" -d 1 2 3 4 5
+	elif [ "$i" -eq 2 ]; then
+		bspc monitor "$mon" -d 6 7 8 9
+	else
+		bspc monitor "$mon" -d "$((i + 8))"
+	fi
+done
+
+# ---- Behaviour --------------------------------------------------------------
+bspc config border_width            2
+bspc config window_gap              10
+bspc config split_ratio             0.5
+bspc config single_monocle          false
+bspc config borderless_monocle      true
+bspc config gapless_monocle         false
+bspc config focus_follows_pointer   false
+bspc config pointer_follows_focus   false
+bspc config pointer_modifier        mod4
+bspc config pointer_action1         move
+bspc config pointer_action2         resize_side
+bspc config pointer_action3         resize_corner
+bspc config remove_disabled_monitors  true
+bspc config remove_unplugged_monitors true
+bspc config merge_overlapping_monitors true
+# The lumen bar sets the padding for its own edge (see the Quickshell config).
+
+# ---- Rules ------------------------------------------------------------------
+bspc rule -r '*'
+bspc rule -a '*:*:Picture-in-Picture' state=floating sticky=on
+bspc rule -a 'Pavucontrol' state=floating
+bspc rule -a 'nm-connection-editor' state=floating
+bspc rule -a 'Xdg-desktop-portal-gtk' state=floating
+
+# ---- Session ----------------------------------------------------------------
+xsetroot -cursor_name left_ptr
+lumen-theme apply --quiet   # borders, GTK/Qt files, background colour
+
+pgrep -x xsettingsd >/dev/null || xsettingsd >/dev/null 2>&1 &
+
+# picom: try the GPU backend first, fall back to software rendering.
+if ! pgrep -x picom >/dev/null; then
+	picom -b 2>/dev/null || picom -b --backend xrender 2>/dev/null
+fi
+
+pgrep -f 'quickshell -c lumen' >/dev/null || quickshell -c lumen >/dev/null 2>&1 &
+
+# Per-user additions that survive updates.
+[ -x "$HOME/.config/bspwm/autostart" ] && "$HOME/.config/bspwm/autostart" &

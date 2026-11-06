@@ -1,0 +1,346 @@
+#!/usr/bin/env bash
+# lumen installer — Arch Linux and Arch-based distributions.
+#
+#   ./install.sh --dry-run          show what would happen, change nothing
+#   ./install.sh                    install (recommended profile)
+#
+# Options:
+#   --profile core|recommended|full   package set (default: recommended)
+#   --fm dolphin|nautilus|none        file manager (asked when interactive)
+#   --dm sddm|none                    login screen (default: sddm, none for core)
+#   --avatar <image>                  profile picture for the desktop and login
+#   --autostart / --no-autostart      without SDDM: start X automatically on tty1
+#   --link                            symlink configs to this repo (for development)
+#   --no-packages                     only install config files
+#   --dry-run                         print the plan without changing anything
+#   -y, --yes                         don't ask questions; use defaults
+#   -h, --help                        show this help
+set -euo pipefail
+
+REPO=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+NAME=lumen
+CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
+DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share}
+STATE_HOME=${XDG_STATE_HOME:-$HOME/.local/state}
+BACKUP=$STATE_HOME/$NAME/backups/$(date +%Y%m%d-%H%M%S)
+
+PROFILE=recommended FM=ask DM=auto AVATAR='' AUTOSTART=ask LINK=0 PACKAGES=1 DRY=0 YES=0
+
+# ---------------------------------------------------------------- helpers
+c_blue=$'\e[1;34m' c_yellow=$'\e[1;33m' c_red=$'\e[1;31m' c_dim=$'\e[2m' c_off=$'\e[0m'
+[[ -t 1 ]] || c_blue='' c_yellow='' c_red='' c_dim='' c_off=''
+log() { printf '%s::%s %s\n' "$c_blue" "$c_off" "$*"; }
+warn() { printf '%s!!%s %s\n' "$c_yellow" "$c_off" "$*" >&2; }
+die() { printf '%serror:%s %s\n' "$c_red" "$c_off" "$*" >&2; exit 1; }
+run() {
+	if ((DRY)); then printf '   %s[dry-run]%s %s\n' "$c_dim" "$c_off" "$*"; else "$@"; fi
+}
+ask() { # ask "question" default(y/n)
+	local reply def=$2
+	((YES)) || [[ ! -t 0 ]] && { [[ $def == y ]]; return; }
+	read -rp "$1 [$([[ $def == y ]] && echo Y/n || echo y/N)] " reply
+	reply=${reply:-$def}
+	[[ ${reply,,} == y* ]]
+}
+usage() { sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'; exit 0; }
+
+# ---------------------------------------------------------------- arguments
+while (($#)); do
+	case $1 in
+		--profile) PROFILE=${2:-}; shift ;;
+		--profile=*) PROFILE=${1#*=} ;;
+		--fm) FM=${2:-}; shift ;;
+		--fm=*) FM=${1#*=} ;;
+		--dm) DM=${2:-}; shift ;;
+		--dm=*) DM=${1#*=} ;;
+		--avatar) AVATAR=${2:-}; shift ;;
+		--avatar=*) AVATAR=${1#*=} ;;
+		--autostart) AUTOSTART=yes ;;
+		--no-autostart) AUTOSTART=no ;;
+		--link) LINK=1 ;;
+		--no-packages) PACKAGES=0 ;;
+		--dry-run) DRY=1 ;;
+		-y | --yes) YES=1 ;;
+		-h | --help) usage ;;
+		*) die "unknown option: $1 (see --help)" ;;
+	esac
+	shift
+done
+[[ $PROFILE =~ ^(core|recommended|full)$ ]] || die "--profile must be core, recommended or full"
+[[ $FM =~ ^(ask|dolphin|nautilus|none)$ ]] || die "--fm must be dolphin, nautilus or none"
+[[ $DM =~ ^(auto|sddm|none)$ ]] || die "--dm must be sddm or none"
+[[ $DM == auto ]] && { [[ $PROFILE == core ]] && DM=none || DM=sddm; }
+[[ -z $AVATAR || -f $AVATAR ]] || die "--avatar: no such file: $AVATAR"
+
+# ---------------------------------------------------------------- checks
+preflight() {
+	[[ $EUID -ne 0 || -n ${LUMEN_ALLOW_ROOT:-} ]] || die "run as your normal user; sudo is used only for pacman"
+	if [[ -z ${LUMEN_SKIP_OS_CHECK:-} ]]; then
+		[[ -r /etc/os-release ]] || die "can't read /etc/os-release"
+		# shellcheck disable=SC1091
+		. /etc/os-release
+		[[ ${ID:-} == arch || " ${ID_LIKE:-} " == *" arch "* ]] ||
+			die "lumen supports Arch Linux and Arch-based distributions (found: ${PRETTY_NAME:-unknown})"
+		command -v pacman >/dev/null || die "pacman not found"
+	fi
+	((PACKAGES == 0)) && [[ $DM == none ]] || command -v sudo >/dev/null || die "sudo is required (packages and login screen)"
+	if ((DRY)); then log "Dry run: nothing will be changed."; fi
+}
+
+read_list() { # read_list core -> package names, comments stripped
+	local line
+	while read -r line || [[ -n $line ]]; do
+		line=${line%%#*}
+		line=${line//[[:space:]]/}
+		[[ -n $line ]] && printf '%s\n' "$line"
+	done <"$REPO/packages/$1.txt"
+}
+
+# ---------------------------------------------------------------- packages
+choose_fm() {
+	[[ $FM != ask ]] && return 0
+	if ((YES)) || [[ ! -t 0 ]] || [[ $PROFILE != full ]]; then FM=none; return 0; fi
+	local reply
+	read -rp "File manager — 1) Dolphin  2) Nautilus  3) none [3] " reply
+	case $reply in 1) FM=dolphin ;; 2) FM=nautilus ;; *) FM=none ;; esac
+}
+
+install_packages() {
+	((PACKAGES)) || { log "Skipping packages (--no-packages)."; return 0; }
+	local pkgs=()
+	mapfile -t pkgs < <(read_list core)
+	[[ $PROFILE == core ]] || mapfile -t -O "${#pkgs[@]}" pkgs < <(read_list recommended)
+	[[ $PROFILE == full ]] && mapfile -t -O "${#pkgs[@]}" pkgs < <(read_list full)
+	choose_fm
+	case $FM in
+		dolphin) pkgs+=(dolphin breeze-icons) ;;
+		nautilus) pkgs+=(nautilus) ;;
+	esac
+	[[ $DM == sddm ]] && pkgs+=(sddm)
+	if command -v systemd-detect-virt >/dev/null && systemd-detect-virt -q; then
+		log "Virtual machine detected: adding spice-vdagent."
+		pkgs+=(spice-vdagent)
+	fi
+
+	local missing=()
+	if command -v pacman >/dev/null; then
+		mapfile -t missing < <(pacman -T "${pkgs[@]}" 2>/dev/null || true)
+	else
+		missing=("${pkgs[@]}")
+	fi
+	log "Profile '$PROFILE': ${#pkgs[@]} packages, ${#missing[@]} to install."
+	if ((${#missing[@]})); then
+		printf '   %s\n' "${missing[*]}"
+		local flags=(-S --needed)
+		((YES)) && flags+=(--noconfirm)
+		run sudo pacman "${flags[@]}" "${missing[@]}"
+	fi
+
+	if [[ " ${pkgs[*]} " == *" spice-vdagent "* ]]; then
+		run sudo systemctl enable --now spice-vdagentd.socket ||
+			run sudo systemctl enable --now spice-vdagentd.service ||
+			warn "couldn't enable spice-vdagentd; clipboard sharing may not work"
+	fi
+}
+
+# ---------------------------------------------------------------- files
+# Move an existing path into the backup folder, keeping its layout.
+backup() {
+	local dst=$1 rel
+	[[ -e $dst || -L $dst ]] || return 0
+	rel=${dst#"$HOME"/}
+	run mkdir -p "$(dirname "$BACKUP/$rel")"
+	run mv "$dst" "$BACKUP/$rel"
+	BACKED_UP=1
+}
+
+# Install one file (copy mode) or one path (link mode).
+place() {
+	local src=$1 dst=$2
+	if ((LINK)); then
+		[[ -L $dst && $(readlink "$dst") == "$src" ]] && return
+		backup "$dst"
+		run mkdir -p "$(dirname "$dst")"
+		run ln -s "$src" "$dst"
+	else
+		[[ -f $dst && ! -L $dst ]] && cmp -s "$src" "$dst" && return
+		backup "$dst"
+		run mkdir -p "$(dirname "$dst")"
+		run cp -p "$src" "$dst"
+	fi
+}
+
+# Copy mode installs each file; link mode links each top-level folder so new
+# files from `git pull` appear without reinstalling.
+place_tree() {
+	local srcroot=$1 dstroot=$2
+	local entry f
+	for entry in "$srcroot"/*; do
+		[[ -e $entry ]] || continue
+		if ((LINK)) && [[ -d $entry && ${entry##*/} == quickshell ]]; then
+			place_tree "$entry" "$dstroot/quickshell" # don't take over other shells
+		elif ((LINK)) || [[ -f $entry ]]; then
+			place "$entry" "$dstroot/${entry##*/}"
+		else
+			while IFS= read -r -d '' f; do
+				place "$f" "$dstroot/${f#"$srcroot"/}"
+			done < <(find "$entry" -type f -print0)
+		fi
+	done
+}
+
+install_fonts() {
+	if ! compgen -G "$REPO/assets/fonts/*.ttf" >/dev/null; then
+		log "Fetching Space Grotesk (not in the Arch repos)..."
+		if ((DRY)); then
+			run "$REPO/tools/fetch-fonts.sh"
+		else
+			"$REPO/tools/fetch-fonts.sh" || warn "font download failed; the shell will use a fallback font"
+		fi
+	fi
+	local f
+	for f in "$REPO"/assets/fonts/*.ttf; do
+		[[ -e $f ]] || continue
+		place "$f" "$DATA_HOME/fonts/$NAME/${f##*/}"
+	done
+	command -v fc-cache >/dev/null && run fc-cache -f "$DATA_HOME/fonts" >/dev/null || true
+}
+
+install_files() {
+	log "Installing configuration ($( ((LINK)) && echo "linked to $REPO" || echo copied))..."
+	BACKED_UP=0
+	place_tree "$REPO/config" "$CONFIG_HOME"
+	run chmod +x "$REPO/config/bspwm/bspwmrc"
+	place_tree "$REPO/bin" "$HOME/.local/bin"
+	place_tree "$REPO/share/palettes" "$DATA_HOME/$NAME/palettes"
+	place "$REPO/home/xinitrc" "$HOME/.xinitrc"
+	install_fonts
+
+	# Default cursor for the X root window and apps that don't read XSETTINGS.
+	if [[ ! -e $HOME/.icons/default/index.theme ]]; then
+		run mkdir -p "$HOME/.icons/default"
+		if ((DRY)); then run write "$HOME/.icons/default/index.theme"; else
+			printf '[Icon Theme]\nInherits=Adwaita\n' >"$HOME/.icons/default/index.theme"
+		fi
+	fi
+
+	# User settings are created once and never overwritten.
+	if [[ ! -e $CONFIG_HOME/$NAME/settings.conf ]]; then
+		run mkdir -p "$CONFIG_HOME/$NAME"
+		if ((DRY)); then run write "$CONFIG_HOME/$NAME/settings.conf"; else
+			printf '# lumen settings — edited by lumen-theme and the Settings app.\nmode=dark\naccent=blue\nbar_position=top\nfont=Space Grotesk\nfont_size=10\nmono_font=JetBrains Mono\n' \
+				>"$CONFIG_HOME/$NAME/settings.conf"
+		fi
+	fi
+	((BACKED_UP)) && log "Replaced files were backed up to $BACKUP"
+	return 0
+}
+
+# ---------------------------------------------------------------- system
+# SDDM can't read your home folder, so its theme, the session entry and a copy
+# of lumen-session are installed system-wide (always copied, even with --link).
+install_system() {
+	[[ $DM == sddm ]] || return 0
+	local theme=/usr/share/sddm/themes/$NAME f font=""
+	log "Installing the login screen (SDDM)..."
+	run sudo install -d -m 755 "$theme" "$theme/fonts"
+	for f in Main.qml metadata.desktop theme.conf; do
+		run sudo install -m 644 "$REPO/system/sddm/$NAME/$f" "$theme/$f"
+	done
+	for f in "$REPO"/assets/fonts/*.ttf; do [[ -e $f ]] && font=$f && break; done
+	if [[ -n $font ]]; then
+		run sudo install -m 644 "$font" "$theme/fonts/SpaceGrotesk.ttf"
+	fi
+	# Owned by you so lumen-theme can recolour the login screen without sudo.
+	if [[ ! -O $theme/theme.conf.user ]]; then
+		run sudo install -m 644 -o "$(id -un)" -g "$(id -gn)" /dev/null "$theme/theme.conf.user"
+	fi
+	run sudo install -D -m 644 "$REPO/system/sddm/$NAME.conf" "/etc/sddm.conf.d/$NAME.conf"
+	run sudo install -D -m 644 "$REPO/system/xsessions/$NAME.desktop" "/usr/share/xsessions/$NAME.desktop"
+	run sudo install -D -m 755 "$REPO/bin/lumen-session" /usr/local/bin/lumen-session
+	enable_dm
+}
+
+enable_dm() {
+	local link=/etc/systemd/system/display-manager.service cur=""
+	[[ -L $link ]] && cur=$(basename "$(readlink "$link")")
+	case $cur in
+		sddm.service) log "SDDM is already enabled." ;;
+		"") run sudo systemctl enable sddm.service ;;
+		*)
+			if ask "Another login manager ($cur) is enabled. Replace it with SDDM?" n; then
+				run sudo systemctl disable "$cur"
+				run sudo systemctl enable sddm.service
+			else
+				warn "kept $cur. To switch later: sudo systemctl disable $cur && sudo systemctl enable sddm"
+			fi
+			;;
+	esac
+}
+
+setup_avatar() {
+	local img=$AVATAR bin=$HOME/.local/bin/lumen-avatar
+	if [[ -z $img && ! -f $HOME/.face ]] && ((YES == 0)) && [[ -t 0 ]]; then
+		read -rp "Profile picture — path to a PNG or JPEG (Enter to skip): " img
+		img=${img/#\~/$HOME}
+		if [[ -n $img && ! -f $img ]]; then
+			warn "no such file: $img (set one later with: lumen-avatar set <image>)"
+			img=""
+		fi
+	fi
+	if [[ -n $img ]]; then
+		if ((DRY)); then run "$bin" set "$img"; else "$bin" set "$img" || warn "couldn't set the picture"; fi
+	elif [[ $DM == sddm && -f $HOME/.face ]]; then
+		run "$bin" sync
+	fi
+	return 0
+}
+
+setup_autostart() {
+	local profile=$HOME/.bash_profile marker="# lumen: start X on tty1"
+	[[ $DM == none ]] || return 0 # SDDM starts the desktop
+	if [[ -f $profile ]] && grep -qF "$marker" "$profile"; then return 0; fi
+	case $AUTOSTART in
+		no) return 0 ;;
+		ask) ask "Start the desktop automatically when you log in on tty1?" y || return 0 ;;
+	esac
+	log "Adding auto-start to $profile"
+	if ((DRY)); then run append "$profile"; return 0; fi
+	cat >>"$profile" <<-EOF
+
+		$marker
+		if [ -z "\$DISPLAY" ] && [ "\${XDG_VTNR:-0}" -eq 1 ]; then
+		    exec startx
+		fi
+	EOF
+}
+
+apply_theme() {
+	log "Generating theme files..."
+	if ((DRY)); then run "$HOME/.local/bin/lumen-theme" apply; return; fi
+	"$HOME/.local/bin/lumen-theme" apply --quiet || warn "lumen-theme reported a problem; run it again after logging in"
+}
+
+# ---------------------------------------------------------------- main
+preflight
+install_packages
+install_files
+install_system
+setup_avatar
+setup_autostart
+apply_theme
+
+echo
+log "Done."
+if ((DRY)); then
+	echo "   This was a dry run. Run again without --dry-run to install."
+else
+	if [[ $DM == sddm ]]; then
+		echo "   Reboot to reach the login screen, then pick the 'lumen' session."
+	else
+		echo "   Log out and back in on tty1, or run: startx"
+	fi
+	echo "   Profile picture: lumen-avatar set <image>"
+	echo "   Shortcuts: super+Return terminal · super+shift+d light/dark · super+shift+a accent"
+	echo "              super+shift+arrows move the bar · super+alt+q log out"
+fi

@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=lumen
+Comment=bspwm with the lumen shell
+Exec=/usr/local/bin/lumen-session
+Type=Application
+DesktopNames=lumen

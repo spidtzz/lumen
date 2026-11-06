@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# lumen-avatar — set your profile picture for the desktop and the login screen.
+#
+# Usage:
+#   lumen-avatar set <image>    use a PNG or JPEG as your picture
+#   lumen-avatar clear          remove it (an initial is shown instead)
+#   lumen-avatar sync           copy ~/.face to the login screen again
+#   lumen-avatar path           print the picture's path
+#
+# The picture is stored as ~/.face (the freedesktop convention). SDDM can't
+# read your home folder, so a copy goes to /usr/share/sddm/faces (needs sudo).
+set -euo pipefail
+
+FACE=$HOME/.face
+FACES_DIR=/usr/share/sddm/faces
+USER_NAME=${USER:-$(id -un)}
+SDDM_FACE=$FACES_DIR/$USER_NAME.face.icon
+
+die() { printf 'lumen-avatar: %s\n' "$*" >&2; exit 1; }
+say() { printf 'lumen-avatar: %s\n' "$*"; }
+
+# Re-read the picture in a running shell.
+notify_shell() {
+	command -v qs >/dev/null && qs -c lumen ipc call avatar changed >/dev/null 2>&1 || true
+}
+
+sync_sddm() {
+	[[ -d $FACES_DIR ]] || return 0 # SDDM not installed
+	if [[ -f $FACE ]]; then
+		sudo install -m 644 "$FACE" "$SDDM_FACE" && say "login screen picture updated"
+	elif [[ -e $SDDM_FACE ]]; then
+		sudo rm -f "$SDDM_FACE" && say "login screen picture removed"
+	fi
+}
+
+case ${1:-} in
+	set)
+		img=${2:-}
+		[[ -f $img ]] || die "no such file: ${img:-<missing>}"
+		# Check the real format from the file's first bytes.
+		sig=$(head -c 8 "$img" | od -An -tx1 | tr -d ' \n')
+		case $sig in
+			89504e470d0a1a0a* | ffd8ff*) ;;
+			*) die "use a PNG or JPEG image" ;;
+		esac
+		(($(stat -c %s "$img") <= 5 * 1024 * 1024)) || die "image is larger than 5 MB"
+		cp -f "$img" "$FACE"
+		chmod 644 "$FACE"
+		say "picture set"
+		sync_sddm
+		notify_shell
+		;;
+	clear)
+		rm -f "$FACE"
+		say "picture removed"
+		sync_sddm
+		notify_shell
+		;;
+	sync) sync_sddm ;;
+	path) [[ -f $FACE ]] && echo "$FACE" ;;
+	*) sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'; [[ -z ${1:-} || $1 == -h || $1 == --help ]] ;;
+esac

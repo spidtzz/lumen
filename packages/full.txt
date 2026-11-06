@@ -1,0 +1,5 @@
+# Added by the "full" profile, on top of "recommended".
+# The file manager is chosen separately with --fm (dolphin, nautilus or none).
+
+# Emoji in apps and the shell
+noto-fonts-emoji

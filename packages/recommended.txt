@@ -1,0 +1,7 @@
+# Added by the "recommended" profile (the default).
+
+# Icon theme with light and dark variants
+papirus-icon-theme
+
+# Standard home folders (Documents, Downloads, ...)
+xdg-user-dirs

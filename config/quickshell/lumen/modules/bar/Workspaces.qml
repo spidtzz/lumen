@@ -39,7 +39,7 @@ Grid {
                 font.family: Theme.fontFamily
                 font.pixelSize: 13
                 font.weight: Font.Bold
-                color: chip.active ? Theme.onAccent
+                color: chip.active ? Theme.accentFg
                      : chip.modelData.occupied ? Theme.ink : Theme.muted
                 opacity: chip.active || chip.modelData.occupied ? 1 : 0.6
             }

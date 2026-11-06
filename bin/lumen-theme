@@ -396,8 +396,14 @@ apply_bspwm() {
 }
 
 apply_root() {
-	[[ -n ${DISPLAY:-} ]] && has xsetroot || return 0
-	xsetroot -solid "${P[bg]}" 2>/dev/null || true
+	[[ -n ${DISPLAY:-} ]] || return 0
+	# picom only draws a background that's published as a root pixmap, which
+	# hsetroot does; plain xsetroot would leave the desktop black under picom.
+	if has hsetroot; then
+		hsetroot -solid "${P[bg]}" >/dev/null 2>&1 || true
+	elif has xsetroot; then
+		xsetroot -solid "${P[bg]}" 2>/dev/null || true
+	fi
 }
 
 apply() {

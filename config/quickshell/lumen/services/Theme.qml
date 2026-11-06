@@ -30,7 +30,7 @@ Singleton {
     property color muted: "#97a5be"
     property color line: "#25334c"
     property color accent: "#71a3ff"
-    property color onAccent: "#081123"
+    property color accentFg: "#081123"
     property color danger: "#f75d59"
     property color success: "#53be70"
     property color warning: "#edb345"
@@ -58,7 +58,7 @@ Singleton {
     Behavior on muted { ColorAnimation { duration: root.animNormal } }
     Behavior on line { ColorAnimation { duration: root.animNormal } }
     Behavior on accent { ColorAnimation { duration: root.animNormal } }
-    Behavior on onAccent { ColorAnimation { duration: root.animNormal } }
+    Behavior on accentFg { ColorAnimation { duration: root.animNormal } }
 
     function parseConf(text) {
         const out = {};
@@ -109,7 +109,7 @@ Singleton {
             const p = root.parseConf(text());
             const map = {
                 bg: "bg", panel: "panel", field: "field", ink: "ink", muted: "muted",
-                line: "line", accent: "accent", on_accent: "onAccent",
+                line: "line", accent: "accent", on_accent: "accentFg",
                 danger: "danger", success: "success", warning: "warning"
             };
             for (const key in map)

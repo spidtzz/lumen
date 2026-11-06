@@ -56,12 +56,23 @@ lumen-theme apply --quiet   # borders, GTK/Qt files, background colour
 
 pgrep -x xsettingsd >/dev/null || xsettingsd >/dev/null 2>&1 &
 
-# picom: try the GPU backend first, fall back to software rendering.
+# Logs for troubleshooting: ~/.local/state/lumen/{picom,quickshell}.log
+LOGS="${XDG_STATE_HOME:-$HOME/.local/state}/lumen"
+mkdir -p "$LOGS"
+
+# picom: GPU backend on real hardware, software rendering in virtual machines
+# (virtual GPUs often show a black screen with the GPU backend).
 if ! pgrep -x picom >/dev/null; then
-	picom -b 2>/dev/null || picom -b --backend xrender 2>/dev/null
+	if systemd-detect-virt -q 2>/dev/null; then
+		picom -b --backend xrender --log-file "$LOGS/picom.log"
+	else
+		picom -b --log-file "$LOGS/picom.log" ||
+			picom -b --backend xrender --log-file "$LOGS/picom.log"
+	fi
 fi
 
-pgrep -f 'quickshell -c lumen' >/dev/null || quickshell -c lumen >/dev/null 2>&1 &
+pgrep -f 'quickshell -c lumen' >/dev/null ||
+	quickshell -c lumen >"$LOGS/quickshell.log" 2>&1 &
 
 # Per-user additions that survive updates.
 [ -x "$HOME/.config/bspwm/autostart" ] && "$HOME/.config/bspwm/autostart" &

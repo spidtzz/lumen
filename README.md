@@ -15,7 +15,7 @@ One theme — seven accent colours in light and dark — applied to the shell, G
 ## Install
 
 ```sh
-git clone https://github.com/<you>/lumen.git
+git clone https://github.com/spidtzz/lumen.git
 cd lumen
 ./install.sh --dry-run     # see what will happen
 ./install.sh               # install

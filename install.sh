@@ -77,10 +77,13 @@ preflight() {
 	[[ $EUID -ne 0 || -n ${LUMEN_ALLOW_ROOT:-} ]] || die "run as your normal user; sudo is used only for pacman"
 	if [[ -z ${LUMEN_SKIP_OS_CHECK:-} ]]; then
 		[[ -r /etc/os-release ]] || die "can't read /etc/os-release"
+		# Read os-release in a subshell: it defines NAME, ID, VERSION... which
+		# would otherwise overwrite this script's own variables.
+		local os_id os_like os_pretty
 		# shellcheck disable=SC1091
-		. /etc/os-release
-		[[ ${ID:-} == arch || " ${ID_LIKE:-} " == *" arch "* ]] ||
-			die "lumen supports Arch Linux and Arch-based distributions (found: ${PRETTY_NAME:-unknown})"
+		IFS='|' read -r os_id os_like os_pretty < <(. /etc/os-release && printf '%s|%s|%s\n' "${ID:-}" "${ID_LIKE:-}" "${PRETTY_NAME:-unknown}")
+		[[ $os_id == arch || " $os_like " == *" arch "* ]] ||
+			die "lumen supports Arch Linux and Arch-based distributions (found: $os_pretty)"
 		command -v pacman >/dev/null || die "pacman not found"
 	fi
 	((PACKAGES == 0)) && [[ $DM == none ]] || command -v sudo >/dev/null || die "sudo is required (packages and login screen)"

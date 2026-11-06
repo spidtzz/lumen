@@ -1,0 +1,229 @@
+#!/usr/bin/env bash
+# lumen-settings — read, change and apply lumen's settings.
+#
+# Usage:
+#   lumen-settings get [key]            print one setting, or all of them
+#   lumen-settings set <key> <value>    validate, save and apply a setting
+#   lumen-settings apply [what]         session | theme | input | compositor | display
+#   lumen-settings keys                 list settings with their allowed values
+#   lumen-settings display-save <args>  remember xrandr arguments for next login
+#   lumen-settings sysinfo              system details for the About page
+#
+# Settings live in ~/.config/lumen/settings.conf (key=value). Unknown keys and
+# comments are kept, so it's safe to edit by hand.
+set -euo pipefail
+
+CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
+DIR=$CONFIG_HOME/lumen
+SETTINGS=$DIR/settings.conf
+DISPLAY_CONF=$DIR/display.conf
+BIN_DIR=$(dirname "$(readlink -f "$0")")
+STATE=${XDG_STATE_HOME:-$HOME/.local/state}/lumen
+
+die() { printf 'lumen-settings: %s\n' "$*" >&2; exit 1; }
+has() { command -v "$1" >/dev/null 2>&1; }
+
+# ---------------------------------------------------------------- schema
+# key ~ default ~ allowed (regex) ~ applier
+SCHEMA=(
+	"mode~dark~^(light|dark)$~theme"
+	"accent~blue~^(blue|violet|teal|green|orange|pink|mono)$~theme"
+	"bar_position~top~^(top|bottom|left|right)$~-"
+	"font~Space Grotesk~^[A-Za-z0-9 ._-]{1,64}$~theme"
+	"font_size~10~^([6-9]|1[0-9]|2[0-4])$~theme"
+	"mono_font~JetBrains Mono~^[A-Za-z0-9 ._-]{1,64}$~theme"
+	"clock_24h~true~^(true|false)$~-"
+	"shamsi_date~false~^(true|false)$~-"
+	"compositor~true~^(true|false)$~compositor"
+	"kb_layouts~us~^[a-z]{2,3}(,[a-z]{2,3}){0,3}$~input"
+	"kb_switch~alt_shift~^(alt_shift|ctrl_shift|caps)$~input"
+	"repeat_delay~400~^([1-9][0-9]{2}|1000)$~input"
+	"repeat_rate~30~^([1-5][0-9]|60)$~input"
+	"pointer_speed~0~^-?(0(\.[0-9]{1,2})?|1(\.0{1,2})?)$~input"
+	"natural_scroll~false~^(true|false)$~input"
+	"tap_to_click~true~^(true|false)$~input"
+)
+
+schema_field() { # schema_field key index
+	local row
+	for row in "${SCHEMA[@]}"; do
+		IFS='~' read -r -a f <<<"$row"
+		[[ ${f[0]} == "$1" ]] && { printf '%s' "${f[$2]}"; return 0; }
+	done
+	return 1
+}
+
+# ---------------------------------------------------------------- storage
+declare -A CONF
+load() {
+	local row k v
+	for row in "${SCHEMA[@]}"; do
+		IFS='~' read -r k v _ <<<"$row"
+		CONF[$k]=$v
+	done
+	[[ -f $SETTINGS ]] || return 0
+	while IFS='=' read -r k v || [[ -n $k ]]; do
+		[[ $k =~ ^[a-z0-9_]+$ ]] || continue
+		CONF[$k]=$v
+	done <"$SETTINGS"
+}
+
+# Replace one key in place, keeping every other line (and the file's inode,
+# so Quickshell's watcher keeps working).
+store() {
+	local key=$1 value=$2 line out=() found=0
+	mkdir -p "$DIR"
+	if [[ -f $SETTINGS ]]; then
+		while IFS= read -r line || [[ -n $line ]]; do
+			if [[ $line == "$key="* ]]; then
+				out+=("$key=$value")
+				found=1
+			else
+				out+=("$line")
+			fi
+		done <"$SETTINGS"
+	else
+		out+=("# lumen settings — edited by lumen-settings and the Settings app.")
+	fi
+	((found)) || out+=("$key=$value")
+	printf '%s\n' "${out[@]}" >"$SETTINGS"
+}
+
+# ---------------------------------------------------------------- appliers
+apply_theme() { "$BIN_DIR/lumen-theme" apply --quiet; }
+
+apply_input() {
+	[[ -n ${DISPLAY:-} ]] || return 0
+	load
+	local opt=grp:alt_shift_toggle
+	case ${CONF[kb_switch]} in
+		ctrl_shift) opt=grp:ctrl_shift_toggle ;;
+		caps) opt=grp:caps_toggle ;;
+	esac
+	if has setxkbmap; then
+		if [[ ${CONF[kb_layouts]} == *,* ]]; then
+			setxkbmap -layout "${CONF[kb_layouts]}" -option "" -option "$opt"
+		else
+			setxkbmap -layout "${CONF[kb_layouts]}" -option ""
+		fi
+	fi
+	has xset && xset r rate "${CONF[repeat_delay]}" "${CONF[repeat_rate]}"
+
+	has xinput || return 0
+	local id props nat tap
+	[[ ${CONF[natural_scroll]} == true ]] && nat=1 || nat=0
+	[[ ${CONF[tap_to_click]} == true ]] && tap=1 || tap=0
+	for id in $(xinput list --id-only 2>/dev/null); do
+		props=$(xinput list-props "$id" 2>/dev/null) || continue
+		[[ $props == *"libinput Accel Speed ("* ]] &&
+			xinput set-prop "$id" "libinput Accel Speed" "${CONF[pointer_speed]}" 2>/dev/null
+		[[ $props == *"libinput Natural Scrolling Enabled ("* ]] &&
+			xinput set-prop "$id" "libinput Natural Scrolling Enabled" "$nat" 2>/dev/null
+		[[ $props == *"libinput Tapping Enabled ("* ]] &&
+			xinput set-prop "$id" "libinput Tapping Enabled" "$tap" 2>/dev/null
+	done
+	return 0
+}
+
+apply_compositor() {
+	[[ -n ${DISPLAY:-} ]] || return 0
+	load
+	if [[ ${CONF[compositor]} != true ]]; then
+		pkill -x picom 2>/dev/null || true
+		return 0
+	fi
+	pgrep -x picom >/dev/null && return 0
+	mkdir -p "$STATE"
+	# Software rendering in virtual machines: virtual GPUs often show black
+	# windows with picom's GPU backend.
+	if systemd-detect-virt -q 2>/dev/null; then
+		picom -b --backend xrender --log-file "$STATE/picom.log"
+	else
+		picom -b --log-file "$STATE/picom.log" ||
+			picom -b --backend xrender --log-file "$STATE/picom.log"
+	fi
+}
+
+apply_display() {
+	[[ -n ${DISPLAY:-} && -s $DISPLAY_CONF ]] || return 0
+	local args
+	read -r -a args <"$DISPLAY_CONF"
+	((${#args[@]})) && xrandr "${args[@]}" || true
+}
+
+apply_what() {
+	case $1 in
+		theme) apply_theme ;;
+		input) apply_input ;;
+		compositor) apply_compositor ;;
+		display) apply_display ;;
+		session) apply_display; apply_input; apply_theme; apply_compositor ;;
+		-) ;;
+		*) die "unknown target: $1 (session, theme, input, compositor, display)" ;;
+	esac
+}
+
+# ---------------------------------------------------------------- sysinfo
+sysinfo() {
+	local os kernel cpu mem gpu disk up qsv
+	os=$(. /etc/os-release 2>/dev/null && printf '%s' "${PRETTY_NAME:-Linux}")
+	kernel=$(uname -r)
+	cpu=$(sed -n 's/^model name[[:space:]]*: //p;T;q' /proc/cpuinfo)
+	cpu="$cpu ($(nproc) threads)"
+	mem=$(awk '/^MemTotal/ {printf "%.1f GiB", $2/1048576}' /proc/meminfo)
+	if has lspci; then
+		gpu=$(lspci 2>/dev/null | sed -n 's/.*\(VGA\|3D\|Display\)[^:]*: //p;T;q' || true)
+	fi
+	disk=$(df -h --output=used,size / 2>/dev/null | awk 'NR==2 {print $1 " of " $2 " used"}' || true)
+	up=$(uptime -p 2>/dev/null || true)
+	up=${up#up }
+	qsv=$(quickshell --version 2>/dev/null || true)
+	qsv=${qsv%%$'\n'*}
+	printf 'hostname=%s\nos=%s\nkernel=%s\ncpu=%s\nmemory=%s\ngpu=%s\ndisk=%s\nuptime=%s\nquickshell=%s\nvirtual=%s\n' \
+		"$(cat /etc/hostname 2>/dev/null || uname -n)" "$os" "$kernel" "$cpu" "$mem" "${gpu:-}" \
+		"${disk:-}" "${up:-}" "${qsv:-}" "$(systemd-detect-virt 2>/dev/null || echo none)"
+}
+
+# ---------------------------------------------------------------- CLI
+cmd=${1:-}
+shift || true
+case $cmd in
+	get)
+		load
+		if [[ -n ${1:-} ]]; then
+			[[ -v CONF[$1] ]] || die "unknown key: $1"
+			printf '%s\n' "${CONF[$1]}"
+		else
+			for row in "${SCHEMA[@]}"; do
+				k=${row%%~*}
+				printf '%s=%s\n' "$k" "${CONF[$k]}"
+			done
+		fi
+		;;
+	set)
+		[[ $# -eq 2 ]] || die "usage: lumen-settings set <key> <value>"
+		pattern=$(schema_field "$1" 2) || die "unknown key: $1 (see: lumen-settings keys)"
+		[[ $2 =~ $pattern ]] || die "invalid value for $1: '$2' (allowed: $pattern)"
+		store "$1" "$2"
+		apply_what "$(schema_field "$1" 3)"
+		;;
+	apply) apply_what "${1:-session}" ;;
+	keys)
+		for row in "${SCHEMA[@]}"; do
+			IFS='~' read -r k d p _ <<<"$row"
+			printf '%-15s default %-15s allowed %s\n' "$k" "$d" "$p"
+		done
+		;;
+	display-save)
+		(($#)) || die "usage: lumen-settings display-save <xrandr arguments...>"
+		for a in "$@"; do
+			[[ $a =~ ^[A-Za-z0-9._+x-]+$ ]] || die "unexpected xrandr argument: $a"
+		done
+		mkdir -p "$DIR"
+		printf '%s\n' "$*" >"$DISPLAY_CONF"
+		;;
+	display-reset) rm -f "$DISPLAY_CONF" ;;
+	sysinfo) sysinfo ;;
+	-h | --help | help | "") sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//' ;;
+	*) die "unknown command: $cmd (try --help)" ;;
+esac

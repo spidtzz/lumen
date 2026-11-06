@@ -21,6 +21,12 @@ Singleton {
     property string fontFamily: "Space Grotesk"
     property string monoFamily: "JetBrains Mono"
     property int fontSize: 10
+    readonly property real fontScale: fontSize / 10   // shell text follows the font size setting
+
+    // Every key in settings.conf (see `lumen-settings keys`), as strings.
+    property var conf: ({})
+    readonly property bool clock24h: conf.clock_24h !== "false"
+    readonly property bool shamsiDate: conf.shamsi_date === "true"
 
     // ---- palette (same names as the UI demo) ----
     property color bg: "#070f1f"
@@ -73,9 +79,13 @@ Singleton {
         return out;
     }
 
-    // Run a lumen-theme command (used by the Settings app and theme picker).
+    // Save and apply a setting. The change comes back through the file
+    // watcher below; `conf` is updated right away so controls feel instant.
     function setValue(key, value) {
-        Quickshell.execDetached(["lumen-theme", "set", key, value]);
+        const c = Object.assign({}, conf);
+        c[key] = String(value);
+        conf = c;
+        Quickshell.execDetached(["lumen-settings", "set", key, String(value)]);
     }
 
     FileView {
@@ -85,6 +95,7 @@ Singleton {
         onFileChanged: reload()
         onLoaded: {
             const c = root.parseConf(text());
+            root.conf = c;
             if (c.mode === "light" || c.mode === "dark")
                 root.mode = c.mode;
             if (c.accent)

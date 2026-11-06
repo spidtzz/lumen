@@ -37,7 +37,7 @@ Grid {
                 anchors.centerIn: parent
                 text: chip.modelData.name
                 font.family: Theme.fontFamily
-                font.pixelSize: 13
+                font.pixelSize: Math.round(13 * Theme.fontScale)
                 font.weight: Font.Bold
                 color: chip.active ? Theme.accentFg
                      : chip.modelData.occupied ? Theme.ink : Theme.muted

@@ -15,6 +15,11 @@ xorg-xinput
 # Password prompts for system settings
 polkit-gnome
 
+# Screenshots and screen recording (Print)
+maim
+slop
+gpu-screen-recorder
+
 # Clipboard history (super + v)
 clipnotify
 xclip

@@ -3,11 +3,13 @@ import QtQuick.Layouts
 import QtQuick.Controls.Basic
 import Quickshell
 import Quickshell.Services.Pipewire
+import Quickshell.Services.UPower
+import Quickshell.Bluetooth
 import qs.services
 import qs.components
 
-// GNOME-style Quick Settings: you, quick toggles, volume, session buttons
-// and notifications.
+// GNOME-style Quick Settings: you, quick toggles, volume and brightness,
+// the power menu, and notifications. Right-click a tile for its settings.
 PopupCard {
     id: qs
 
@@ -17,8 +19,11 @@ PopupCard {
     readonly property var wifiDev: Network.devices.find(d => d.type === "wifi") ?? null
     readonly property var wiredDev: Network.devices.find(d => d.type === "ethernet") ?? null
     property string confirm: ""   // "logout" | "restart" | "shutdown"
+    readonly property var bt: Bluetooth.defaultAdapter
+    readonly property var btConnected: bt ? bt.devices.values.filter(d => d.connected) : []
 
     PwObjectTracker { objects: qs.sink ? [qs.sink] : [] }
+    Component.onCompleted: Brightness.refresh()
 
     function close() { Panels.closePopup(); }
     function run(cmd) { close(); Quickshell.execDetached(cmd); }
@@ -52,6 +57,7 @@ PopupCard {
             active: Network.wifiEnabled
             status: !Network.wifiEnabled ? "Off" : qs.wifiDev && qs.wifiDev.connection ? qs.wifiDev.connection : "Not connected"
             onClicked: Network.setWifi(!Network.wifiEnabled)
+            onRightClicked: Panels.openSettings("network")
         }
         Tile {
             visible: qs.wifiDev === null
@@ -60,6 +66,19 @@ PopupCard {
             active: qs.wiredDev !== null && qs.wiredDev.state === "connected"
             status: active ? "Connected" : "Disconnected"
             onClicked: Panels.openSettings("network")
+        }
+        Tile {
+            icon: "bluetooth"
+            label: "Bluetooth"
+            enabled: qs.bt !== null
+            active: qs.bt !== null && qs.bt.enabled
+            status: qs.bt === null ? "No adapter"
+                  : !qs.bt.enabled ? "Off"
+                  : qs.btConnected.length === 1 ? qs.btConnected[0].name
+                  : qs.btConnected.length > 1 ? qs.btConnected.length + " devices"
+                  : "On"
+            onClicked: qs.bt.enabled = !qs.bt.enabled
+            onRightClicked: Panels.openSettings("bluetooth")
         }
         Tile {
             icon: Theme.dark ? "moon" : "sun"
@@ -74,6 +93,15 @@ PopupCard {
             active: Notifs.dnd
             status: Notifs.dnd ? "Notifications hidden" : "Off"
             onClicked: Notifs.dnd = !Notifs.dnd
+        }
+        Tile {
+            icon: "gauge"
+            label: "Performance"
+            enabled: PowerProfiles.hasPerformanceProfile
+            active: PowerProfiles.profile === PowerProfile.Performance
+            status: !PowerProfiles.hasPerformanceProfile ? "Not supported here"
+                  : active ? "On" : PowerProfiles.profile === PowerProfile.PowerSaver ? "Power saver" : "Balanced"
+            onClicked: PowerProfiles.profile = active ? PowerProfile.Balanced : PowerProfile.Performance
         }
         Tile {
             readonly property bool fxOn: Theme.conf.compositor !== "false"
@@ -104,6 +132,31 @@ PopupCard {
         }
         Txt {
             text: Math.round((qs.sink && qs.sink.audio ? qs.sink.audio.volume : 0) * 100) + "%"
+            muted: true
+            size: 12
+            Layout.preferredWidth: 38
+            horizontalAlignment: Text.AlignRight
+        }
+    }
+
+    // ---- brightness (built-in screens only) ----
+    RowLayout {
+        visible: Brightness.available
+        Layout.fillWidth: true
+        spacing: 10
+        Item {
+            implicitWidth: 38
+            implicitHeight: 38
+            Icon { anchors.centerIn: parent; name: "brightness"; size: 17 }
+        }
+        LSlider {
+            Layout.fillWidth: true
+            from: 0.01; to: 1; stepSize: 0.01
+            value: Brightness.value
+            onMoved: Brightness.set(value)
+        }
+        Txt {
+            text: Math.round(Brightness.value * 100) + "%"
             muted: true
             size: 12
             Layout.preferredWidth: 38

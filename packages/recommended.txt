@@ -8,3 +8,9 @@ xdg-user-dirs
 
 # notify-send, for scripts and the test button in Settings > Notifications
 libnotify
+
+# Quick Settings: Bluetooth, performance mode, screen brightness
+bluez
+bluez-utils
+power-profiles-daemon
+brightnessctl

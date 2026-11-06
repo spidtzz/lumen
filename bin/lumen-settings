@@ -38,6 +38,7 @@ SCHEMA=(
 	"clock_24h~true~^(true|false)$~-"
 	"compositor~true~^(true|false)$~compositor"
 	"focus_follows_mouse~true~^(true|false)$~wm"
+	"window_buttons~false~^(true|false)$~theme"
 	"clipboard_history~true~^(true|false)$~-"
 	"notif_position~top-right~^(top|bottom)-(left|center|right)$~-"
 	"bar_workspaces~5~^([3-9]|10)$~-"

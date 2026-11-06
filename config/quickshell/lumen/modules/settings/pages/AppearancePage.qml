@@ -85,6 +85,18 @@ Page {
     }
 
     Card {
+        title: "Windows"
+        SettingRow {
+            label: "Title-bar buttons"
+            description: "Minimise, maximise and close buttons in apps that draw their own title bar. Off by default: close windows with super + Q. Open apps update after a restart."
+            Toggle {
+                checked: Theme.conf.window_buttons === "true"
+                onToggled: c => Theme.setValue("window_buttons", c)
+            }
+        }
+    }
+
+    Card {
         title: "Effects"
         SettingRow {
             label: "Compositor"

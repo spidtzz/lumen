@@ -150,6 +150,15 @@ install_packages() {
 			run sudo systemctl enable --now spice-vdagentd.service ||
 			warn "couldn't enable spice-vdagentd; clipboard sharing may not work"
 	fi
+
+	# Bluetooth and power profiles (Quick Settings), when installed.
+	local svc
+	for svc in bluetooth power-profiles-daemon; do
+		if [[ " ${pkgs[*]} " == *" ${svc/bluetooth/bluez} "* ]] || systemctl list-unit-files "$svc.service" >/dev/null 2>&1; then
+			systemctl is-enabled -q "$svc.service" 2>/dev/null ||
+				run sudo systemctl enable --now "$svc.service" || warn "couldn't enable $svc"
+		fi
+	done
 }
 
 # ---------------------------------------------------------------- files

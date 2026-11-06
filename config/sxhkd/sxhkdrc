@@ -39,6 +39,28 @@ super + n
 super + c
 	qs -c lumen ipc call panels toggle calendar
 
+# @group Screenshots
+
+# Screenshot and recording panel
+Print
+	qs -c lumen ipc call capture toggle
+
+# Screenshot of a selection (drag, or click a window)
+super + shift + s
+	lumen-capture shot selection
+
+# Screenshot of the whole screen
+ctrl + Print
+	lumen-capture shot screen
+
+# Screenshot of the focused window
+alt + Print
+	lumen-capture shot window
+
+# Start or stop recording the screen
+super + shift + r
+	lumen-capture toggle screen
+
 # @group Theme
 
 # Switch between light and dark

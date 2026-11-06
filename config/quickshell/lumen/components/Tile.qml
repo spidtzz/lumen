@@ -11,6 +11,7 @@ Rectangle {
     property string status
     property bool active: false
     signal clicked()
+    signal rightClicked()
 
     Layout.fillWidth: true
     implicitHeight: 56
@@ -57,4 +58,5 @@ Rectangle {
 
     HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }
     TapHandler { id: tap; onTapped: tile.clicked() }
+    TapHandler { acceptedButtons: Qt.RightButton; onTapped: tile.rightClicked() }
 }

@@ -43,6 +43,10 @@ Backups of anything replaced go to `~/.local/state/lumen/backups/<date>/`.
 | `super + Return` | Terminal (kitty) |
 | `super + space` | App launcher |
 | `super + v` | Clipboard history |
+| `super + /` | Keyboard shortcuts (read from your sxhkdrc) |
+| `Print` | Screenshot and recording panel |
+| `super + shift + s` | Screenshot of a selection |
+| `super + shift + r` | Start / stop recording the screen |
 | `super + n` | Quick settings |
 | `super + c` | Calendar |
 | `super + shift + l` | Lock the screen |
@@ -76,8 +80,9 @@ The full list is in [`config/sxhkd/sxhkdrc`](config/sxhkd/sxhkdrc).
   right-click for the list. Hidden when only one layout is set up.
 - **Time** — click for a calendar. Month and day names follow your regional settings.
 - **Quick settings** — your picture, Settings, and a power menu (lock, log out, restart,
-  shut down); toggles for Wi-Fi, dark style, Do Not Disturb and effects; volume; and
-  your notifications.
+  shut down); toggles for Wi-Fi, Bluetooth, dark style, Do Not Disturb, performance
+  mode and effects (right-click a toggle for its settings); volume and screen
+  brightness; and your notifications.
 
 Popups and notifications are drawn above all windows. Click elsewhere, or the same
 button again, to close them. Notifications can appear in any corner or edge centre
@@ -85,6 +90,24 @@ button again, to close them. Notifications can appear in any corner or edge cent
 Scrolling over the workspaces switches desktops.
 
 lumen is its own notification server, so no dunst or mako is needed.
+
+## Screenshots and recording
+
+`Print` opens a small panel: screenshot or recording, of the whole screen, the focused
+window or a selection (drag, or click a window). Screenshots have an optional delay and
+are copied to the clipboard; recordings can include sound. Files go to
+`~/Pictures/Screenshots` and `~/Videos/Recordings`; a red dot in the bar shows a
+recording in progress — click it to stop. Direct shortcuts: `super + shift + s`
+(selection), `ctrl + Print` (screen), `alt + Print` (window), `super + shift + r`
+(record). Uses maim, slop and gpu-screen-recorder, which falls back to CPU encoding
+when there's no hardware encoder (for example in a VM).
+
+## Keyboard shortcuts viewer
+
+`super + /` lists the shortcuts from your own `~/.config/sxhkd/sxhkdrc`, grouped and
+searchable, and updates when you save the file. A comment line directly above a binding
+is its description; `# @group Name` starts a group. Bindings without a comment show
+their command.
 
 ## Clipboard history
 
@@ -119,12 +142,13 @@ about mouse clicks while a bar popup is open, so clicking elsewhere closes it.
 
 | Page | What you can change | Uses |
 | --- | --- | --- |
-| Appearance | light/dark, accent, text size, compositor | lumen-theme |
+| Appearance | light/dark, accent, text size, title-bar buttons, compositor | lumen-theme |
 | Bar | edge, workspaces per page, clock, tray grouping, pinned and custom tray icons | |
 | Wallpaper | a picture (from Pictures, system wallpapers or anywhere) or the theme colour; fill, fit, centre, tile, stretch | hsetroot |
 | Displays | resolution, refresh rate, rotation, primary, arrangement — undone after 15 s unless kept | xrandr |
 | Sound | output and input device, volume, mute | PipeWire (built into Quickshell) |
 | Network | wired and Wi-Fi, connect with password | NetworkManager (nmcli) |
+| Bluetooth | on/off, find, pair, connect, forget devices | BlueZ |
 | Keyboard & Mouse | up to four layouts (e.g. English + Persian) and the switch keys, key repeat, focus follows mouse, pointer speed, natural scrolling, tap to click | setxkbmap, xset, xinput, bspwm |
 | Date & Time | time zone, network time, 24-hour clock | timedatectl |
 | Notifications | pop-up position, Do Not Disturb, clear history, test notification | |
@@ -202,6 +226,7 @@ bin/lumen-settings      settings storage, validation and appliers
 bin/lumen-theme         theme engine (bash)
 bin/lumen-lock          lock screen launcher with i3lock fallback
 bin/lumen-clipboard     clipboard history
+bin/lumen-capture       screenshots and recordings
 bin/lumen-avatar        profile picture
 bin/lumen-session       session start-up (SDDM and startx)
 config/                 → ~/.config  (bspwm, sxhkd, picom, kitty, quickshell, portals)

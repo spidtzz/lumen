@@ -15,7 +15,7 @@ PopupCard {
 
     GridLayout {
         id: grid
-        columns: Math.min(5, Math.max(1, root.hidden.length))
+        columns: Math.min(4, Math.max(1, root.hidden.length))
         rowSpacing: 2
         columnSpacing: 2
         Repeater {
@@ -29,12 +29,4 @@ PopupCard {
         }
     }
 
-    Txt {
-        Layout.fillWidth: true
-        Layout.maximumWidth: 200
-        text: "Pin icons to the bar in Settings › Bar"
-        size: 11
-        muted: true
-        visible: root.hidden.length > 0
-    }
 }

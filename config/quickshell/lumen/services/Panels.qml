@@ -28,6 +28,12 @@ Singleton {
         launcherOpen = !launcherOpen;
     }
 
+    // ---- screenshot / recording panel, keyboard shortcuts ----
+    property bool captureOpen: false
+    function toggleCapture() { popup = ""; launcherOpen = false; clipboardOpen = false; captureOpen = !captureOpen; }
+    property bool shortcutsOpen: false
+    function toggleShortcuts() { popup = ""; shortcutsOpen = !shortcutsOpen; }
+
     // ---- clipboard history ----
     property bool clipboardOpen: false
     property int clipboardRevision: 0   // bumped when lumen-clipboard records something

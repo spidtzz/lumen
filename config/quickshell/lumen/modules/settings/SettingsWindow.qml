@@ -11,22 +11,25 @@ FloatingWindow {
 
     title: "lumen Settings"
     implicitWidth: 1000
-    implicitHeight: 680
+    implicitHeight: 720
     color: Theme.bg
 
+    // Pages, grouped into sections in the sidebar.
     readonly property var pages: [
-        { id: "appearance", label: "Appearance", icon: "droplet", file: "AppearancePage.qml" },
-        { id: "bar", label: "Bar", icon: "layout", file: "BarPage.qml" },
-        { id: "wallpaper", label: "Wallpaper", icon: "image", file: "WallpaperPage.qml" },
-        { id: "notifications", label: "Notifications", icon: "bell", file: "NotificationsPage.qml" },
-        { id: "display", label: "Displays", icon: "monitor", file: "DisplayPage.qml" },
-        { id: "sound", label: "Sound", icon: "volume", file: "SoundPage.qml" },
-        { id: "network", label: "Network", icon: "wifi", file: "NetworkPage.qml" },
-        { id: "input", label: "Keyboard & Mouse", icon: "keyboard", file: "InputPage.qml" },
-        { id: "datetime", label: "Date & Time", icon: "clock", file: "DateTimePage.qml" },
-        { id: "users", label: "Users", icon: "user", file: "UsersPage.qml" },
-        { id: "about", label: "About", icon: "info", file: "AboutPage.qml" }
+        { id: "appearance", section: "Personalisation", label: "Appearance", icon: "droplet", file: "AppearancePage.qml" },
+        { id: "wallpaper", section: "Personalisation", label: "Wallpaper", icon: "image", file: "WallpaperPage.qml" },
+        { id: "bar", section: "Personalisation", label: "Bar", icon: "layout", file: "BarPage.qml" },
+        { id: "network", section: "Connections", label: "Network", icon: "wifi", file: "NetworkPage.qml" },
+        { id: "bluetooth", section: "Connections", label: "Bluetooth", icon: "bluetooth", file: "BluetoothPage.qml" },
+        { id: "display", section: "Devices", label: "Displays", icon: "monitor", file: "DisplayPage.qml" },
+        { id: "sound", section: "Devices", label: "Sound", icon: "volume", file: "SoundPage.qml" },
+        { id: "input", section: "Devices", label: "Keyboard & Mouse", icon: "keyboard", file: "InputPage.qml" },
+        { id: "notifications", section: "System", label: "Notifications", icon: "bell", file: "NotificationsPage.qml" },
+        { id: "datetime", section: "System", label: "Date & Time", icon: "clock", file: "DateTimePage.qml" },
+        { id: "users", section: "System", label: "Users & Privacy", icon: "user", file: "UsersPage.qml" },
+        { id: "about", section: "System", label: "About", icon: "info", file: "AboutPage.qml" }
     ]
+    readonly property var sections: [...new Set(pages.map(p => p.section))]
     readonly property var currentPage: pages.find(p => p.id === Panels.settingsPage) ?? pages[0]
 
     // Closing the window from bspwm (super + q) hides it; free it then.
@@ -84,44 +87,77 @@ FloatingWindow {
                         }
                     }
 
-                    Repeater {
-                        model: win.pages
-                        delegate: Rectangle {
-                            id: item
-                            required property var modelData
-                            readonly property bool selected: modelData.id === win.currentPage.id
+                    Flickable {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        contentHeight: sectionsCol.implicitHeight
+                        clip: true
+                        boundsBehavior: Flickable.StopAtBounds
 
-                            Layout.fillWidth: true
-                            implicitHeight: 40
-                            radius: Theme.radiusSmall
-                            color: selected ? Theme.accent : hover.hovered ? Theme.panel : "transparent"
-                            Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                        ColumnLayout {
+                            id: sectionsCol
+                            width: parent.width
+                            spacing: 2
 
-                            RowLayout {
-                                anchors.fill: parent
-                                anchors.leftMargin: 12
-                                anchors.rightMargin: 12
-                                spacing: 12
-                                Icon {
-                                    name: item.modelData.icon
-                                    size: 18
-                                    color: item.selected ? Theme.accentFg : Theme.ink
-                                }
-                                Txt {
+                            Repeater {
+                                model: win.sections
+                                delegate: ColumnLayout {
+                                    id: section
+                                    required property string modelData
                                     Layout.fillWidth: true
-                                    text: item.modelData.label
-                                    strong: true
-                                    color: item.selected ? Theme.accentFg : Theme.ink
-                                    wrapMode: Text.NoWrap
-                                    elide: Text.ElideRight
+                                    spacing: 2
+
+                                    Txt {
+                                        Layout.topMargin: 10
+                                        Layout.leftMargin: 12
+                                        Layout.bottomMargin: 2
+                                        text: section.modelData
+                                        size: 11
+                                        strong: true
+                                        muted: true
+                                    }
+
+                                    Repeater {
+                                        model: win.pages.filter(p => p.section === section.modelData)
+                                delegate: Rectangle {
+                                    id: item
+                                    required property var modelData
+                                    readonly property bool selected: modelData.id === win.currentPage.id
+
+                                    Layout.fillWidth: true
+                                    implicitHeight: 36
+                                    radius: Theme.radiusSmall
+                                    color: selected ? Theme.accent : hover.hovered ? Theme.panel : "transparent"
+                                    Behavior on color { ColorAnimation { duration: Theme.animFast } }
+
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.leftMargin: 12
+                                        anchors.rightMargin: 12
+                                        spacing: 12
+                                        Icon {
+                                            name: item.modelData.icon
+                                            size: 18
+                                            color: item.selected ? Theme.accentFg : Theme.ink
+                                        }
+                                        Txt {
+                                            Layout.fillWidth: true
+                                            text: item.modelData.label
+                                            strong: true
+                                            color: item.selected ? Theme.accentFg : Theme.ink
+                                            wrapMode: Text.NoWrap
+                                            elide: Text.ElideRight
+                                        }
+                                    }
+                                    HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }
+                                    TapHandler { onTapped: Panels.settingsPage = item.modelData.id }
+                                }
+                                    }
                                 }
                             }
-                            HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }
-                            TapHandler { onTapped: Panels.settingsPage = item.modelData.id }
                         }
                     }
 
-                    Item { Layout.fillHeight: true }
 
                     Btn {
                         Layout.fillWidth: true

@@ -106,11 +106,12 @@ PanelWindow {
             anchors.bottomMargin: 5
             anchors.verticalCenter: bar.vertical ? undefined : parent.verticalCenter
             anchors.horizontalCenter: bar.vertical ? parent.horizontalCenter : undefined
-            columns: bar.vertical ? 1 : 4
+            columns: bar.vertical ? 1 : 5
             spacing: 6
             verticalItemAlignment: Grid.AlignVCenter
             horizontalItemAlignment: Grid.AlignHCenter
 
+            RecordingButton { vertical: bar.vertical }
             TrayArea { bar: bar; vertical: bar.vertical }
             KeyboardButton { bar: bar; vertical: bar.vertical }
             TimeButton { bar: bar; vertical: bar.vertical }

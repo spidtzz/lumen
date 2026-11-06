@@ -6,6 +6,8 @@ import qs.modules.bar
 import qs.modules.settings
 import qs.modules.launcher
 import qs.modules.clipboard
+import qs.modules.capture
+import qs.modules.shortcuts
 
 // lumen — a desktop shell for bspwm.
 // Run with: quickshell -c lumen   (bspwmrc starts it automatically)
@@ -65,6 +67,25 @@ ShellRoot {
         target: "clipboard"
         function toggle(): void { Panels.toggleClipboard(); }
         function changed(): void { Panels.clipboardRevision++; }
+    }
+
+    // Screenshot / recording panel (Print) and the keyboard shortcut viewer.
+    LazyLoader {
+        active: Panels.captureOpen
+        CaptureWindow {}
+    }
+    LazyLoader {
+        active: Panels.shortcutsOpen
+        ShortcutsWindow {}
+    }
+    IpcHandler {
+        target: "capture"
+        function toggle(): void { Panels.toggleCapture(); }
+        function changed(): void { Recorder.refresh(); }
+    }
+    IpcHandler {
+        target: "shortcuts"
+        function toggle(): void { Panels.toggleShortcuts(); }
     }
 
     // super + space

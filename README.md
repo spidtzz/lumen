@@ -3,8 +3,8 @@
 A lightweight desktop for **bspwm on X11**, built with [Quickshell](https://quickshell.outfoxxed.me).
 One theme — seven accent colours in light and dark — applied to the shell, GTK 3, GTK 4/libadwaita, Qt and KDE apps, kitty and bspwm.
 
-> **Status: stage 1 of 4.** Session, login screen, installer, theme system and a basic bar work.
-> Coming next: app launcher, notifications, shortcut viewer, Settings app.
+> **Status: stage 3 of 4.** Session, login and lock screens, installer, theme system, bar with
+> quick settings, notifications, app launcher and Settings app. Coming next: shortcut viewer.
 
 ## Goals
 
@@ -29,7 +29,6 @@ Without SDDM (`--dm none`), log in on tty1 (the installer can start the desktop 
 | `--profile core\|recommended\|full` | Package set. `recommended` is the default. |
 | `--fm dolphin\|nautilus\|none` | Install and theme a file manager. |
 | `--dm sddm\|none` | Login screen. `sddm` by default, `none` with the core profile. |
-| `--avatar <image>` | Profile picture (PNG or JPEG). Asked for when interactive. |
 | `--autostart` / `--no-autostart` | Without SDDM: start X automatically on tty1. |
 | `--link` | Symlink configs to the repo instead of copying (for development). |
 | `--no-packages` | Install config files only. |
@@ -42,8 +41,13 @@ Backups of anything replaced go to `~/.local/state/lumen/backups/<date>/`.
 | Keys | Action |
 | --- | --- |
 | `super + Return` | Terminal (kitty) |
+| `super + space` | App launcher |
+| `super + n` | Quick settings |
+| `super + c` | Calendar |
+| `super + shift + l` | Lock the screen |
+| `super + comma` | Settings |
 | `super + q` | Close window |
-| `super + 1…9` / `super + shift + 1…9` | Go to / send to desktop |
+| `super + 1…9, 0` / `super + shift + 1…9, 0` | Go to / send to desktop 1–10 |
 | `super + h j k l` | Focus window in a direction |
 | `super + t / s / f` | Tiled / floating / fullscreen |
 | `super + m` | Monocle layout |
@@ -54,6 +58,62 @@ Backups of anything replaced go to `~/.local/state/lumen/backups/<date>/`.
 | `super + alt + r` / `super + alt + q` | Restart bspwm / log out |
 
 The full list is in [`config/sxhkd/sxhkdrc`](config/sxhkd/sxhkdrc).
+
+## The bar
+
+`[launcher] app name ........ [workspaces] ........ [tray] [time] [quick settings]`
+
+- **App name** — the class of the focused window, next to the launcher.
+- **Launcher** — the lumen logo. Opens a Spotlight-style search: five apps at a time,
+  smooth scrolling with the mouse, one row per arrow key, Enter to open. Apps you open
+  often come first.
+- **Workspaces** — a page at a time (5 by default): go to 7 and the bar shows 6–10.
+- **Tray** — grouped like Windows (pinned icons on the bar, the rest behind an arrow) or
+  every icon on the bar like GNOME and Plasma. Pin icons and give any app a custom icon
+  in Settings › Bar.
+- **Time** — click for a calendar with Gregorian and Shamsi views.
+- **Quick settings** — your picture, Settings, lock and power (lock, log out, restart,
+  shut down), toggles for Wi-Fi, dark style, Do Not Disturb and effects, volume, and
+  your notifications.
+
+lumen is its own notification server, so no dunst or mako is needed.
+
+## Lock screen
+
+Same design as the login screen. It runs as a separate process from the bar, pauses
+global shortcuts while locked, and if it ever stops without your password, `i3lock`
+locks the screen instead. It locks after the idle time set in Settings › Users and
+before suspend (via `xss-lock`).
+
+```sh
+lumen-lock --test     # try it safely: Esc closes it
+```
+
+## Settings
+
+| Page | What you can change | Uses |
+| --- | --- | --- |
+| Appearance | light/dark, accent, text size, compositor | lumen-theme |
+| Bar | edge, workspaces per page, clock, tray grouping, pinned and custom tray icons | |
+| Displays | resolution, refresh rate, rotation, primary, arrangement — undone after 15 s unless kept | xrandr |
+| Sound | output and input device, volume, mute | PipeWire (built into Quickshell) |
+| Network | wired and Wi-Fi, connect with password | NetworkManager (nmcli) |
+| Keyboard & Mouse | up to four layouts (e.g. English + Persian) and the switch shortcut, key repeat, pointer speed, natural scrolling, tap to click | setxkbmap, xset, xinput |
+| Date & Time | time zone, network time, 24-hour clock, Shamsi date | timedatectl |
+| Users | profile picture, password, lock after idle, test the lock screen | lumen-avatar, passwd, xss-lock |
+| About | system details, copy to clipboard | |
+
+Everything is stored in `~/.config/lumen/settings.conf` and applied again at login.
+From a terminal:
+
+```sh
+lumen-settings keys                      # every setting and its allowed values
+lumen-settings set kb_layouts us,ir
+lumen-settings set kb_switch alt_shift
+qs -c lumen ipc call settings open display
+```
+
+System changes (time zone, login-screen picture) show a password prompt (polkit-gnome).
 
 ## Login screen and profile picture
 
@@ -110,7 +170,9 @@ Palettes are generated from the original oklch design values by `tools/gen-palet
 ```
 install.sh              installer
 packages/               package lists per profile
+bin/lumen-settings      settings storage, validation and appliers
 bin/lumen-theme         theme engine (bash)
+bin/lumen-lock          lock screen launcher with i3lock fallback
 bin/lumen-avatar        profile picture
 bin/lumen-session       session start-up (SDDM and startx)
 config/                 → ~/.config  (bspwm, sxhkd, picom, kitty, quickshell, portals)

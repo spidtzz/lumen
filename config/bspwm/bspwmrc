@@ -8,20 +8,20 @@ export PATH="$HOME/.local/bin:$PATH"
 pgrep -x sxhkd >/dev/null || sxhkd &
 
 # ---- Desktops ---------------------------------------------------------------
-# One monitor gets desktops 1-9. With two, the first gets 1-5 and the second
-# 6-9; any further monitor gets a single desktop.
+# One monitor gets desktops 1-10. With two, the first gets 1-5 and the second
+# 6-10; any further monitor gets a single desktop.
 i=0
 count=$(bspc query -M | wc -l)
 for mon in $(bspc query -M --names); do
 	i=$((i + 1))
 	if [ "$count" -eq 1 ]; then
-		bspc monitor "$mon" -d 1 2 3 4 5 6 7 8 9
+		bspc monitor "$mon" -d 1 2 3 4 5 6 7 8 9 10
 	elif [ "$i" -eq 1 ]; then
 		bspc monitor "$mon" -d 1 2 3 4 5
 	elif [ "$i" -eq 2 ]; then
-		bspc monitor "$mon" -d 6 7 8 9
+		bspc monitor "$mon" -d 6 7 8 9 10
 	else
-		bspc monitor "$mon" -d "$((i + 8))"
+		bspc monitor "$mon" -d "$((i + 9))"
 	fi
 done
 
@@ -49,19 +49,30 @@ bspc rule -a '*:*:Picture-in-Picture' state=floating sticky=on
 bspc rule -a 'Pavucontrol' state=floating
 bspc rule -a 'nm-connection-editor' state=floating
 bspc rule -a 'Xdg-desktop-portal-gtk' state=floating
+bspc rule -a 'Polkit-gnome-authentication-agent-1' state=floating
+bspc rule -a '*:*:lumen Settings' state=floating center=on
 
 # ---- Session ----------------------------------------------------------------
 xsetroot -cursor_name left_ptr
-lumen-theme apply --quiet   # borders, GTK/Qt files, background colour
+
+# Saved display layout, keyboard and mouse, theme (borders, GTK/Qt files,
+# background) and the compositor, all from ~/.config/lumen/settings.conf.
+lumen-settings apply session
 
 pgrep -x xsettingsd >/dev/null || xsettingsd >/dev/null 2>&1 &
 
-# picom: try the GPU backend first, fall back to software rendering.
-if ! pgrep -x picom >/dev/null; then
-	picom -b 2>/dev/null || picom -b --backend xrender 2>/dev/null
-fi
+# Password prompts for system changes (time zone, display layout, ...).
+POLKIT_AGENT=/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
+pgrep -f "$POLKIT_AGENT" >/dev/null || { [ -x "$POLKIT_AGENT" ] && "$POLKIT_AGENT" & }
 
-pgrep -f 'quickshell -c lumen' >/dev/null || quickshell -c lumen >/dev/null 2>&1 &
+# Lock on idle (Settings > Users) and before suspend.
+pgrep -x xss-lock >/dev/null || xss-lock --transfer-sleep-lock -- lumen-lock &
+
+# Shell log for troubleshooting: ~/.local/state/lumen/quickshell.log
+LOGS="${XDG_STATE_HOME:-$HOME/.local/state}/lumen"
+mkdir -p "$LOGS"
+pgrep -f 'quickshell -c lumen' >/dev/null ||
+	quickshell -c lumen >"$LOGS/quickshell.log" 2>&1 &
 
 # Per-user additions that survive updates.
 [ -x "$HOME/.config/bspwm/autostart" ] && "$HOME/.config/bspwm/autostart" &

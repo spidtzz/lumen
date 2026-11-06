@@ -60,6 +60,47 @@ Singleton {
         root.monitors = mons;
     }
 
+    // Class of the focused window (WM_CLASS), "" on an empty desktop.
+    property string focusedClass: ""
+    property bool classPending: false
+
+    function queryClass() {
+        if (classQuery.running) { classPending = true; return; }
+        classQuery.running = true;
+    }
+
+    Process {
+        id: focusEvents
+        command: ["bspc", "subscribe", "node_focus", "node_add", "node_remove", "node_transfer", "desktop_focus"]
+        running: true
+        stdout: SplitParser { onRead: data => root.queryClass() }
+        onExited: focusRestart.start()
+    }
+    Timer { id: focusRestart; interval: 1000; onTriggered: { focusEvents.running = true; root.queryClass(); } }
+
+    Process {
+        id: classQuery
+        command: ["bspc", "query", "-T", "-n", "focused.window"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                let cls = "";
+                try {
+                    const t = JSON.parse(text);
+                    cls = t.client ? t.client.className : "";
+                } catch (e) {}
+                root.focusedClass = cls;
+            }
+        }
+        onExited: {
+            if (root.classPending) {
+                root.classPending = false;
+                running = true;
+            }
+        }
+    }
+
+    Component.onCompleted: queryClass()
+
     Process {
         id: subscriber
         command: ["bspc", "subscribe", "report"]

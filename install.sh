@@ -8,7 +8,6 @@
 #   --profile core|recommended|full   package set (default: recommended)
 #   --fm dolphin|nautilus|none        file manager (asked when interactive)
 #   --dm sddm|none                    login screen (default: sddm, none for core)
-#   --avatar <image>                  profile picture for the desktop and login
 #   --autostart / --no-autostart      without SDDM: start X automatically on tty1
 #   --link                            symlink configs to this repo (for development)
 #   --no-packages                     only install config files
@@ -24,7 +23,7 @@ DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share}
 STATE_HOME=${XDG_STATE_HOME:-$HOME/.local/state}
 BACKUP=$STATE_HOME/$NAME/backups/$(date +%Y%m%d-%H%M%S)
 
-PROFILE=recommended FM=ask DM=auto AVATAR='' AUTOSTART=ask LINK=0 PACKAGES=1 DRY=0 YES=0
+PROFILE=recommended FM=ask DM=auto AUTOSTART=ask LINK=0 PACKAGES=1 DRY=0 YES=0
 
 # ---------------------------------------------------------------- helpers
 c_blue=$'\e[1;34m' c_yellow=$'\e[1;33m' c_red=$'\e[1;31m' c_dim=$'\e[2m' c_off=$'\e[0m'
@@ -42,7 +41,7 @@ ask() { # ask "question" default(y/n)
 	reply=${reply:-$def}
 	[[ ${reply,,} == y* ]]
 }
-usage() { sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'; exit 0; }
+usage() { sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; exit 0; }
 
 # ---------------------------------------------------------------- arguments
 while (($#)); do
@@ -53,8 +52,6 @@ while (($#)); do
 		--fm=*) FM=${1#*=} ;;
 		--dm) DM=${2:-}; shift ;;
 		--dm=*) DM=${1#*=} ;;
-		--avatar) AVATAR=${2:-}; shift ;;
-		--avatar=*) AVATAR=${1#*=} ;;
 		--autostart) AUTOSTART=yes ;;
 		--no-autostart) AUTOSTART=no ;;
 		--link) LINK=1 ;;
@@ -70,7 +67,6 @@ done
 [[ $FM =~ ^(ask|dolphin|nautilus|none)$ ]] || die "--fm must be dolphin, nautilus or none"
 [[ $DM =~ ^(auto|sddm|none)$ ]] || die "--dm must be sddm or none"
 [[ $DM == auto ]] && { [[ $PROFILE == core ]] && DM=none || DM=sddm; }
-[[ -z $AVATAR || -f $AVATAR ]] || die "--avatar: no such file: $AVATAR"
 
 # ---------------------------------------------------------------- checks
 preflight() {
@@ -88,6 +84,16 @@ preflight() {
 	fi
 	((PACKAGES == 0)) && [[ $DM == none ]] || command -v sudo >/dev/null || die "sudo is required (packages and login screen)"
 	if ((DRY)); then log "Dry run: nothing will be changed."; fi
+	if command -v git >/dev/null && git -C "$REPO" rev-parse --git-dir >/dev/null 2>&1; then
+		log "Installing lumen $(git -C "$REPO" log -1 --format='%h (%cd)' --date=short)"
+		local changed
+		changed=$(git -C "$REPO" status --porcelain 2>/dev/null)
+		if [[ -n $changed ]]; then
+			warn "this folder has local changes that differ from GitHub:"
+			printf '%s\n' "$changed" | head -10 >&2
+			warn "to match GitHub exactly: git fetch && git reset --hard origin/main"
+		fi
+	fi
 }
 
 read_list() { # read_list core -> package names, comments stripped
@@ -281,20 +287,11 @@ enable_dm() {
 	esac
 }
 
+# The profile picture is set after installing (Settings > Users, or
+# lumen-avatar set <image>). An existing ~/.face is copied to the login screen.
 setup_avatar() {
-	local img=$AVATAR bin=$HOME/.local/bin/lumen-avatar
-	if [[ -z $img && ! -f $HOME/.face ]] && ((YES == 0)) && [[ -t 0 ]]; then
-		read -rp "Profile picture — path to a PNG or JPEG (Enter to skip): " img
-		img=${img/#\~/$HOME}
-		if [[ -n $img && ! -f $img ]]; then
-			warn "no such file: $img (set one later with: lumen-avatar set <image>)"
-			img=""
-		fi
-	fi
-	if [[ -n $img ]]; then
-		if ((DRY)); then run "$bin" set "$img"; else "$bin" set "$img" || warn "couldn't set the picture"; fi
-	elif [[ $DM == sddm && -f $HOME/.face ]]; then
-		run "$bin" sync
+	if [[ $DM == sddm && -f $HOME/.face ]]; then
+		run "$HOME/.local/bin/lumen-avatar" sync
 	fi
 	return 0
 }
@@ -343,7 +340,7 @@ else
 	else
 		echo "   Log out and back in on tty1, or run: startx"
 	fi
-	echo "   Profile picture: lumen-avatar set <image>"
+	echo "   Set your profile picture in Settings > Users (super + comma)."
 	echo "   Shortcuts: super+Return terminal · super+shift+d light/dark · super+shift+a accent"
 	echo "              super+shift+arrows move the bar · super+alt+q log out"
 fi

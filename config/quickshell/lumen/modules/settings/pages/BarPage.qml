@@ -8,7 +8,7 @@ import qs.components
 Page {
     id: page
     title: "Bar"
-    description: "Position, workspaces, clock and tray icons."
+    description: "Position, workspaces, clock and tray icons. The bar shows the focused app on the left, workspaces in the middle, and tray, time and quick settings on the right."
 
     Card {
         title: "Position"
@@ -63,8 +63,8 @@ Page {
             }
         }
         SettingRow {
-            label: "Shamsi date"
-            description: "Show the Persian calendar date in the bar."
+            label: "Shamsi calendar"
+            description: "Open the calendar (click the time) in the Persian calendar."
             Toggle {
                 checked: Theme.shamsiDate
                 onToggled: c => Theme.setValue("shamsi_date", c)

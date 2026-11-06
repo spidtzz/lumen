@@ -1,10 +1,13 @@
 import QtQuick
-import QtQuick.Layouts
 import Quickshell
 import qs.services
+import qs.components
 
-// One bar per screen. It sits on the edge chosen in settings.conf
-// (top, bottom, left or right) as a floating rounded panel.
+// One bar per screen, on the edge chosen in Settings (top, bottom, left or
+// right), as a floating rounded panel:
+//   [launcher] app class ........ [workspaces] ........ [tray] time [QS]
+// The workspaces stay centred however wide the sides get. On a vertical bar
+// the app name is hidden (there's no room for it).
 PanelWindow {
     id: bar
 
@@ -27,6 +30,14 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     color: "transparent"
 
+    // An item's rectangle in screen coordinates, for placing popups.
+    function anchorOf(item) {
+        const p = item.mapToItem(null, 0, 0);
+        const ox = edge === "right" ? screen.width - Theme.barThickness : 0;
+        const oy = edge === "bottom" ? screen.height - Theme.barThickness : 0;
+        return Qt.rect(p.x + ox, p.y + oy, item.width, item.height);
+    }
+
     Rectangle {
         id: body
         anchors.fill: parent
@@ -46,33 +57,53 @@ PanelWindow {
             onWheel: event => Bspwm.cycleDesktop(event.angleDelta.y < 0)
         }
 
-        GridLayout {
-            anchors.fill: parent
-            anchors.margins: 5
-            rowSpacing: 6
-            columnSpacing: 6
-            columns: bar.vertical ? 1 : 4  // four items: one row or one column
+        // ---- start: launcher + focused app ----
+        Grid {
+            id: start
+            anchors.left: bar.vertical ? undefined : parent.left
+            anchors.top: bar.vertical ? parent.top : undefined
+            anchors.leftMargin: 5
+            anchors.topMargin: 5
+            anchors.verticalCenter: bar.vertical ? undefined : parent.verticalCenter
+            anchors.horizontalCenter: bar.vertical ? parent.horizontalCenter : undefined
+            columns: bar.vertical ? 1 : 2
+            spacing: 10
+            verticalItemAlignment: Grid.AlignVCenter
+            horizontalItemAlignment: Grid.AlignHCenter
 
-            Workspaces {
-                screenName: bar.screen ? bar.screen.name : ""
-                vertical: bar.vertical
-                Layout.alignment: Qt.AlignCenter
+            LauncherButton {}
+            AppLabel {
+                visible: !bar.vertical
+                // Never run into the centred workspaces.
+                maxWidth: Math.max(0, body.width / 2 - center.width / 2 - 26 - 10 - 5 - 16)
             }
+        }
 
-            Item {
-                Layout.fillWidth: !bar.vertical
-                Layout.fillHeight: bar.vertical
-            }
+        // ---- centre: workspaces ----
+        Workspaces {
+            id: center
+            anchors.centerIn: parent
+            screenName: bar.screen ? bar.screen.name : ""
+            vertical: bar.vertical
+        }
 
-            Clock {
-                vertical: bar.vertical
-                Layout.alignment: Qt.AlignCenter
-            }
+        // ---- end: tray, time, quick settings ----
+        Grid {
+            id: end
+            anchors.right: bar.vertical ? undefined : parent.right
+            anchors.bottom: bar.vertical ? parent.bottom : undefined
+            anchors.rightMargin: 5
+            anchors.bottomMargin: 5
+            anchors.verticalCenter: bar.vertical ? undefined : parent.verticalCenter
+            anchors.horizontalCenter: bar.vertical ? parent.horizontalCenter : undefined
+            columns: bar.vertical ? 1 : 3
+            spacing: 6
+            verticalItemAlignment: Grid.AlignVCenter
+            horizontalItemAlignment: Grid.AlignHCenter
 
-            Avatar {
-                size: 26
-                Layout.alignment: Qt.AlignCenter
-            }
+            TrayArea { bar: bar; vertical: bar.vertical }
+            TimeButton { bar: bar; vertical: bar.vertical }
+            QsButton { bar: bar; vertical: bar.vertical }
         }
     }
 }

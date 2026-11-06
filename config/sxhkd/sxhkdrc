@@ -23,6 +23,22 @@ super + slash
 super + comma
 	qs -c lumen ipc call settings toggle
 
+# Lock the screen
+super + shift + l
+	lumen-lock
+
+# Open quick settings
+super + n
+	qs -c lumen ipc call panels toggle qs
+
+# Open the calendar
+super + c
+	qs -c lumen ipc call panels toggle calendar
+
+# Next keyboard layout (when "Alt + Shift" is chosen in Settings)
+{alt + Shift_L,alt + Shift_R,shift + Alt_L}
+	lumen-settings layout-next
+
 # @group Theme
 
 # Switch between light and dark
@@ -103,13 +119,13 @@ super + ctrl + alt + space
 
 # @group Desktops
 
-# Go to desktop 1-9
-super + {1-9}
-	bspc desktop -f '^{1-9}'
+# Go to desktop 1-10
+super + {1-9,0}
+	bspc desktop -f '^{1-9,10}'
 
-# Send the window to desktop 1-9
-super + shift + {1-9}
-	bspc node -d '^{1-9}'
+# Send the window to desktop 1-10
+super + shift + {1-9,0}
+	bspc node -d '^{1-9,10}'
 
 # Go to the previous desktop
 super + Tab

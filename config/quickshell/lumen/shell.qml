@@ -3,6 +3,10 @@ import Quickshell
 import Quickshell.Io
 import qs.services
 import qs.modules.bar
+import qs.modules.settings
+import qs.modules.popups
+import qs.modules.launcher
+import qs.modules.notifications
 
 // lumen — a desktop shell for bspwm.
 // Run with: quickshell -c lumen   (bspwmrc starts it automatically)
@@ -12,6 +16,21 @@ ShellRoot {
     Variants {
         model: Quickshell.screens
         Bar {}
+    }
+
+    // Calendar, quick settings and tray popups (one layer per screen).
+    Variants {
+        model: Quickshell.screens
+        PopupLayer {}
+    }
+
+    // Notification popups; also starts the notification server.
+    NotificationPopups {}
+
+    // App launcher, created when opened.
+    LazyLoader {
+        active: Panels.launcherOpen
+        Launcher {}
     }
 
     // Reserve space for the bar on its edge only. bspwm's padding is global,
@@ -28,6 +47,33 @@ ShellRoot {
     }
 
     Component.onCompleted: syncPadding()
+
+    // Settings app, created when opened and freed when closed.
+    LazyLoader {
+        active: Panels.settingsOpen
+        SettingsWindow {}
+    }
+
+    // super + comma, or: qs -c lumen ipc call settings open display
+    IpcHandler {
+        target: "settings"
+        function toggle(): void { Panels.toggleSettings(); }
+        function open(page: string): void { Panels.openSettings(page); }
+        function close(): void { Panels.settingsOpen = false; }
+    }
+
+    // super + space
+    IpcHandler {
+        target: "launcher"
+        function toggle(): void { Panels.toggleLauncher(); }
+    }
+
+    // super + n / super + c, or: qs -c lumen ipc call panels toggle qs
+    IpcHandler {
+        target: "panels"
+        function toggle(name: string): void { Panels.togglePopup(name, null, null); }
+        function close(): void { Panels.closePopup(); }
+    }
 
     // Called by lumen-avatar after the picture changes.
     IpcHandler {

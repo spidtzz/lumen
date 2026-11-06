@@ -115,8 +115,8 @@ Page {
             }
         }
         SettingRow {
-            label: "Shamsi date in the bar"
-            description: "Shown when you hover over the clock."
+            label: "Shamsi calendar"
+            description: "Open the bar's calendar in the Persian calendar."
             Toggle {
                 checked: Theme.shamsiDate
                 onToggled: c => Theme.setValue("shamsi_date", c)

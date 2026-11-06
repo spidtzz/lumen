@@ -5,6 +5,20 @@ xorg-server
 xorg-xinit
 xorg-xrandr
 xorg-xsetroot
+hsetroot
+
+# Keyboard layouts, key repeat and mouse settings
+xorg-setxkbmap
+xorg-xset
+xorg-xinput
+
+# Password prompts for system settings
+polkit-gnome
+
+# Lock screen: locks on idle and before suspend; i3lock is the safety net
+# if the lumen lock screen ever stops unexpectedly
+xss-lock
+i3lock
 
 # Window manager and hotkeys
 bspwm

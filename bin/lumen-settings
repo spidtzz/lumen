@@ -7,6 +7,7 @@
 #   lumen-settings apply [what]         session | theme | input | compositor | display | idle
 #   lumen-settings keys                 list settings with their allowed values
 #   lumen-settings display-save <args>  remember xrandr arguments for next login
+#   lumen-settings layout-next          switch to the next keyboard layout
 #   lumen-settings sysinfo              system details for the About page
 #
 # Settings live in ~/.config/lumen/settings.conf (key=value). Unknown keys and
@@ -98,13 +99,16 @@ apply_theme() { "$BIN_DIR/lumen-theme" apply --quiet; }
 apply_input() {
 	[[ -n ${DISPLAY:-} ]] || return 0
 	load
-	local opt=grp:alt_shift_toggle
+	# Alt+Shift is handled by sxhkd (see layout_next) rather than XKB's
+	# grp:alt_shift_toggle, which only works from the first layout when another
+	# layout (like Persian) uses Right Alt for extra characters.
+	local opt=""
 	case ${CONF[kb_switch]} in
 		ctrl_shift) opt=grp:ctrl_shift_toggle ;;
 		caps) opt=grp:caps_toggle ;;
 	esac
 	if has setxkbmap; then
-		if [[ ${CONF[kb_layouts]} == *,* ]]; then
+		if [[ ${CONF[kb_layouts]} == *,* && -n $opt ]]; then
 			setxkbmap -layout "${CONF[kb_layouts]}" -option "" -option "$opt"
 		else
 			setxkbmap -layout "${CONF[kb_layouts]}" -option ""
@@ -126,6 +130,21 @@ apply_input() {
 			xinput set-prop "$id" "libinput Tapping Enabled" "$tap" 2>/dev/null
 	done
 	return 0
+}
+
+# Next keyboard layout, for the Alt+Shift shortcut in sxhkdrc. Rotates the
+# layout list so the next one becomes active; Right Alt keeps working as each
+# layout's AltGr key.
+layout_next() {
+	[[ -n ${DISPLAY:-} ]] && has setxkbmap || return 0
+	load
+	[[ ${CONF[kb_switch]} == alt_shift && ${CONF[kb_layouts]} == *,* ]] || return 0
+	local current first rest
+	current=$(setxkbmap -query | sed -n 's/^layout:[[:space:]]*//p')
+	[[ $current == *,* ]] || current=${CONF[kb_layouts]}
+	first=${current%%,*}
+	rest=${current#*,}
+	setxkbmap -layout "$rest,$first" -option ""
 }
 
 apply_compositor() {
@@ -241,6 +260,7 @@ case $cmd in
 		printf '%s\n' "$*" >"$DISPLAY_CONF"
 		;;
 	display-reset) rm -f "$DISPLAY_CONF" ;;
+	layout-next) layout_next ;;
 	sysinfo) sysinfo ;;
 	-h | --help | help | "") sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//' ;;
 	*) die "unknown command: $cmd (try --help)" ;;

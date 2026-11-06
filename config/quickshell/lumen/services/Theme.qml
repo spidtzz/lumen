@@ -27,7 +27,6 @@ Singleton {
     // Every key in settings.conf (see `lumen-settings keys`), as strings.
     property var conf: ({})
     readonly property bool clock24h: conf.clock_24h !== "false"
-    readonly property bool shamsiDate: conf.shamsi_date === "true"
 
     // ---- palette (same names as the UI demo) ----
     property color bg: "#070f1f"

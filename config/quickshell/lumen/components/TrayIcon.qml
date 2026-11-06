@@ -4,13 +4,14 @@ import Quickshell.Widgets
 import qs.services
 
 // One tray icon. Left click opens the app (or its menu if that's all it has),
-// right click the app's menu, middle click its secondary action, scroll is
-// passed to the app.
+// right click opens lumen's menu for it (Pin to bar + the app's own menu),
+// middle click its secondary action, scroll is passed to the app.
 Item {
     id: root
 
     required property var item
     property int size: 18
+    property var bar: null   // set for icons on the bar; null inside the tray popup
     signal activated()
 
     implicitWidth: size + 8
@@ -30,10 +31,10 @@ Item {
     }
 
     function openMenu() {
-        const win = QsWindow.window;
-        if (!win || !root.item.hasMenu) return;
-        const p = root.mapToItem(win.contentItem, 0, root.height + 4);
-        root.item.display(win, p.x, p.y);
+        if (root.bar)
+            Panels.openTrayMenu(root.item, root.bar.screen, root.bar.anchorOf(root));
+        else
+            Panels.openTrayMenu(root.item, Panels.popupScreen, null);
     }
 
     MouseArea {
@@ -45,11 +46,12 @@ Item {
         onClicked: event => {
             if (event.button === Qt.RightButton || (event.button === Qt.LeftButton && root.item.onlyMenu)) {
                 root.openMenu();
-            } else if (event.button === Qt.MiddleButton) {
-                root.item.secondaryActivate();
-            } else {
-                root.item.activate();
+                return;
             }
+            if (event.button === Qt.MiddleButton)
+                root.item.secondaryActivate();
+            else
+                root.item.activate();
             root.activated();
         }
         onWheel: event => root.item.scroll(event.angleDelta.y / 120, false)

@@ -3,21 +3,32 @@ import QtQuick.Effects
 import Quickshell
 import qs.services
 import qs.components
-import "../../components/Jalali.js" as Jalali
 
 // One lock screen per monitor, in the same design as the SDDM login screen.
-PanelWindow {
+// A normal window (so bspwm gives it keyboard focus); lumen-lock adds a rule
+// for each "lumen Lock <monitor>" title: fullscreen, on top, on that monitor.
+FloatingWindow {
     id: surface
 
     required property var modelData
     required property var lock
     screen: modelData
 
-    anchors { top: true; bottom: true; left: true; right: true }
-    exclusionMode: ExclusionMode.Ignore
-    aboveWindows: true
-    focusable: true
+    title: "lumen Lock " + modelData.name
+    implicitWidth: modelData.width
+    implicitHeight: modelData.height
     color: Theme.bg
+
+    // Wallpaper from Settings, dimmed, behind everything.
+    Image {
+        anchors.fill: parent
+        visible: (Theme.conf.wallpaper || "") !== "" && status === Image.Ready
+        source: Theme.conf.wallpaper ? "file://" + Theme.conf.wallpaper : ""
+        fillMode: Image.PreserveAspectCrop
+        asynchronous: true
+        sourceSize: Qt.size(surface.modelData.width, surface.modelData.height)
+        Rectangle { anchors.fill: parent; color: Theme.bg; opacity: 0.55 }
+    }
 
     SystemClock { id: clock; precision: SystemClock.Seconds }
 
@@ -49,6 +60,7 @@ PanelWindow {
     }
     MultiEffect {
         anchors.fill: glow
+        visible: (Theme.conf.wallpaper || "") === ""
         source: glow
         blurEnabled: true
         blurMax: 64
@@ -69,7 +81,7 @@ PanelWindow {
         }
         Txt {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: Theme.shamsiDate ? Jalali.format(clock.date, true) : Qt.formatDateTime(clock.date, "dddd, d MMMM")
+            text: clock.date.toLocaleDateString(Qt.locale(), Locale.LongFormat)
             size: 18
             muted: true
         }

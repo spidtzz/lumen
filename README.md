@@ -61,7 +61,7 @@ The full list is in [`config/sxhkd/sxhkdrc`](config/sxhkd/sxhkdrc).
 
 ## The bar
 
-`[launcher] app name ........ [workspaces] ........ [tray] [time] [quick settings]`
+`[launcher] app name ........ [workspaces] ........ [tray] [EN] [time] [quick settings]`
 
 - **App name** — the class of the focused window, next to the launcher.
 - **Launcher** — the lumen logo. Opens a Spotlight-style search: five apps at a time,
@@ -69,12 +69,16 @@ The full list is in [`config/sxhkd/sxhkdrc`](config/sxhkd/sxhkdrc).
   often come first.
 - **Workspaces** — a page at a time (5 by default): go to 7 and the bar shows 6–10.
 - **Tray** — grouped like Windows (pinned icons on the bar, the rest behind an arrow) or
-  every icon on the bar like GNOME and Plasma. Pin icons and give any app a custom icon
-  in Settings › Bar.
-- **Time** — click for a calendar with Gregorian and Shamsi views.
-- **Quick settings** — your picture, Settings, lock and power (lock, log out, restart,
-  shut down), toggles for Wi-Fi, dark style, Do Not Disturb and effects, volume, and
+  every icon on the bar like GNOME and Plasma (Settings › Bar). Right-click an icon for
+  **Pin to bar** and the app's own menu. Custom icons per app are in Settings › Bar.
+- **Keyboard layout** — shows the active layout (EN, FA, ...). Click for the next one,
+  right-click for the list. Hidden when only one layout is set up.
+- **Time** — click for a calendar. Month and day names follow your regional settings.
+- **Quick settings** — your picture, Settings, and a power menu (lock, log out, restart,
+  shut down); toggles for Wi-Fi, dark style, Do Not Disturb and effects; volume; and
   your notifications.
+
+Popups and notifications are drawn above all windows and close when you click elsewhere.
 
 lumen is its own notification server, so no dunst or mako is needed.
 
@@ -89,17 +93,27 @@ before suspend (via `xss-lock`).
 lumen-lock --test     # try it safely: Esc closes it
 ```
 
+## Keyboard layouts
+
+Switching works like Windows: press and release **Alt+Shift** (or Ctrl+Shift, or Caps
+Lock — your choice in Settings) without another key. Left or right keys, in any layout.
+Because a third key cancels the switch, AltGr shortcuts such as Persian's half-space
+(ZWNJ) and AltGr+Shift characters keep working. A small watcher (`lumen-settings
+kbswitch`, using `xinput`) handles this instead of XKB's `grp:` options, which break
+in layouts that use Right Alt for extra characters.
+
 ## Settings
 
 | Page | What you can change | Uses |
 | --- | --- | --- |
 | Appearance | light/dark, accent, text size, compositor | lumen-theme |
 | Bar | edge, workspaces per page, clock, tray grouping, pinned and custom tray icons | |
+| Wallpaper | a picture (from Pictures, system wallpapers or anywhere) or the theme colour; fill, fit, centre, tile, stretch | hsetroot |
 | Displays | resolution, refresh rate, rotation, primary, arrangement — undone after 15 s unless kept | xrandr |
 | Sound | output and input device, volume, mute | PipeWire (built into Quickshell) |
 | Network | wired and Wi-Fi, connect with password | NetworkManager (nmcli) |
-| Keyboard & Mouse | up to four layouts (e.g. English + Persian) and the switch shortcut, key repeat, pointer speed, natural scrolling, tap to click | setxkbmap, xset, xinput |
-| Date & Time | time zone, network time, 24-hour clock, Shamsi date | timedatectl |
+| Keyboard & Mouse | up to four layouts (e.g. English + Persian) and the switch keys, key repeat, pointer speed, natural scrolling, tap to click | setxkbmap, xset, xinput |
+| Date & Time | time zone, network time, 24-hour clock | timedatectl |
 | Users | profile picture, password, lock after idle, test the lock screen | lumen-avatar, passwd, xss-lock |
 | About | system details, copy to clipboard | |
 

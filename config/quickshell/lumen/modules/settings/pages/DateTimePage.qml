@@ -4,12 +4,11 @@ import Quickshell
 import Quickshell.Io
 import qs.services
 import qs.components
-import "../../../components/Jalali.js" as Jalali
 
 Page {
     id: page
     title: "Date & Time"
-    description: "Time zone, network time and how the clock looks."
+    description: "Time zone, network time and how the clock looks. Date formats follow your system's regional settings."
 
     property string timezone: ""
     property bool ntp: false
@@ -65,12 +64,7 @@ Page {
                 size: 44
                 strong: true
             }
-            Txt { text: Qt.formatDateTime(clock.date, "dddd, d MMMM yyyy"); muted: true; size: 16 }
-            Txt {
-                text: Jalali.format(clock.date, true) + "   ·   " + Jalali.format(clock.date, false)
-                muted: true
-                size: 15
-            }
+            Txt { text: clock.date.toLocaleDateString(Qt.locale(), Locale.LongFormat); muted: true; size: 16 }
         }
     }
 
@@ -112,14 +106,6 @@ Page {
             Toggle {
                 checked: Theme.clock24h
                 onToggled: c => Theme.setValue("clock_24h", c)
-            }
-        }
-        SettingRow {
-            label: "Shamsi calendar"
-            description: "Open the bar's calendar in the Persian calendar."
-            Toggle {
-                checked: Theme.shamsiDate
-                onToggled: c => Theme.setValue("shamsi_date", c)
             }
         }
         Txt {

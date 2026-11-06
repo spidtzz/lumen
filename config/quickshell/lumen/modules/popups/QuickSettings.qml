@@ -23,94 +23,18 @@ PopupCard {
     function close() { Panels.closePopup(); }
     function run(cmd) { close(); Quickshell.execDetached(cmd); }
 
-    // ---- header: you, Settings, lock, power ----
+    // ---- header: you on the left; Settings and the power menu on the right ----
     RowLayout {
         Layout.fillWidth: true
-        spacing: 12
-        Avatar { size: 40 }
-        ColumnLayout {
-            Layout.fillWidth: true
-            spacing: 0
-            Txt { text: Theme.userName; strong: true; size: 15 }
-            Txt { text: "Quick settings"; muted: true; size: 12 }
-        }
-        Btn { icon: "settings"; variant: "ghost"; onClicked: Panels.openSettings("appearance") }
-        Btn { icon: "lock"; variant: "ghost"; onClicked: qs.run(["lumen-lock"]) }
-        Btn {
-            icon: "power"
-            variant: qs.confirm === "" ? "ghost" : "normal"
-            onClicked: qs.confirm = qs.confirm === "" ? "menu" : ""
-        }
-    }
-
-    // ---- session ----
-    ColumnLayout {
-        visible: qs.confirm !== ""
-        Layout.fillWidth: true
         spacing: 8
-
-        GridLayout {
-            visible: qs.confirm === "menu"
-            Layout.fillWidth: true
-            columns: 4
-            columnSpacing: 6
-            Repeater {
-                model: [
-                    { id: "lock", label: "Lock", icon: "lock" },
-                    { id: "logout", label: "Log out", icon: "log-out" },
-                    { id: "restart", label: "Restart", icon: "restart" },
-                    { id: "shutdown", label: "Shut down", icon: "power" }
-                ]
-                delegate: Rectangle {
-                    id: sb
-                    required property var modelData
-                    Layout.fillWidth: true
-                    implicitHeight: 64
-                    radius: 12
-                    color: sbHover.hovered ? Theme.accent : Theme.field
-                    border.width: 1
-                    border.color: sbHover.hovered ? Theme.accent : Theme.line
-                    ColumnLayout {
-                        anchors.centerIn: parent
-                        spacing: 4
-                        Icon { Layout.alignment: Qt.AlignHCenter; name: sb.modelData.icon; size: 18; color: sbHover.hovered ? Theme.accentFg : Theme.ink }
-                        Txt { Layout.alignment: Qt.AlignHCenter; text: sb.modelData.label; size: 11; strong: true; color: sbHover.hovered ? Theme.accentFg : Theme.ink }
-                    }
-                    HoverHandler { id: sbHover; cursorShape: Qt.PointingHandCursor }
-                    TapHandler {
-                        onTapped: sb.modelData.id === "lock" ? qs.run(["lumen-lock"]) : qs.confirm = sb.modelData.id
-                    }
-                }
-            }
-        }
-
-        Rectangle {
-            visible: qs.confirm !== "menu"
-            Layout.fillWidth: true
-            implicitHeight: confirmRow.implicitHeight + 24
-            radius: 12
-            color: Theme.field
-            border.width: 1
-            border.color: Theme.line
-            RowLayout {
-                id: confirmRow
-                anchors.fill: parent
-                anchors.margins: 12
-                spacing: 8
-                Txt {
-                    Layout.fillWidth: true
-                    text: qs.confirm === "logout" ? "Log out now?" : qs.confirm === "restart" ? "Restart now?" : "Shut down now?"
-                    strong: true
-                }
-                Btn { text: "Cancel"; variant: "ghost"; onClicked: qs.confirm = "menu" }
-                Btn {
-                    text: qs.confirm === "logout" ? "Log out" : qs.confirm === "restart" ? "Restart" : "Shut down"
-                    variant: "danger"
-                    onClicked: qs.run(qs.confirm === "logout" ? ["bspc", "quit"]
-                                    : qs.confirm === "restart" ? ["systemctl", "reboot"]
-                                    : ["systemctl", "poweroff"])
-                }
-            }
+        Avatar { size: 40 }
+        Item { Layout.fillWidth: true }
+        Btn { icon: "settings"; variant: "ghost"; onClicked: Panels.openSettings("appearance") }
+        Btn {
+            id: powerBtn
+            icon: "power"
+            variant: qs.confirm !== "" ? "normal" : "ghost"
+            onClicked: qs.confirm = qs.confirm === "" ? "menu" : ""
         }
     }
 
@@ -202,14 +126,17 @@ PopupCard {
         }
     }
 
-    ColumnLayout {
+    Item {
         visible: Notifs.list.length === 0
         Layout.fillWidth: true
-        Layout.topMargin: 8
-        Layout.bottomMargin: 8
-        spacing: 6
-        Icon { Layout.alignment: Qt.AlignHCenter; name: "bell"; size: 26; color: Theme.muted; opacity: 0.6 }
-        Txt { Layout.alignment: Qt.AlignHCenter; text: "No notifications"; muted: true; size: 13 }
+        implicitHeight: emptyCol.implicitHeight + 16
+        Column {
+            id: emptyCol
+            anchors.centerIn: parent
+            spacing: 6
+            Icon { anchors.horizontalCenter: parent.horizontalCenter; name: "bell"; size: 26; color: Theme.muted; opacity: 0.6 }
+            Txt { anchors.horizontalCenter: parent.horizontalCenter; text: "No notifications"; muted: true; size: 13; wrapMode: Text.NoWrap }
+        }
     }
 
     Flickable {
@@ -231,6 +158,72 @@ PopupCard {
                     required property var modelData
                     notification: modelData
                     onDismissed: modelData.dismiss()
+                }
+            }
+        }
+    }
+
+    // ---- power menu: drops down under the power button ----
+    Rectangle {
+        id: powerMenu
+        parent: qs
+        visible: qs.confirm !== ""
+        z: 10
+        width: 220
+        height: powerCol.implicitHeight + 12
+        x: qs.width - width - qs.padding
+        y: qs.padding + 46
+        radius: 12
+        color: Theme.panel
+        border.width: 1
+        border.color: Theme.line
+
+        // soft shadow
+        Rectangle {
+            z: -1
+            anchors.fill: parent
+            anchors.margins: -1
+            anchors.topMargin: 3
+            radius: parent.radius
+            color: "#000000"
+            opacity: 0.18
+        }
+
+        ColumnLayout {
+            id: powerCol
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.margins: 6
+            spacing: 2
+
+            // the menu
+            MenuRow { visible: qs.confirm === "menu"; icon: "lock"; text: "Lock"; onClicked: qs.run(["lumen-lock"]) }
+            MenuRow { visible: qs.confirm === "menu"; icon: "log-out"; text: "Log out\u2026"; onClicked: qs.confirm = "logout" }
+            MenuRow { visible: qs.confirm === "menu"; icon: "restart"; text: "Restart\u2026"; onClicked: qs.confirm = "restart" }
+            MenuRow { visible: qs.confirm === "menu"; icon: "power"; text: "Shut down\u2026"; onClicked: qs.confirm = "shutdown" }
+
+            // confirmation
+            Txt {
+                visible: qs.confirm !== "menu"
+                Layout.margins: 8
+                Layout.fillWidth: true
+                text: qs.confirm === "logout" ? "Log out now?" : qs.confirm === "restart" ? "Restart now?" : "Shut down now?"
+                strong: true
+            }
+            RowLayout {
+                visible: qs.confirm !== "menu"
+                Layout.fillWidth: true
+                Layout.margins: 4
+                spacing: 6
+                Btn { Layout.fillWidth: true; text: "Cancel"; variant: "ghost"; onClicked: qs.confirm = "menu" }
+                Btn {
+                    Layout.fillWidth: true
+                    text: qs.confirm === "logout" ? "Log out" : qs.confirm === "restart" ? "Restart" : "Shut down"
+                    variant: "danger"
+                    onClicked: qs.run(qs.confirm === "logout" ? ["bspc", "quit"]
+                                    : qs.confirm === "restart" ? ["systemctl", "reboot"]
+                                    : ["systemctl", "poweroff"])
                 }
             }
         }

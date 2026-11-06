@@ -8,6 +8,8 @@
 #   lumen-settings keys                 list settings with their allowed values
 #   lumen-settings display-save <args>  remember xrandr arguments for next login
 #   lumen-settings layout-next          switch to the next keyboard layout
+#   lumen-settings layout-set <code>    switch to a layout in use (e.g. ir)
+#   lumen-settings kbswitch             watch for the layout-switch keys (bspwmrc runs this)
 #   lumen-settings sysinfo              system details for the About page
 #
 # Settings live in ~/.config/lumen/settings.conf (key=value). Unknown keys and
@@ -34,7 +36,6 @@ SCHEMA=(
 	"font_size~10~^([6-9]|1[0-9]|2[0-4])$~theme"
 	"mono_font~JetBrains Mono~^[A-Za-z0-9 ._-]{1,64}$~theme"
 	"clock_24h~true~^(true|false)$~-"
-	"shamsi_date~false~^(true|false)$~-"
 	"compositor~true~^(true|false)$~compositor"
 	"bar_workspaces~5~^([3-9]|10)$~-"
 	"tray_grouped~true~^(true|false)$~-"
@@ -46,6 +47,8 @@ SCHEMA=(
 	"pointer_speed~0~^-?(0(\.[0-9]{1,2})?|1(\.0{1,2})?)$~input"
 	"natural_scroll~false~^(true|false)$~input"
 	"tap_to_click~true~^(true|false)$~input"
+	"wallpaper~~^(/.{1,500})?$~theme"
+	"wallpaper_mode~fill~^(fill|fit|center|tile|stretch)$~theme"
 )
 
 schema_field() { # schema_field key index
@@ -99,20 +102,12 @@ apply_theme() { "$BIN_DIR/lumen-theme" apply --quiet; }
 apply_input() {
 	[[ -n ${DISPLAY:-} ]] || return 0
 	load
-	# Alt+Shift is handled by sxhkd (see layout_next) rather than XKB's
-	# grp:alt_shift_toggle, which only works from the first layout when another
-	# layout (like Persian) uses Right Alt for extra characters.
-	local opt=""
-	case ${CONF[kb_switch]} in
-		ctrl_shift) opt=grp:ctrl_shift_toggle ;;
-		caps) opt=grp:caps_toggle ;;
-	esac
+	# Layout switching is done by the `kbswitch` watcher below, not XKB's
+	# grp:* options: those break when a layout (like Persian) uses Right Alt
+	# for extra characters, and they hide which layout is active.
 	if has setxkbmap; then
-		if [[ ${CONF[kb_layouts]} == *,* && -n $opt ]]; then
-			setxkbmap -layout "${CONF[kb_layouts]}" -option "" -option "$opt"
-		else
-			setxkbmap -layout "${CONF[kb_layouts]}" -option ""
-		fi
+		setxkbmap -layout "${CONF[kb_layouts]}" $(kb_options)
+		notify_keyboard
 	fi
 	has xset && xset r rate "${CONF[repeat_delay]}" "${CONF[repeat_rate]}"
 
@@ -132,19 +127,102 @@ apply_input() {
 	return 0
 }
 
-# Next keyboard layout, for the Alt+Shift shortcut in sxhkdrc. Rotates the
-# layout list so the next one becomes active; Right Alt keeps working as each
-# layout's AltGr key.
+# XKB options: none, except that Caps Lock does nothing when it's the
+# layout switch key.
+kb_options() {
+	if [[ ${CONF[kb_switch]} == caps && ${CONF[kb_layouts]} == *,* ]]; then
+		printf '%s\n' -option "" -option caps:none
+	else
+		printf '%s\n' -option ""
+	fi
+}
+
+# Tell the bar which layout is active now.
+notify_keyboard() {
+	has qs && { qs -c lumen ipc call keyboard changed >/dev/null 2>&1 & } || true
+}
+
+current_layouts() {
+	local cur
+	cur=$(setxkbmap -query 2>/dev/null | sed -n 's/^layout:[[:space:]]*//p')
+	printf '%s' "${cur:-${CONF[kb_layouts]}}"
+}
+
+# The active layout is always the first one: switching rotates the list.
+layout_set() {
+	[[ -n ${DISPLAY:-} ]] && has setxkbmap || return 0
+	load
+	local want=$1 cur list=() i n rotated=()
+	cur=$(current_layouts)
+	IFS=, read -r -a list <<<"$cur"
+	n=${#list[@]}
+	((n > 1)) || return 0
+	for i in "${!list[@]}"; do
+		[[ ${list[$i]} == "$want" ]] || continue
+		rotated=("${list[@]:$i}" "${list[@]:0:$i}")
+		local IFS=,
+		setxkbmap -layout "${rotated[*]}" $(kb_options)
+		notify_keyboard
+		return 0
+	done
+	die "layout not in use: $want"
+}
+
 layout_next() {
 	[[ -n ${DISPLAY:-} ]] && has setxkbmap || return 0
 	load
-	[[ ${CONF[kb_switch]} == alt_shift && ${CONF[kb_layouts]} == *,* ]] || return 0
-	local current first rest
-	current=$(setxkbmap -query | sed -n 's/^layout:[[:space:]]*//p')
-	[[ $current == *,* ]] || current=${CONF[kb_layouts]}
-	first=${current%%,*}
-	rest=${current#*,}
-	setxkbmap -layout "$rest,$first" -option ""
+	local cur
+	cur=$(current_layouts)
+	[[ $cur == *,* ]] || return 0
+	cur=${cur#*,}
+	layout_set "${cur%%,*}"
+}
+
+# Called by the watcher when a switch combination is released.
+layout_hotkey() {
+	load
+	[[ $1 == "${CONF[kb_switch]}" ]] && layout_next
+	return 0
+}
+
+# Watches raw key events and switches layout the way Windows does: when the
+# combination (Alt+Shift, Ctrl+Shift or Caps Lock alone) is pressed and
+# released without any other key. Works with left or right keys in every
+# layout, and AltGr+Shift+key still types characters (the third key cancels).
+# Keycodes are the standard evdev ones.
+kbswitch() {
+	has xinput || die "xinput is needed for layout switching"
+	stdbuf -oL xinput test-xi2 --root | awk -v cmd="$0 layout-hotkey" '
+		function isalt(k) { return k == 64 || k == 108 }
+		function isshift(k) { return k == 50 || k == 62 }
+		function isctrl(k) { return k == 37 || k == 105 }
+		function count(c,   k, a, s, x) {
+			a = s = x = c = 0
+			for (k in down) { c++; if (isalt(k)) a++; else if (isshift(k)) s++; else if (isctrl(k)) x++ }
+			nalt = a; nshift = s; nctrl = x
+			return c
+		}
+		/RawKeyPress/ { t = 1; next }
+		/RawKeyRelease/ { t = 2; next }
+		/^[[:space:]]+detail:/ && t {
+			k = $2 + 0
+			if (t == 1) {
+				if (!(k in down)) {
+					down[k] = 1
+					n = count()
+					if (n == 2 && nshift == 1 && nalt == 1) combo = "alt_shift"
+					else if (n == 2 && nshift == 1 && nctrl == 1) combo = "ctrl_shift"
+					else if (n == 1 && k == 66) combo = "caps"
+					else if (n == 1 && (isalt(k) || isshift(k) || isctrl(k))) combo = ""
+					else combo = "-"   # another key: a shortcut or a character
+				}
+			} else {
+				delete down[k]
+				if (combo != "" && combo != "-") { system(cmd " " combo " &"); fflush() }
+				if (combo != "") combo = (count() == 0) ? "" : "-"
+			}
+			t = 0
+		}'
 }
 
 apply_compositor() {
@@ -261,7 +339,11 @@ case $cmd in
 		;;
 	display-reset) rm -f "$DISPLAY_CONF" ;;
 	layout-next) layout_next ;;
+	layout-set) [[ -n ${1:-} ]] || die "usage: lumen-settings layout-set <layout>"; layout_set "$1" ;;
+	layout-hotkey) layout_hotkey "${1:-}" ;;
+	layout-current) load; cur=$(current_layouts); printf '%s\n' "${cur%%,*}" ;;
+	kbswitch) kbswitch ;;
 	sysinfo) sysinfo ;;
-	-h | --help | help | "") sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//' ;;
+	-h | --help | help | "") sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//' ;;
 	*) die "unknown command: $cmd (try --help)" ;;
 esac

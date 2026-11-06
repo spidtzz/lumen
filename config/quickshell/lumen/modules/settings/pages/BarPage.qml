@@ -62,14 +62,6 @@ Page {
                 onToggled: c => Theme.setValue("clock_24h", c)
             }
         }
-        SettingRow {
-            label: "Shamsi calendar"
-            description: "Open the calendar (click the time) in the Persian calendar."
-            Toggle {
-                checked: Theme.shamsiDate
-                onToggled: c => Theme.setValue("shamsi_date", c)
-            }
-        }
     }
 
     Card {

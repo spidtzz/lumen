@@ -4,9 +4,7 @@ import Quickshell.Io
 import qs.services
 import qs.modules.bar
 import qs.modules.settings
-import qs.modules.popups
 import qs.modules.launcher
-import qs.modules.notifications
 
 // lumen — a desktop shell for bspwm.
 // Run with: quickshell -c lumen   (bspwmrc starts it automatically)
@@ -18,14 +16,8 @@ ShellRoot {
         Bar {}
     }
 
-    // Calendar, quick settings and tray popups (one layer per screen).
-    Variants {
-        model: Quickshell.screens
-        PopupLayer {}
-    }
-
-    // Notification popups; also starts the notification server.
-    NotificationPopups {}
+    // The notification server (popups are shown by each bar).
+    Component.onCompleted: { syncPadding(); Notifs.dnd; }
 
     // App launcher, created when opened.
     LazyLoader {
@@ -46,7 +38,6 @@ ShellRoot {
         function onBarPositionChanged() { root.syncPadding(); }
     }
 
-    Component.onCompleted: syncPadding()
 
     // Settings app, created when opened and freed when closed.
     LazyLoader {
@@ -66,6 +57,12 @@ ShellRoot {
     IpcHandler {
         target: "launcher"
         function toggle(): void { Panels.toggleLauncher(); }
+    }
+
+    // Called by lumen-settings when the keyboard layout changes.
+    IpcHandler {
+        target: "keyboard"
+        function changed(): void { Keyboard.refresh(); }
     }
 
     // super + n / super + c, or: qs -c lumen ipc call panels toggle qs

@@ -47,6 +47,7 @@ Grid {
         delegate: TrayIcon {
             required property var modelData
             item: modelData
+            bar: root.bar
         }
     }
 }

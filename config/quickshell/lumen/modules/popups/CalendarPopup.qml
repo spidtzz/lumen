@@ -3,58 +3,44 @@ import QtQuick.Layouts
 import Quickshell
 import qs.services
 import qs.components
-import "../../components/Jalali.js" as Jalali
 
-// Mini calendar with Gregorian and Shamsi views, like the demo's date picker.
+// Mini calendar. Month and day names, and the first day of the week, follow
+// the system's regional format.
 PopupCard {
     id: cal
 
     implicitWidth: 320
 
-    property bool shamsi: Theme.shamsiDate
+    readonly property var loc: Qt.locale()
     property int viewYear: 0
-    property int viewMonth: 0   // 1-12
-
-    readonly property var monthsG: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
-    readonly property var weekG: ["S", "M", "T", "W", "T", "F", "S"]
-    readonly property var weekJ: ["ش", "ی", "د", "س", "چ", "پ", "ج"]   // Saturday first
+    property int viewMonth: 0   // 0-11
 
     SystemClock { id: clock; precision: SystemClock.Hours }
 
-    function today() {
-        const d = clock.date;
-        return shamsi ? Jalali.fromDate(d) : { y: d.getFullYear(), m: d.getMonth() + 1, d: d.getDate() };
-    }
-    function goToday() { const t = today(); viewYear = t.y; viewMonth = t.m; }
+    function goToday() { viewYear = clock.date.getFullYear(); viewMonth = clock.date.getMonth(); }
     function step(n) {
         let m = viewMonth + n, y = viewYear;
-        if (m < 1) { m = 12; y--; }
-        if (m > 12) { m = 1; y++; }
+        if (m < 0) { m = 11; y--; }
+        if (m > 11) { m = 0; y++; }
         viewMonth = m; viewYear = y;
     }
-    function digits(v) { return shamsi ? Jalali.faDigits(v) : String(v); }
-
-    onShamsiChanged: goToday()
     Component.onCompleted: goToday()
 
-    // Cells for the visible month: blanks, then 1..length.
-    readonly property var cells: {
-        if (viewMonth === 0) return [];
-        const first = shamsi ? Jalali.toDate(viewYear, viewMonth, 1) : new Date(viewYear, viewMonth - 1, 1);
-        const len = shamsi ? Jalali.monthLength(viewYear, viewMonth) : new Date(viewYear, viewMonth, 0).getDate();
-        const weekStart = shamsi ? 6 : 0;
-        const blanks = (first.getDay() - weekStart + 7) % 7;
+    // Qt: firstDayOfWeek is 1 (Monday) to 7 (Sunday); JS getDay() is 0 (Sunday) to 6.
+    readonly property int weekStart: loc.firstDayOfWeek % 7
+    readonly property var weekdays: {
         const out = [];
-        for (let i = 0; i < blanks; i++) out.push(0);
-        for (let d = 1; d <= len; d++) out.push(d);
+        for (let i = 0; i < 7; i++)
+            out.push(loc.dayName((weekStart + i) % 7, Locale.NarrowFormat));
         return out;
     }
-
-    Seg {
-        Layout.fillWidth: true
-        options: [{ label: "Gregorian", value: false }, { label: "Shamsi", value: true }]
-        value: cal.shamsi
-        onPicked: v => cal.shamsi = v
+    readonly property var cells: {
+        const first = new Date(viewYear, viewMonth, 1);
+        const len = new Date(viewYear, viewMonth + 1, 0).getDate();
+        const out = [];
+        for (let i = 0; i < (first.getDay() - weekStart + 7) % 7; i++) out.push(0);
+        for (let d = 1; d <= len; d++) out.push(d);
+        return out;
     }
 
     RowLayout {
@@ -63,7 +49,7 @@ PopupCard {
         Txt {
             Layout.fillWidth: true
             horizontalAlignment: Text.AlignHCenter
-            text: (cal.shamsi ? Jalali.MONTHS_FA[cal.viewMonth - 1] : cal.monthsG[cal.viewMonth - 1] || "") + " " + cal.digits(cal.viewYear)
+            text: cal.loc.standaloneMonthName(cal.viewMonth, Locale.LongFormat) + " " + cal.viewYear
             strong: true
             size: 15
         }
@@ -75,10 +61,9 @@ PopupCard {
         columns: 7
         rowSpacing: 3
         columnSpacing: 3
-        layoutDirection: cal.shamsi ? Qt.RightToLeft : Qt.LeftToRight
 
         Repeater {
-            model: cal.shamsi ? cal.weekJ : cal.weekG
+            model: cal.weekdays
             delegate: Txt {
                 required property string modelData
                 Layout.fillWidth: true
@@ -95,8 +80,8 @@ PopupCard {
             delegate: Rectangle {
                 id: day
                 required property int modelData
-                readonly property var t: cal.today()
-                readonly property bool isToday: modelData > 0 && t.y === cal.viewYear && t.m === cal.viewMonth && t.d === modelData
+                readonly property bool isToday: modelData > 0 && clock.date.getFullYear() === cal.viewYear
+                    && clock.date.getMonth() === cal.viewMonth && clock.date.getDate() === modelData
 
                 Layout.fillWidth: true
                 implicitHeight: 34
@@ -105,7 +90,7 @@ PopupCard {
                 Txt {
                     anchors.centerIn: parent
                     visible: day.modelData > 0
-                    text: cal.digits(day.modelData)
+                    text: day.modelData
                     size: 13
                     strong: day.isToday
                     color: day.isToday ? Theme.accentFg : Theme.ink
@@ -118,7 +103,7 @@ PopupCard {
         Layout.fillWidth: true
         Txt {
             Layout.fillWidth: true
-            text: cal.shamsi ? Qt.formatDate(clock.date, "d MMMM yyyy") : Jalali.format(clock.date, true)
+            text: clock.date.toLocaleDateString(cal.loc, Locale.LongFormat)
             muted: true
             size: 12
             elide: Text.ElideRight

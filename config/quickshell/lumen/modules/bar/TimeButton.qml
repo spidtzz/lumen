@@ -2,7 +2,7 @@ import QtQuick
 import Quickshell
 import qs.services
 
-// The time. Click for the calendar (Gregorian or Shamsi).
+// The time. Click for the calendar.
 BarButton {
     id: btn
 

@@ -35,10 +35,6 @@ super + n
 super + c
 	qs -c lumen ipc call panels toggle calendar
 
-# Next keyboard layout (when "Alt + Shift" is chosen in Settings)
-{alt + Shift_L,alt + Shift_R,shift + Alt_L}
-	lumen-settings layout-next
-
 # @group Theme
 
 # Switch between light and dark

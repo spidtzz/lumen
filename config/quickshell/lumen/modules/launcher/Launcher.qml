@@ -8,15 +8,16 @@ import qs.components
 
 // Spotlight-style app launcher. Five results show at once; the mouse wheel
 // scrolls smoothly, arrow keys move one row at a time.
-// Enter opens, Esc (or a click outside) closes.
-PanelWindow {
+// Enter opens, Esc (or clicking anywhere else) closes.
+// It's a normal window so bspwm gives it keyboard focus; the bspwmrc rule for
+// "lumen Launcher" makes it floating, centred, borderless and on top.
+FloatingWindow {
     id: win
 
-    screen: Panels.focusedScreen()
-    anchors { top: true; bottom: true; left: true; right: true }
-    exclusionMode: ExclusionMode.Ignore
-    focusable: true
-    color: "transparent"
+    title: "lumen Launcher"
+    implicitWidth: 640
+    implicitHeight: card.height
+    color: Theme.panel
 
     readonly property int rowHeight: 58
     readonly property int visibleRows: 5
@@ -35,30 +36,22 @@ PanelWindow {
         list.positionViewAtIndex(list.currentIndex, ListView.Contain);   // jump, no animation
     }
 
-    MouseArea {
-        anchors.fill: parent
-        onPressed: win.close()
-    }
-
     Rectangle {
         id: card
-        width: Math.min(640, win.width - 48)
+        width: win.width
         height: col.implicitHeight + 20
-        x: (win.width - width) / 2
-        y: Math.round(win.height * 0.22)
-        radius: 18
+        radius: Theme.radius
         color: Theme.panel
         border.width: 1
         border.color: Theme.line
 
-        // Open animation
-        scale: 0.97
-        opacity: 0
-        Component.onCompleted: { scale = 1; opacity = 1; }
-        Behavior on scale { NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutCubic } }
-        Behavior on opacity { NumberAnimation { duration: Theme.animFast } }
-
-        MouseArea { anchors.fill: parent }   // keep clicks inside from closing
+        // Close when another window gets focus (a click elsewhere).
+        readonly property bool active: Window.active
+        property bool wasActive: false
+        onActiveChanged: {
+            if (active) { wasActive = true; input.forceActiveFocus(); }
+            else if (wasActive) win.close();
+        }
 
         ColumnLayout {
             id: col

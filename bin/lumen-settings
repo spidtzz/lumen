@@ -11,6 +11,7 @@
 #   lumen-settings layout-set <code>    switch to a layout in use (e.g. ir)
 #   lumen-settings kbswitch             watch for the layout-switch keys (bspwmrc runs this)
 #   lumen-settings sysinfo              system details for the About page
+#   lumen-settings awake on|off|status  keep the screen on (Quick Settings)
 #
 # Settings live in ~/.config/lumen/settings.conf (key=value). Unknown keys and
 # comments are kept, so it's safe to edit by hand.
@@ -245,7 +246,13 @@ kbswitch() {
 # settings restarts it.
 picom_flags() {
 	local f=(--log-file "$STATE/picom.log")
-	[[ ${CONF[corners]} == square ]] && f+=(--corner-radius 0)
+	# In virtual machines picom renders in software (xrender), which rounds a
+	# window but not its bspwm border: the coloured border would stop short of
+	# each corner. Window corners stay square there; the GPU renderer on real
+	# hardware rounds the border along with the window.
+	if [[ ${CONF[corners]} == square ]] || systemd-detect-virt -q 2>/dev/null; then
+		f+=(--corner-radius 0)
+	fi
 	[[ ${CONF[animations]} == false ]] && f+=(--no-fading-openclose --fade-in-step 1 --fade-out-step 1)
 	printf '%s\n' "${f[@]}"
 }
@@ -290,10 +297,13 @@ apply_display() {
 
 # Lock after idle minutes (0 = never). xss-lock, started by bspwmrc, runs
 # lumen-lock when the X screensaver timer fires and before suspend.
+AWAKE_FLAG=${XDG_RUNTIME_DIR:-/tmp}/lumen-awake
+
 apply_idle() {
 	[[ -n ${DISPLAY:-} ]] && has xset || return 0
 	load
 	local secs=$((CONF[idle_lock] * 60))
+	[[ -e $AWAKE_FLAG ]] && secs=0   # Keep awake is on
 	if ((secs > 0)); then
 		xset s "$secs" "$secs"
 	else
@@ -390,6 +400,14 @@ case $cmd in
 	layout-current) load; cur=$(current_layouts); printf '%s\n' "${cur%%,*}" ;;
 	kbswitch) kbswitch ;;
 	sysinfo) sysinfo ;;
+	awake)
+		case ${1:-status} in
+			on) : >"$AWAKE_FLAG"; apply_idle ;;
+			off) rm -f "$AWAKE_FLAG"; apply_idle ;;
+			status) [[ -e $AWAKE_FLAG ]] && echo on || echo off ;;
+			*) die "usage: lumen-settings awake on|off|status" ;;
+		esac
+		;;
 	-h | --help | help | "") sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//' ;;
 	*) die "unknown command: $cmd (try --help)" ;;
 esac

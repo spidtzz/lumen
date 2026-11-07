@@ -55,7 +55,8 @@ chosen others in `~/.config/mimeapps.list`.
 | `super + n` | Quick settings |
 | `super + c` | Calendar |
 | `super + shift + l` | Lock the screen |
-| `super + comma` | Settings |
+| `super + i` | Settings |
+| `super + e` | File manager (Thunar) |
 | `super + q` | Close window |
 | `super + 1…9, 0` / `super + shift + 1…9, 0` | Go to / send to desktop 1–10 |
 | `super + h j k l` | Focus window in a direction |
@@ -87,8 +88,9 @@ The full list is in [`config/sxhkd/sxhkdrc`](config/sxhkd/sxhkdrc).
 - **Time** — click for a calendar. Month and day names follow your regional settings.
 - **Quick settings** — your picture, Settings, and a power menu (lock, log out, restart,
   shut down); toggles for Wi-Fi, Bluetooth, dark style, Do Not Disturb, performance
-  mode and effects (right-click a toggle for its settings); volume and screen
-  brightness; and your notifications.
+  mode and keep awake (no screen blanking or idle lock until you turn it off);
+  right-click a toggle for its settings; volume and screen brightness; and your
+  notifications. Visual effects are in Settings › Performance.
 
 Popups and notifications are drawn above all windows. Click elsewhere, or the same
 button again, to close them. Notifications can appear in any corner or edge centre
@@ -163,9 +165,11 @@ about mouse clicks while a bar popup is open, so clicking elsewhere closes it.
 | About | system details, copy to clipboard | |
 
 Everything is stored in `~/.config/lumen/settings.conf` and applied again at login.
-From a terminal:
+Settings is also in the app launcher. From a terminal:
 
 ```sh
+lumen settings                           # open Settings (lumen settings display: a page)
+lumen help                               # everything the lumen command can open
 lumen-settings keys                      # every setting and its allowed values
 lumen-settings set kb_layouts us,ir
 lumen-settings set kb_switch alt_shift
@@ -211,6 +215,14 @@ lumen-theme set corners square   # rounded square
 windows (picom) and the login screen. Qt apps use Qt's Fusion style, whose corners are
 already nearly square, and there's no global setting to change them further.
 
+In a virtual machine, windows keep square corners even with rounded corners on: picom
+renders in software there, and its software renderer rounds a window but not its border,
+so the coloured border would stop short of each corner. On real hardware picom's GPU
+renderer rounds both. The bar, popups and Settings are rounded everywhere.
+
+File pickers (Open/Save dialogs) come from `xdg-desktop-portal-gtk` for every app
+(`GTK_USE_PORTAL=1`), so they follow light/dark even in Firefox and Thunderbird.
+
 `lumen-theme` writes:
 
 | Target | How | Live? |
@@ -234,6 +246,7 @@ Palettes are generated from the original oklch design values by `tools/gen-palet
 ```
 install.sh              installer
 packages/               package lists per profile
+bin/lumen               open Settings, the launcher, files... from a terminal
 bin/lumen-settings      settings storage, validation and appliers
 bin/lumen-theme         theme engine (bash)
 bin/lumen-lock          lock screen launcher with i3lock fallback
@@ -244,6 +257,7 @@ bin/lumen-session       session start-up (SDDM and startx)
 config/                 → ~/.config  (bspwm, sxhkd, picom, kitty, quickshell, portals)
 home/xinitrc            → ~/.xinitrc
 share/palettes/         → ~/.local/share/lumen/palettes
+share/applications/     → ~/.local/share/applications (Settings in the launcher)
 system/                 → system-wide: SDDM theme and config, session entry
 assets/fonts/           Space Grotesk (OFL), fetched by tools/fetch-fonts.sh
 tools/                  development helpers

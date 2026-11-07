@@ -223,6 +223,7 @@ install_files() {
 	run chmod +x "$REPO/config/bspwm/bspwmrc"
 	place_tree "$REPO/bin" "$HOME/.local/bin"
 	place_tree "$REPO/share/palettes" "$DATA_HOME/$NAME/palettes"
+	place_tree "$REPO/share/applications" "$DATA_HOME/applications"   # Settings in the app launcher
 	place "$REPO/home/xinitrc" "$HOME/.xinitrc"
 	install_fonts
 

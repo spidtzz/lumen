@@ -98,7 +98,9 @@ PanelWindow {
         }
 
         // ---- end: tray, time, quick settings ----
-        Grid {
+        // A Row on a horizontal bar and a Column on a vertical one (simpler and
+        // more predictable than one Grid that changes its column count).
+        Loader {
             id: end
             anchors.right: bar.vertical ? undefined : parent.right
             anchors.bottom: bar.vertical ? parent.bottom : undefined
@@ -106,16 +108,31 @@ PanelWindow {
             anchors.bottomMargin: 5
             anchors.verticalCenter: bar.vertical ? undefined : parent.verticalCenter
             anchors.horizontalCenter: bar.vertical ? parent.horizontalCenter : undefined
-            columns: bar.vertical ? 1 : 5
-            spacing: 6
-            verticalItemAlignment: Grid.AlignVCenter
-            horizontalItemAlignment: Grid.AlignHCenter
+            sourceComponent: bar.vertical ? endColumn : endRow
+        }
 
-            RecordingButton { vertical: bar.vertical }
-            TrayArea { bar: bar; vertical: bar.vertical }
-            KeyboardButton { bar: bar; vertical: bar.vertical }
-            TimeButton { bar: bar; vertical: bar.vertical }
-            QsButton { bar: bar; vertical: bar.vertical }
+        Component {
+            id: endRow
+            Row {
+                spacing: 6
+                RecordingButton { anchors.verticalCenter: parent.verticalCenter }
+                TrayArea { bar: bar; anchors.verticalCenter: parent.verticalCenter }
+                KeyboardButton { bar: bar; anchors.verticalCenter: parent.verticalCenter }
+                TimeButton { bar: bar; anchors.verticalCenter: parent.verticalCenter }
+                QsButton { bar: bar; anchors.verticalCenter: parent.verticalCenter }
+            }
+        }
+
+        Component {
+            id: endColumn
+            Column {
+                spacing: 6
+                RecordingButton { vertical: true; anchors.horizontalCenter: parent.horizontalCenter }
+                TrayArea { bar: bar; vertical: true; anchors.horizontalCenter: parent.horizontalCenter }
+                KeyboardButton { bar: bar; vertical: true; anchors.horizontalCenter: parent.horizontalCenter }
+                TimeButton { bar: bar; vertical: true; anchors.horizontalCenter: parent.horizontalCenter }
+                QsButton { bar: bar; vertical: true; anchors.horizontalCenter: parent.horizontalCenter }
+            }
         }
     }
 

@@ -12,11 +12,18 @@ export XDG_SESSION_TYPE=x11
 export QT_QPA_PLATFORMTHEME=gtk3
 export XCURSOR_THEME=Adwaita
 export XCURSOR_SIZE=24
+# File pickers come from one place (xdg-desktop-portal-gtk), which follows
+# light/dark live. Without this, Firefox and Thunderbird draw their own
+# picker, which can stay in the old mode after a switch.
+export GTK_USE_PORTAL=1
 
 # Let D-Bus-activated services (portals, notifications) see this session.
 dbus-update-activation-environment --systemd \
 	DISPLAY XAUTHORITY PATH XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP \
-	XDG_SESSION_TYPE QT_QPA_PLATFORMTHEME XCURSOR_THEME XCURSOR_SIZE 2>/dev/null
+	XDG_SESSION_TYPE QT_QPA_PLATFORMTHEME XCURSOR_THEME XCURSOR_SIZE GTK_USE_PORTAL 2>/dev/null
+# Portals left over from an earlier login would still point at the old
+# display and miss theme changes; restart them if they're running.
+systemctl --user try-restart xdg-desktop-portal-gtk.service xdg-desktop-portal.service 2>/dev/null
 
 # Inside a virtual machine: clipboard sharing and auto-resize.
 command -v spice-vdagent >/dev/null && spice-vdagent

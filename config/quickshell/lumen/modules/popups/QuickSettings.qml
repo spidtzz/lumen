@@ -105,13 +105,12 @@ PopupCard {
             onRightClicked: Panels.openSettings("performance")
         }
         Tile {
-            readonly property bool fxOn: Theme.conf.compositor !== "false"
-            icon: "droplet"
-            label: "Effects"
-            active: fxOn
-            status: fxOn ? "Shadows and fades" : "Off"
-            onClicked: Theme.setValue("compositor", !fxOn)
-            onRightClicked: Panels.openSettings("performance")
+            icon: "coffee"
+            label: "Keep awake"
+            active: Awake.on
+            status: Awake.on ? "Screen stays on" : "Off"
+            onClicked: Awake.toggle()
+            onRightClicked: Panels.openSettings("users")
         }
     }
 

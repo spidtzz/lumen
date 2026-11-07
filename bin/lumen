@@ -1,0 +1,39 @@
+#!/bin/sh
+# lumen — open parts of the desktop from a terminal or a shortcut.
+#
+#   lumen settings [page]   Settings (pages: network bluetooth appearance wallpaper
+#                           bar display sound input notifications performance
+#                           datetime users about)
+#   lumen launcher          app launcher
+#   lumen shortcuts         keyboard shortcuts
+#   lumen clipboard         clipboard history
+#   lumen files [folder]    file manager (your default one, Thunar unless changed)
+#   lumen lock              lock the screen
+#   lumen reload            restart the bar and popups (after updating lumen)
+#   lumen theme ...         same as lumen-theme (e.g. lumen theme set mode light)
+set -eu
+
+ipc() { exec qs -c lumen ipc call "$@"; }
+
+case ${1:-help} in
+	settings) [ -n "${2:-}" ] && ipc settings open "$2" || ipc settings show ;;
+	launcher) ipc launcher toggle ;;
+	shortcuts) ipc shortcuts toggle ;;
+	clipboard) ipc clipboard toggle ;;
+	files)
+		dir=${2:-$HOME}
+		gio open "$dir" 2>/dev/null || exec thunar "$dir"
+		;;
+	lock) exec lumen-lock ;;
+	reload)
+		qs -c lumen kill >/dev/null 2>&1 || qs kill -c lumen >/dev/null 2>&1 || true
+		sleep 0.3
+		state=${XDG_STATE_HOME:-$HOME/.local/state}/lumen
+		mkdir -p "$state"
+		setsid -f qs -c lumen >"$state/quickshell.log" 2>&1
+		echo "lumen: restarted (log: $state/quickshell.log)"
+		;;
+	theme) shift; exec lumen-theme "$@" ;;
+	-h | --help | help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//' ;;
+	*) echo "lumen: unknown command: $1 (try: lumen help)" >&2; exit 1 ;;
+esac

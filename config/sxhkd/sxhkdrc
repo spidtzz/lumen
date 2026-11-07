@@ -20,8 +20,12 @@ super + slash
 	qs -c lumen ipc call shortcuts toggle
 
 # Open Settings
-super + comma
+super + i
 	qs -c lumen ipc call settings toggle
+
+# Open the file manager
+super + e
+	lumen files
 
 # Clipboard history
 super + v

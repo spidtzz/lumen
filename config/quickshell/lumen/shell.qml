@@ -48,11 +48,12 @@ ShellRoot {
         SettingsWindow {}
     }
 
-    // super + comma, or: qs -c lumen ipc call settings open display
+    // super + i, or: lumen settings display
     IpcHandler {
         target: "settings"
         function toggle(): void { Panels.toggleSettings(); }
         function open(page: string): void { Panels.openSettings(page); }
+        function show(): void { Panels.openSettings(Panels.settingsPage); }
         function close(): void { Panels.settingsOpen = false; }
     }
 

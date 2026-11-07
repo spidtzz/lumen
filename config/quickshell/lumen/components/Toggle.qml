@@ -18,10 +18,11 @@ Rectangle {
     activeFocusOnTab: true
     Behavior on color { ColorAnimation { duration: Theme.animFast } }
 
+    // The knob, centred vertically with the same 4px inset on both sides.
     Rectangle {
         width: 20; height: 20; radius: Theme.r(10)
-        y: 3
-        x: sw.checked ? sw.width - width - 4 : 3
+        y: (sw.height - height) / 2
+        x: sw.checked ? sw.width - width - 4 : 4
         color: sw.checked ? Theme.accentFg : Theme.ink
         Behavior on x { NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutCubic } }
     }

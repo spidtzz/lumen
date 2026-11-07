@@ -5,7 +5,7 @@ import qs.services
 import qs.components
 
 // The Settings app: a normal window with a sidebar of pages.
-// Open with super + comma, or `qs -c lumen ipc call settings open display`.
+// Open with super + i, `lumen settings`, or `lumen settings display`.
 FloatingWindow {
     id: win
 

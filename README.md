@@ -66,6 +66,7 @@ chosen others in `~/.config/mimeapps.list`.
 | `super + t` / `super + f` | Tiled / fullscreen |
 | `super + shift + f` | Float the window (again to tile it) |
 | `super + m` | Monocle layout |
+| Volume, mute, mic, brightness, play/pause, next/previous keys | Work as labelled; volume and brightness show their level on screen |
 | `super + Escape` | Reload shortcuts |
 | `super + alt + r` / `super + alt + q` | Restart bspwm / log out |
 

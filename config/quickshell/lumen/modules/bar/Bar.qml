@@ -195,6 +195,68 @@ PanelWindow {
         }
     }
 
+    // ---- volume / brightness level (media keys), on the focused screen ----
+    // Bottom centre, kept clear of the bar.
+    PopupWindow {
+        id: osdHost
+
+        readonly property int w: 280
+        anchor.window: win
+        anchor.rect: {
+            const t = Theme.barThickness, sw = win.screen.width, sh = win.screen.height;
+            const x = (sw - w) / 2;
+            const y = sh - implicitHeight - (win.edge === "bottom" ? t + 24 : 48);
+            const ox = win.edge === "right" ? sw - t : 0;
+            const oy = win.edge === "bottom" ? sh - t : 0;
+            return Qt.rect(x - ox, y - oy, 1, 1);
+        }
+        implicitWidth: w
+        implicitHeight: 56
+        color: "transparent"
+        visible: Osd.shown && win.screen === Panels.focusedScreen()
+
+        Rectangle {
+            anchors.fill: parent
+            radius: Theme.radius
+            color: Theme.panel
+            border.width: 1
+            border.color: Theme.line
+
+            Row {
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.leftMargin: 18
+                spacing: 14
+                Icon { anchors.verticalCenter: parent.verticalCenter; name: Osd.icon; size: 20 }
+                Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: osdHost.w - 18 - 20 - 14 - 14 - 52 - 18
+                    height: 8
+                    radius: Theme.r(4)
+                    color: Theme.field
+                    border.width: 1
+                    border.color: Theme.line
+                    Rectangle {
+                        width: parent.width * Math.max(0, Math.min(1, Osd.level))
+                        height: parent.height
+                        radius: parent.radius
+                        color: Theme.accent
+                        Behavior on width { NumberAnimation { duration: Theme.animFast } }
+                    }
+                }
+                Txt {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 52
+                    text: Osd.label
+                    size: 12
+                    strong: true
+                    wrapMode: Text.NoWrap
+                    elide: Text.ElideRight
+                }
+            }
+        }
+    }
+
     // ---- notification popups (on the focused screen) ----
     // Corner or edge from Settings > Notifications, kept clear of the bar.
     PopupWindow {

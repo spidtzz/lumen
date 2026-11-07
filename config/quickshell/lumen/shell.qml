@@ -68,11 +68,26 @@ ShellRoot {
         function toggle(): void { Panels.toggleSettings(); }
         function open(page: string): void { Panels.openSettings(page); }
         function show(): void { Panels.openSettings(Panels.settingsPage); }
+        function close(): void { Panels.settingsOpen = false; }
     }
     IpcHandler {
         target: "debug"
         function bar(): string { return Panels.bars.map(b => b.debugInfo()).join("\n"); }
-        function close(): void { Panels.settingsOpen = false; }
+    }
+
+    // Volume, brightness and media keys (sxhkdrc).
+    IpcHandler {
+        target: "media"
+        function volumeUp(): void { Osd.volume(0.05); }
+        function volumeDown(): void { Osd.volume(-0.05); }
+        function mute(): void { Osd.toggleMute(); }
+        function micMute(): void { Osd.toggleMic(); }
+        function brightnessUp(): void { Osd.brightness(0.05); }
+        function brightnessDown(): void { Osd.brightness(-0.05); }
+        function playPause(): void { Osd.playPause(); }
+        function next(): void { Osd.next(); }
+        function previous(): void { Osd.previous(); }
+        function stop(): void { Osd.stop(); }
     }
 
     // Clipboard history, created when opened.

@@ -89,4 +89,17 @@ Page {
         current: page.source
         onChoose: n => Pipewire.preferredDefaultAudioSource = n
     }
+
+    Card {
+        title: "Volume keys"
+        SettingRow {
+            label: "Step"
+            description: "How much each press of the volume keys changes the volume."
+            Seg {
+                options: [1, 2, 5, 10].map(n => ({ label: n + "%", value: String(n) }))
+                value: Theme.conf.volume_step || "5"
+                onPicked: v => Theme.setValue("volume_step", v)
+            }
+        }
+    }
 }

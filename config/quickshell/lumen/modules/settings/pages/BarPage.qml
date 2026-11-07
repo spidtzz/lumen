@@ -22,6 +22,30 @@ Page {
     }
 
     Card {
+        title: "Style"
+        SettingRow {
+            label: "Shape"
+            description: Theme.barAttached && Theme.screenCorners && Theme.rounded
+                ? "Edge to edge: the bar curves into the rounded screen corners."
+                : Theme.barAttached ? "Edge to edge. Turn on rounded screen corners (Appearance) for curved ends."
+                : "A rounded panel with a gap around it."
+            Seg {
+                options: [{ label: "Floating", value: "floating" }, { label: "Edge to edge", value: "attached" }]
+                value: Theme.barAttached ? "attached" : "floating"
+                onPicked: v => Theme.setValue("bar_style", v)
+            }
+        }
+        SettingRow {
+            label: "Black bar"
+            description: "A pure black bar with light text and icons, in light and dark mode."
+            Toggle {
+                checked: Theme.barBlack
+                onToggled: c => Theme.setValue("bar_black", c)
+            }
+        }
+    }
+
+    Card {
         title: "Position"
         SettingRow {
             label: "Edge"
@@ -71,6 +95,18 @@ Page {
             Toggle {
                 checked: Theme.clock24h
                 onToggled: c => Theme.setValue("clock_24h", c)
+            }
+        }
+    }
+
+    Card {
+        title: "Quick settings"
+        SettingRow {
+            label: "Media controls"
+            description: "Play, pause and skip for whatever is playing (music apps, browsers, mpv). Shown only while something is open."
+            Toggle {
+                checked: Theme.conf.qs_media !== "false"
+                onToggled: c => Theme.setValue("qs_media", c)
             }
         }
     }

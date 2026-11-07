@@ -65,6 +65,36 @@ alt + Print
 super + shift + r
 	lumen-capture toggle screen
 
+# @group Media keys
+
+# Volume up / down (also shows the level)
+XF86Audio{Raise,Lower}Volume
+	qs -c lumen ipc call media volume{Up,Down}
+
+# Mute or unmute the sound
+XF86AudioMute
+	qs -c lumen ipc call media mute
+
+# Mute or unmute the microphone
+XF86AudioMicMute
+	qs -c lumen ipc call media micMute
+
+# Screen brightness up / down (laptops)
+XF86MonBrightness{Up,Down}
+	qs -c lumen ipc call media brightness{Up,Down}
+
+# Play or pause whatever is playing
+{XF86AudioPlay,XF86AudioPause}
+	qs -c lumen ipc call media playPause
+
+# Next / previous track
+XF86Audio{Next,Prev}
+	qs -c lumen ipc call media {next,previous}
+
+# Stop playing
+XF86AudioStop
+	qs -c lumen ipc call media stop
+
 # @group Session
 
 # Reload keyboard shortcuts

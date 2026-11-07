@@ -9,9 +9,9 @@ Rectangle {
     implicitWidth: 26
     implicitHeight: 26
     radius: Theme.r(13)
-    color: Panels.launcherOpen || hover.hovered ? Theme.accent : Theme.field
+    color: Panels.launcherOpen || hover.hovered ? Theme.barAccent : Theme.barField
     border.width: 1
-    border.color: Panels.launcherOpen || hover.hovered ? Theme.accent : Theme.line
+    border.color: Panels.launcherOpen || hover.hovered ? Theme.barAccent : Theme.barLine
     scale: tap.pressed ? 0.92 : 1
     Behavior on color { ColorAnimation { duration: Theme.animFast } }
     Behavior on scale { NumberAnimation { duration: 80 } }
@@ -21,7 +21,7 @@ Rectangle {
         name: "lumen"
         size: 18
         stroke: 2.2
-        color: Panels.launcherOpen || hover.hovered ? Theme.accentFg : Theme.accent
+        color: Panels.launcherOpen || hover.hovered ? Theme.barAccentFg : Theme.barAccent
     }
 
     HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }

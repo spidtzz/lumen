@@ -37,32 +37,68 @@ Page {
                 onPicked: v => Theme.setValue("corners", v)
             }
         }
+        SettingRow {
+            label: "Rounded screen corners"
+            description: "Rounds the corners of the screen itself, like a phone or a MacBook."
+            Toggle {
+                checked: Theme.screenCorners
+                onToggled: c => Theme.setValue("screen_corners", c)
+            }
+        }
     }
 
     Card {
         title: "Accent colour"
-        description: "Used for selections, focused windows and highlights."
+        description: "Used for selections, the focused window and highlights."
+
+        // Fixed-size tiles, so choosing one never moves the others.
         Flow {
             Layout.fillWidth: true
-            spacing: 18
+            spacing: 10
             Repeater {
                 model: accents
-                delegate: ColumnLayout {
+                delegate: Rectangle {
+                    id: tile
                     required property var modelData
-                    spacing: 8
-                    Swatch {
-                        Layout.alignment: Qt.AlignHCenter
-                        swatch: Theme.dark ? modelData.dark : modelData.light
-                        selected: Theme.accentName === modelData.id
-                        onClicked: Theme.setValue("accent", modelData.id)
+                    readonly property bool selected: Theme.accentName === modelData.id
+                    readonly property color swatch: Theme.dark ? modelData.dark : modelData.light
+
+                    width: 92
+                    height: 88
+                    radius: Theme.radiusSmall
+                    color: selected ? Theme.field : tileHover.hovered ? Theme.field : "transparent"
+                    border.width: selected ? 2 : 1
+                    border.color: selected ? tile.swatch : Theme.line
+                    Behavior on color { ColorAnimation { duration: Theme.animFast } }
+
+                    Rectangle {
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        y: 14
+                        width: 34
+                        height: 34
+                        radius: Theme.r(17)
+                        color: tile.swatch
+                        Icon {
+                            anchors.centerIn: parent
+                            visible: tile.selected
+                            name: "check"
+                            size: 18
+                            stroke: 2.6
+                            color: Theme.dark ? "#101010" : "#ffffff"
+                        }
                     }
                     Txt {
-                        Layout.alignment: Qt.AlignHCenter
-                        text: modelData.label
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.bottom: parent.bottom
+                        anchors.bottomMargin: 12
+                        text: tile.modelData.label
                         size: 12
-                        muted: Theme.accentName !== modelData.id
-                        strong: Theme.accentName === modelData.id
+                        strong: true
+                        muted: !tile.selected
+                        wrapMode: Text.NoWrap
                     }
+                    HoverHandler { id: tileHover; cursorShape: Qt.PointingHandCursor }
+                    TapHandler { onTapped: Theme.setValue("accent", tile.modelData.id) }
                 }
             }
         }

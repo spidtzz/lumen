@@ -37,6 +37,9 @@ Singleton {
         flash(sink.audio.muted || v === 0 ? "volume-x" : "volume", sink.audio.muted ? 0 : v,
               sink.audio.muted ? "Muted" : Math.round(v * 100) + "%");
     }
+    // Volume keys change it by this much (Settings > Sound).
+    readonly property real step: Math.max(1, Math.min(20, +(Theme.conf.volume_step || 5))) / 100
+
     function volume(step) {
         if (!sink || !sink.audio) return;
         sink.audio.muted = false;

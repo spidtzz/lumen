@@ -60,7 +60,11 @@ const NAMES = {
     bracketleft: "[", bracketright: "]", left: "←", right: "→", up: "↑", down: "↓",
     prior: "Page Up", next: "Page Down", home: "Home", end: "End", insert: "Insert",
     button1: "Left click", button2: "Middle click", button3: "Right click",
-    button4: "Scroll up", button5: "Scroll down"
+    button4: "Scroll up", button5: "Scroll down",
+    xf86audioraisevolume: "Volume +", xf86audiolowervolume: "Volume −", xf86audiomute: "Mute",
+    xf86audiomicmute: "Mic mute", xf86monbrightnessup: "Brightness +", xf86monbrightnessdown: "Brightness −",
+    xf86audioplay: "Play", xf86audiopause: "Pause", xf86audionext: "Next track",
+    xf86audioprev: "Previous track", xf86audiostop: "Stop"
 };
 
 // "super" -> "Super", "{h,j,k,l}" -> "H / J / K / L", "{1-9,0}" -> "1–9 / 0",

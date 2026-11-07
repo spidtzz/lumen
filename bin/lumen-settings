@@ -33,6 +33,10 @@ SCHEMA=(
 	"mode~dark~^(light|dark)$~theme"
 	"accent~blue~^(blue|violet|teal|green|orange|pink|mono)$~theme"
 	"bar_position~top~^(top|bottom|left|right)$~-"
+	"bar_style~floating~^(floating|attached)$~-"
+	"bar_black~false~^(true|false)$~-"
+	"screen_corners~false~^(true|false)$~-"
+	"volume_step~5~^([1-9]|1[0-9]|20)$~-"
 	"font~Space Grotesk~^[A-Za-z0-9 ._-]{1,64}$~theme"
 	"font_size~10~^([6-9]|1[0-9]|2[0-4])$~theme"
 	"mono_font~JetBrains Mono~^[A-Za-z0-9 ._-]{1,64}$~theme"
@@ -47,6 +51,7 @@ SCHEMA=(
 	"notif_position~top-right~^(top|bottom)-(left|center|right)$~-"
 	"bar_workspaces~5~^([3-9]|10)$~-"
 	"tray_grouped~true~^(true|false)$~-"
+	"qs_media~true~^(true|false)$~-"
 	"idle_lock~10~^(0|5|10|15|30|60)$~idle"
 	"kb_layouts~us~^[a-z]{2,3}(,[a-z]{2,3}){0,3}$~input"
 	"kb_switch~alt_shift~^(alt_shift|ctrl_shift|caps)$~input"
@@ -278,6 +283,8 @@ picom_config() {
 	colour=$(accent_colour)
 	rules+=("{ match = \"window_type = ${q}dock${q} || window_type = ${q}desktop${q}\"; shadow = false; corner-radius = 0; }")
 	rules+=("{ match = \"fullscreen\"; corner-radius = 0; }")
+	# lumen's rounded screen corners: tiny pieces drawn above everything
+	rules+=("{ match = \"override_redirect && width <= 32 && height <= 32\"; shadow = false; corner-radius = 0; fade = false; }")
 	# GTK windows that draw their own shadow
 	rules+=("{ match = \"_GTK_FRAME_EXTENTS@\"; shadow = false; }")
 	case $(focus_style) in

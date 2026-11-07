@@ -11,7 +11,7 @@ BarButton {
     readonly property var sink: Pipewire.defaultAudioSink
     readonly property var wifi: Network.devices.find(d => d.type === "wifi" && d.state === "connected")
     readonly property var wired: Network.devices.find(d => d.type === "ethernet" && d.state === "connected")
-    readonly property color fg: open ? Theme.accentFg : Theme.ink
+    readonly property color fg: open ? Theme.barAccentFg : Theme.barInk
 
     open: Panels.popup === "qs" && Panels.popupScreen === bar.screen
     onClicked: Panels.togglePopup("qs", bar.screen, bar.anchorOf(btn))
@@ -46,9 +46,9 @@ BarButton {
                 anchors.right: parent.right
                 anchors.top: parent.top
                 anchors.margins: -1
-                color: btn.open ? Theme.accentFg : Theme.accent
+                color: btn.open ? Theme.barAccentFg : Theme.barAccent
                 border.width: 1
-                border.color: btn.open ? Theme.accent : Theme.panel
+                border.color: btn.open ? Theme.barAccent : Theme.barBg
             }
         }
     }

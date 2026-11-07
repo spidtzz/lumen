@@ -26,6 +26,6 @@ BarButton {
         font.family: Theme.fontFamily
         font.pixelSize: Math.round(12 * Theme.fontScale)
         font.weight: Font.Bold
-        color: btn.open ? Theme.accentFg : Theme.ink
+        color: btn.open ? Theme.barAccentFg : Theme.barInk
     }
 }

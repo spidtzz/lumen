@@ -32,6 +32,6 @@ BarButton {
         font.pixelSize: Math.round(15 * Theme.fontScale)
         font.weight: Font.Bold
         font.features: ({ "tnum": 1 })   // digits of equal width
-        color: btn.open ? Theme.accentFg : Theme.ink
+        color: btn.open ? Theme.barAccentFg : Theme.barInk
     }
 }

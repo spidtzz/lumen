@@ -15,5 +15,5 @@ Text {
     font.family: Theme.fontFamily
     font.pixelSize: Math.round(15 * Theme.fontScale)
     font.weight: Font.Bold
-    color: empty ? Theme.muted : Theme.ink
+    color: empty ? Theme.barMuted : Theme.barInk
 }

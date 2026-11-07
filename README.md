@@ -66,6 +66,7 @@ chosen others in `~/.config/mimeapps.list`.
 | `super + t` / `super + f` | Tiled / fullscreen |
 | `super + shift + f` | Float the window (again to tile it) |
 | `super + m` | Monocle layout |
+| Volume, mute, mic, brightness, play/pause, next/previous keys | Work as labelled; volume and brightness show their level on screen |
 | `super + Escape` | Reload shortcuts |
 | `super + alt + r` / `super + alt + q` | Restart bspwm / log out |
 
@@ -89,8 +90,9 @@ The full list is in [`config/sxhkd/sxhkdrc`](config/sxhkd/sxhkdrc).
 - **Quick settings** — your picture, Settings, and a power menu (lock, log out, restart,
   shut down); toggles for Wi-Fi, Bluetooth, dark style, Do Not Disturb, performance
   mode and keep awake (no screen blanking or idle lock until you turn it off);
-  right-click a toggle for its settings; volume and screen brightness; and your
-  notifications. Visual effects are in Settings › Performance.
+  right-click a toggle for its settings; volume and screen brightness; media controls
+  for whatever is playing (MPRIS: music apps, browsers, mpv; can be turned off in
+  Settings › Bar); and your notifications. Visual effects are in Settings › Performance.
 
 Popups and notifications are drawn above all windows. Click elsewhere, or the same
 button again, to close them. Notifications can appear in any corner or edge centre
@@ -152,11 +154,11 @@ about mouse clicks while a bar popup is open, so clicking elsewhere closes it.
 | --- | --- | --- |
 | Network | wired and Wi-Fi, connect with password | NetworkManager (nmcli) |
 | Bluetooth | on/off, find, pair, connect, forget devices | BlueZ |
-| Appearance | light/dark, accent, rounded or square corners, text size, focused window outline, title-bar buttons | lumen-theme |
+| Appearance | light/dark, accent, rounded or square corners, rounded screen corners, text size, focused window highlight, title-bar buttons | lumen-theme |
 | Wallpaper | pictures from `~/Pictures/Wallpapers` (optionally its subfolders), system wallpapers or anywhere, or the theme colour; fill, fit, centre, tile, stretch | hsetroot |
-| Bar | edge, workspaces per page, clock, tray grouping, pinned and custom tray icons | |
+| Bar | floating or edge to edge (curved into rounded screen corners), black bar, edge, workspaces per page, clock, media controls, tray grouping, pinned and custom tray icons | |
 | Displays | resolution, refresh rate, rotation, primary, arrangement — undone after 15 s unless kept | xrandr |
-| Sound | output and input device, volume, mute | PipeWire (built into Quickshell) |
+| Sound | output and input device, volume, mute, volume key step | PipeWire (built into Quickshell) |
 | Keyboard & Mouse | up to four layouts (e.g. English + Persian) in order, switch keys, key repeat, focus follows mouse, pointer speed, natural scrolling, tap to click | setxkbmap, xset, xinput, bspwm |
 | Date & Time | time zone, network time, 24-hour clock | timedatectl |
 | Notifications | pop-up position, Do Not Disturb, clear history, test notification | |

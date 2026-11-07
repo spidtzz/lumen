@@ -19,7 +19,7 @@ Rectangle {
     implicitWidth: vertical ? 26 : Math.ceil(contentWidth > 0 ? contentWidth : inner.childrenRect.width) + padding * 2
     implicitHeight: vertical ? inner.childrenRect.height + padding * 2 : 26
     radius: Theme.r(13)
-    color: open ? Theme.accent : hover.hovered ? Theme.field : "transparent"
+    color: open ? Theme.barAccent : hover.hovered ? Theme.barField : "transparent"
     Behavior on color { ColorAnimation { duration: Theme.animFast } }
 
     Item {

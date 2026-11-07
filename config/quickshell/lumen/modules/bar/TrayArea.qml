@@ -38,7 +38,7 @@ Grid {
                 return expander.open ? "chevron-up" : "chevron-down";
             }
             size: 15
-            color: expander.open ? Theme.accentFg : Theme.ink
+            color: expander.open ? Theme.barAccentFg : Theme.barInk
         }
     }
 

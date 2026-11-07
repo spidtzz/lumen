@@ -26,8 +26,12 @@ PanelWindow {
         left: win.edge !== "right"
         right: win.edge !== "left"
     }
-    implicitHeight: vertical ? 0 : Theme.barThickness
-    implicitWidth: vertical ? Theme.barThickness : 0
+    implicitHeight: vertical ? 0 : Theme.barDepth
+    implicitWidth: vertical ? Theme.barDepth : 0
+
+    // This window's position on the screen, for placing popups in screen terms.
+    readonly property int screenX: edge === "right" && screen ? screen.width - Theme.barDepth : 0
+    readonly property int screenY: edge === "bottom" && screen ? screen.height - Theme.barDepth : 0
 
     // bspwm padding is managed by shell.qml, so don't reserve space twice.
     exclusionMode: ExclusionMode.Ignore
@@ -57,28 +61,52 @@ PanelWindow {
     function popupRect(w, h, anchor) {
         const g = Theme.gap;
         const has = anchor && anchor.width > 0;
+        // The bar's inner edge, in this window's coordinates.
+        const inner = edge === "top" || edge === "left" ? Theme.barOuter : Theme.barDepth - Theme.barOuter;
         if (!vertical) {
             const x = has ? anchor.x + anchor.width / 2 - w / 2 : width - w - g;
-            return Qt.rect(Math.max(g, Math.min(x, width - w - g)), edge === "top" ? height + 4 : -h - 4, 1, 1);
+            return Qt.rect(Math.max(g, Math.min(x, width - w - g)), edge === "top" ? inner + 4 : inner - h - 4, 1, 1);
         }
         const y = has ? anchor.y : g;
-        return Qt.rect(edge === "left" ? width + 4 : -w - 4, Math.max(g, Math.min(y, height - h - g)), 1, 1);
+        return Qt.rect(edge === "left" ? inner + 4 : inner - w - 4, Math.max(g, Math.min(y, height - h - g)), 1, 1);
+    }
+
+    // Edge to edge: the curved ends that lead into rounded screen corners.
+    Repeater {
+        model: Theme.barFillets ? (win.edge === "top" ? ["top-left", "top-right"]
+            : win.edge === "bottom" ? ["bottom-left", "bottom-right"]
+            : win.edge === "left" ? ["top-left", "bottom-left"] : ["top-right", "bottom-right"]) : []
+        delegate: Fillet {
+            required property string modelData
+            corner: modelData
+            r: Theme.screenRadius
+            fill: Theme.barBg
+            x: win.edge === "left" ? Theme.barSize
+             : win.edge === "right" ? win.width - Theme.barSize - r
+             : modelData.endsWith("left") ? 0 : win.width - r
+            y: win.edge === "top" ? Theme.barSize
+             : win.edge === "bottom" ? win.height - Theme.barSize - r
+             : modelData.startsWith("top") ? 0 : win.height - r
+        }
     }
 
     Rectangle {
         id: body
         anchors.fill: parent
-        // Gap on the screen edge and both sides; none toward the windows,
-        // because bspwm's window_gap already spaces them.
-        anchors.topMargin: win.edge === "bottom" ? 0 : Theme.gap
-        anchors.bottomMargin: win.edge === "top" ? 0 : Theme.gap
-        anchors.leftMargin: win.edge === "right" ? 0 : Theme.gap
-        anchors.rightMargin: win.edge === "left" ? 0 : Theme.gap
+        // Floating: a gap on the screen edge and both sides; none toward the
+        // windows, because bspwm's window_gap already spaces them.
+        // Edge to edge: no gaps, and room for the curved ends.
+        readonly property int g: Theme.barAttached ? 0 : Theme.gap
+        readonly property int extra: Theme.barDepth - Theme.barOuter   // room for the curved ends
+        anchors.topMargin: win.edge === "bottom" ? (Theme.barAttached ? extra : 0) : g
+        anchors.bottomMargin: win.edge === "top" ? (Theme.barAttached ? extra : 0) : g
+        anchors.leftMargin: win.edge === "right" ? (Theme.barAttached ? extra : 0) : g
+        anchors.rightMargin: win.edge === "left" ? (Theme.barAttached ? extra : 0) : g
 
-        radius: Theme.radius
-        color: Theme.panel
-        border.color: Theme.line
-        border.width: 1
+        radius: Theme.barAttached ? 0 : Theme.radius
+        color: Theme.barBg
+        border.color: Theme.barLine
+        border.width: Theme.barAttached ? 0 : 1
 
         HoverHandler { onHoveredChanged: Panels.barHovered = hovered }
 
@@ -195,6 +223,84 @@ PanelWindow {
         }
     }
 
+    // ---- rounded screen corners (Settings > Appearance) ----
+    // Small black corner pieces above everything, one per screen corner.
+    Variants {
+        model: Theme.screenCorners ? ["top-left", "top-right", "bottom-left", "bottom-right"] : []
+        PopupWindow {
+            id: cornerWin
+            required property string modelData
+            anchor.window: win
+            anchor.rect: Qt.rect((modelData.endsWith("left") ? 0 : win.screen.width - Theme.screenRadius) - win.screenX,
+                                 (modelData.startsWith("top") ? 0 : win.screen.height - Theme.screenRadius) - win.screenY, 1, 1)
+            implicitWidth: Theme.screenRadius
+            implicitHeight: Theme.screenRadius
+            color: "transparent"
+            visible: true
+            Fillet { corner: cornerWin.modelData; r: Theme.screenRadius; fill: "black" }
+        }
+    }
+
+    // ---- volume / brightness level (media keys), on the focused screen ----
+    // Bottom centre, kept clear of the bar.
+    PopupWindow {
+        id: osdHost
+
+        readonly property int w: 280
+        anchor.window: win
+        anchor.rect: {
+            const sw = win.screen.width, sh = win.screen.height;
+            const x = (sw - w) / 2;
+            const y = sh - implicitHeight - (win.edge === "bottom" ? Theme.barReserve + 24 : 48);
+            return Qt.rect(x - win.screenX, y - win.screenY, 1, 1);
+        }
+        implicitWidth: w
+        implicitHeight: 56
+        color: "transparent"
+        visible: Osd.shown && win.screen === Panels.focusedScreen()
+
+        Rectangle {
+            anchors.fill: parent
+            radius: Theme.radius
+            color: Theme.panel
+            border.width: 1
+            border.color: Theme.line
+
+            Row {
+                anchors.verticalCenter: parent.verticalCenter
+                anchors.left: parent.left
+                anchors.leftMargin: 18
+                spacing: 14
+                Icon { anchors.verticalCenter: parent.verticalCenter; name: Osd.icon; size: 20 }
+                Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: osdHost.w - 18 - 20 - 14 - 14 - 52 - 18
+                    height: 8
+                    radius: Theme.r(4)
+                    color: Theme.field
+                    border.width: 1
+                    border.color: Theme.line
+                    Rectangle {
+                        width: parent.width * Math.max(0, Math.min(1, Osd.level))
+                        height: parent.height
+                        radius: parent.radius
+                        color: Theme.accent
+                        Behavior on width { NumberAnimation { duration: Theme.animFast } }
+                    }
+                }
+                Txt {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 52
+                    text: Osd.label
+                    size: 12
+                    strong: true
+                    wrapMode: Text.NoWrap
+                    elide: Text.ElideRight
+                }
+            }
+        }
+    }
+
     // ---- notification popups (on the focused screen) ----
     // Corner or edge from Settings > Notifications, kept clear of the bar.
     PopupWindow {
@@ -204,7 +310,7 @@ PanelWindow {
         readonly property var pos: (Theme.conf.notif_position || "top-right").split("-")
         anchor.window: win
         anchor.rect: {
-            const g = Theme.gap, t = Theme.barThickness;
+            const g = Theme.gap, t = Theme.barReserve;
             const sw = win.screen.width, sh = win.screen.height, h = implicitHeight;
             // The free area of the screen, in screen coordinates.
             const left = (win.edge === "left" ? t + 4 : g);
@@ -213,10 +319,7 @@ PanelWindow {
             const bottom = sh - (win.edge === "bottom" ? t + 4 : g);
             const x = pos[1] === "left" ? left : pos[1] === "center" ? (sw - w) / 2 : right - w;
             const y = pos[0] === "bottom" ? bottom - h : top;
-            // This bar window's position on the screen.
-            const ox = win.edge === "right" ? sw - t : 0;
-            const oy = win.edge === "bottom" ? sh - t : 0;
-            return Qt.rect(x - ox, y - oy, 1, 1);
+            return Qt.rect(x - win.screenX, y - win.screenY, 1, 1);
         }
         implicitWidth: w
         implicitHeight: Math.max(1, notifStack.implicitHeight)

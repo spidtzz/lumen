@@ -20,7 +20,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         radius: Theme.r(8)
-        color: mouse.containsMouse ? Theme.field : "transparent"
+        color: mouse.containsMouse ? (root.bar ? Theme.barField : Theme.field) : "transparent"
     }
 
     IconImage {

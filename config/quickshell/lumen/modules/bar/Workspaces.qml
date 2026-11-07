@@ -41,13 +41,13 @@ Grid {
         width: arrow.ws.vertical ? 26 : 16
         height: arrow.ws.vertical ? 16 : 26
         radius: Theme.r(8)
-        color: arrowHover.hovered ? Theme.field : "transparent"
+        color: arrowHover.hovered ? Theme.barField : "transparent"
         Icon {
             anchors.centerIn: parent
             name: arrow.ws.vertical ? (arrow.forward ? "chevron-down" : "chevron-up")
                                 : (arrow.forward ? "chevron-right" : "chevron-left")
             size: 13
-            color: Theme.muted
+            color: Theme.barMuted
         }
         HoverHandler { id: arrowHover; cursorShape: Qt.PointingHandCursor }
         TapHandler {
@@ -73,7 +73,7 @@ Grid {
             width: root.vertical ? 26 : along
             height: root.vertical ? along : 26
             radius: Theme.r(13)
-            color: active ? Theme.accent : (hover.hovered ? Theme.field : "transparent")
+            color: active ? Theme.barAccent : (hover.hovered ? Theme.barField : "transparent")
             border.width: modelData.urgent && !active ? 1 : 0
             border.color: Theme.danger
 
@@ -87,15 +87,15 @@ Grid {
                 font.family: Theme.fontFamily
                 font.pixelSize: Math.round(13 * Theme.fontScale)
                 font.weight: Font.Bold
-                color: chip.active ? Theme.accentFg
-                     : chip.modelData.occupied ? Theme.ink : Theme.muted
+                color: chip.active ? Theme.barAccentFg
+                     : chip.modelData.occupied ? Theme.barInk : Theme.barMuted
                 opacity: chip.active || chip.modelData.occupied ? 1 : 0.6
             }
 
             Rectangle {
                 visible: chip.modelData.occupied && !chip.active
                 width: 4; height: 4; radius: Theme.r(2)
-                color: Theme.accent
+                color: Theme.barAccent
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.bottom: parent.bottom
                 anchors.bottomMargin: 2

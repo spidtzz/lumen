@@ -30,6 +30,33 @@ Singleton {
     readonly property bool rounded: conf.corners !== "square"     // Settings > Appearance
     readonly property bool animations: conf.animations !== "false" // Settings > Performance
 
+    // ---- bar style (Settings > Bar) and screen corners (Settings > Appearance) ----
+    readonly property bool barAttached: conf.bar_style === "attached"   // edge to edge, no gap
+    readonly property bool barBlack: conf.bar_black === "true"
+    readonly property bool screenCorners: conf.screen_corners === "true"
+    readonly property int screenRadius: 16
+    // An attached bar curves into the screen at both ends when the screen has
+    // rounded corners (and the theme is rounded).
+    readonly property bool barFillets: barAttached && screenCorners && rounded
+    // Distance from the screen edge to the bar's inner edge.
+    readonly property int barOuter: barAttached ? barSize : barThickness
+    // Space bspwm keeps free for the bar.
+    readonly property int barReserve: barAttached ? barSize + gap : barThickness
+    // Thickness of the bar's window (with room for the curved ends).
+    readonly property int barDepth: barAttached ? barSize + (barFillets ? screenRadius : 0) : barThickness
+
+    // Bar colours: the theme, or black with light content.
+    readonly property color barBg: barBlack ? "#000000" : panel
+    readonly property color barInk: barBlack ? "#f2f2f2" : ink
+    readonly property color barMuted: barBlack ? "#9b9b9b" : muted
+    readonly property color barField: barBlack ? "#1e1e1e" : field
+    readonly property color barLine: barBlack ? "#000000" : line
+    // On black, the dark-mode accent (light themes' accents can be too dark).
+    property color darkAccent: accent
+    property color darkAccentFg: accentFg
+    readonly property color barAccent: barBlack ? darkAccent : accent
+    readonly property color barAccentFg: barBlack ? darkAccentFg : accentFg
+
     // ---- palette (same names as the UI demo) ----
     property color bg: "#070f1f"
     property color panel: "#101a2d"
@@ -113,6 +140,17 @@ Singleton {
                 root.monoFamily = c.mono_font;
             if (parseInt(c.font_size) > 0)
                 root.fontSize = parseInt(c.font_size);
+        }
+    }
+
+    FileView {
+        path: root.dataHome + "/lumen/palettes/" + root.accentName + "-dark.conf"
+        watchChanges: true
+        onFileChanged: reload()
+        onLoaded: {
+            const p = root.parseConf(text());
+            if (p.accent) root.darkAccent = p.accent;
+            if (p.on_accent) root.darkAccentFg = p.on_accent;
         }
     }
 

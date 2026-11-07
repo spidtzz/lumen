@@ -32,7 +32,7 @@ BarButton {
             font.pixelSize: Math.round(12 * Theme.fontScale)
             font.weight: Font.Bold
             font.features: ({ "tnum": 1 })
-            color: Theme.ink
+            color: Theme.barInk
         }
     }
 }

@@ -23,9 +23,14 @@ ShellRoot {
         Bar {}
     }
     Timer {
-        id: rebuildBars
+        id: rebuildTimer
         interval: 60
         onTriggered: root.barsShown = true
+    }
+    function rebuildBars() {
+        Panels.closePopup();
+        barsShown = false;
+        rebuildTimer.restart();
     }
 
     // The notification server (popups are shown by each bar).
@@ -42,17 +47,14 @@ ShellRoot {
     function syncPadding() {
         for (const e of ["top", "bottom", "left", "right"])
             Quickshell.execDetached(["bspc", "config", e + "_padding",
-                String(e === Theme.barPosition ? Theme.barThickness : 0)]);
+                String(e === Theme.barPosition ? Theme.barReserve : 0)]);
     }
 
     Connections {
         target: Theme
-        function onBarPositionChanged() {
-            root.syncPadding();
-            Panels.closePopup();
-            root.barsShown = false;
-            rebuildBars.restart();
-        }
+        function onBarReserveChanged() { root.syncPadding(); }
+        function onBarPositionChanged() { root.syncPadding(); root.rebuildBars(); }
+        function onBarDepthChanged() { root.rebuildBars(); }
     }
 
 
@@ -68,11 +70,26 @@ ShellRoot {
         function toggle(): void { Panels.toggleSettings(); }
         function open(page: string): void { Panels.openSettings(page); }
         function show(): void { Panels.openSettings(Panels.settingsPage); }
+        function close(): void { Panels.settingsOpen = false; }
     }
     IpcHandler {
         target: "debug"
         function bar(): string { return Panels.bars.map(b => b.debugInfo()).join("\n"); }
-        function close(): void { Panels.settingsOpen = false; }
+    }
+
+    // Volume, brightness and media keys (sxhkdrc).
+    IpcHandler {
+        target: "media"
+        function volumeUp(): void { Osd.volume(Osd.step); }
+        function volumeDown(): void { Osd.volume(-Osd.step); }
+        function mute(): void { Osd.toggleMute(); }
+        function micMute(): void { Osd.toggleMic(); }
+        function brightnessUp(): void { Osd.brightness(0.05); }
+        function brightnessDown(): void { Osd.brightness(-0.05); }
+        function playPause(): void { Osd.playPause(); }
+        function next(): void { Osd.next(); }
+        function previous(): void { Osd.previous(); }
+        function stop(): void { Osd.stop(); }
     }
 
     // Clipboard history, created when opened.

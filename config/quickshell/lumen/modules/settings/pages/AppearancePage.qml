@@ -96,10 +96,12 @@ Page {
     Card {
         title: "Windows"
         SettingRow {
-            label: "Focused window outline"
+            label: "Highlight the focused window"
             description: Theme.conf.compositor === "false"
-                ? "Always shown while the compositor is off (Settings › Performance)."
-                : "An accent-coloured border around the window you're using. Off: other windows are slightly dimmed instead."
+                ? "An accent outline. Always on while the compositor is off (Settings › Performance)."
+                : Theme.rounded
+                  ? "A soft accent glow around the window you're using (it follows the rounded corners). Off: other windows are slightly dimmed instead."
+                  : "An accent outline around the window you're using. Off: other windows are slightly dimmed instead."
             Toggle {
                 enabled: Theme.conf.compositor !== "false"
                 checked: Theme.conf.window_border !== "false"

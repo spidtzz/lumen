@@ -165,6 +165,9 @@ PopupCard {
         }
     }
 
+    // ---- media (Settings > Bar > Quick settings) ----
+    MediaCard {}
+
     Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: Theme.line }
 
     // ---- notifications ----

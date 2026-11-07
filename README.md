@@ -89,8 +89,9 @@ The full list is in [`config/sxhkd/sxhkdrc`](config/sxhkd/sxhkdrc).
 - **Quick settings** — your picture, Settings, and a power menu (lock, log out, restart,
   shut down); toggles for Wi-Fi, Bluetooth, dark style, Do Not Disturb, performance
   mode and keep awake (no screen blanking or idle lock until you turn it off);
-  right-click a toggle for its settings; volume and screen brightness; and your
-  notifications. Visual effects are in Settings › Performance.
+  right-click a toggle for its settings; volume and screen brightness; media controls
+  for whatever is playing (MPRIS: music apps, browsers, mpv; can be turned off in
+  Settings › Bar); and your notifications. Visual effects are in Settings › Performance.
 
 Popups and notifications are drawn above all windows. Click elsewhere, or the same
 button again, to close them. Notifications can appear in any corner or edge centre
@@ -154,7 +155,7 @@ about mouse clicks while a bar popup is open, so clicking elsewhere closes it.
 | Bluetooth | on/off, find, pair, connect, forget devices | BlueZ |
 | Appearance | light/dark, accent, rounded or square corners, text size, focused window outline, title-bar buttons | lumen-theme |
 | Wallpaper | pictures from `~/Pictures/Wallpapers` (optionally its subfolders), system wallpapers or anywhere, or the theme colour; fill, fit, centre, tile, stretch | hsetroot |
-| Bar | edge, workspaces per page, clock, tray grouping, pinned and custom tray icons | |
+| Bar | edge, workspaces per page, clock, media controls in quick settings, tray grouping, pinned and custom tray icons | |
 | Displays | resolution, refresh rate, rotation, primary, arrangement — undone after 15 s unless kept | xrandr |
 | Sound | output and input device, volume, mute | PipeWire (built into Quickshell) |
 | Keyboard & Mouse | up to four layouts (e.g. English + Persian) in order, switch keys, key repeat, focus follows mouse, pointer speed, natural scrolling, tap to click | setxkbmap, xset, xinput, bspwm |
@@ -215,10 +216,12 @@ lumen-theme set corners square   # rounded square
 windows (picom) and the login screen. Qt apps use Qt's Fusion style, whose corners are
 already nearly square, and there's no global setting to change them further.
 
-The focused window gets an accent-coloured outline (Settings › Appearance › Windows).
-Turn it off and windows you're not using are slightly dimmed instead. bspwm draws the
-outline as a square frame, so with rounded corners it can look cut at the corners
-(clearly so in a virtual machine).
+The focused window is highlighted in the accent colour (Settings › Appearance › Windows):
+with square corners by bspwm's outline, with rounded corners by a soft glow from picom
+(bspwm's outline is a square frame picom can't round, so it would look cut at the
+corners). Turned off, windows you're not using are slightly dimmed instead. picom runs
+with `~/.local/state/lumen/picom.conf`, which includes your `~/.config/picom/picom.conf`
+and adds these window rules.
 
 File pickers (Open/Save dialogs) come from `xdg-desktop-portal-gtk` for every app
 (`GTK_USE_PORTAL=1`), so they follow light/dark even in Firefox and Thunderbird.

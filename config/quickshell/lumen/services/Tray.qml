@@ -30,10 +30,16 @@ Singleton {
         adapter.icons = m;
     }
 
+    // A custom icon that can't be found falls back to the app's own icon.
     function iconFor(item) {
         const o = adapter.icons[item.id];
-        if (o)
-            return o.startsWith("/") ? "file://" + o : Quickshell.iconPath(o, "image-missing");
+        if (o && o.startsWith("/"))
+            return "file://" + o;
+        if (o) {
+            const p = Quickshell.iconPath(o, true);
+            if (p !== "")
+                return p;
+        }
         return item.icon;
     }
 

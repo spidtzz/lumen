@@ -80,8 +80,10 @@ pgrep -x xss-lock >/dev/null || xss-lock --transfer-sleep-lock -- lumen-lock &
 # Shell log for troubleshooting: ~/.local/state/lumen/quickshell.log
 LOGS="${XDG_STATE_HOME:-$HOME/.local/state}/lumen"
 mkdir -p "$LOGS"
+# QS_ICON_THEME: icon names (tray icons you set in Settings > Bar) come from
+# the same icon theme as your apps.
 pgrep -f 'quickshell -c lumen' >/dev/null ||
-	quickshell -c lumen >"$LOGS/quickshell.log" 2>&1 &
+	QS_ICON_THEME=$(lumen-theme icon-theme 2>/dev/null) quickshell -c lumen >"$LOGS/quickshell.log" 2>&1 &
 
 # Per-user additions that survive updates.
 [ -x "$HOME/.config/bspwm/autostart" ] && "$HOME/.config/bspwm/autostart" &

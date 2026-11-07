@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import QtQuick.Dialogs
 import Quickshell
 import Quickshell.Widgets
 import qs.services
@@ -9,6 +10,16 @@ Page {
     id: page
     title: "Bar"
     description: "Position, workspaces, clock and tray icons. The bar shows the focused app on the left, workspaces in the middle, and tray, time and quick settings on the right."
+
+    // Picture for a tray icon (the button next to the icon name).
+    FileDialog {
+        id: iconPicker
+        property string target: ""
+        title: "Choose an icon picture"
+        nameFilters: ["Images (*.png *.svg *.jpg *.jpeg *.webp)"]
+        currentFolder: "file://" + Theme.home + "/Pictures"
+        onAccepted: Tray.setIcon(target, decodeURIComponent(String(selectedFile).replace(/^file:\/\//, "")))
+    }
 
     Card {
         title: "Position"
@@ -136,14 +147,23 @@ Page {
                         spacing: 8
                         Field {
                             id: iconField
+                            // An icon name from your icon theme, or a picture.
+                            readonly property string typed: text.trim()
+                            readonly property bool found: typed === "" || typed.startsWith("/")
+                                || Quickshell.iconPath(typed, true) !== ""
                             Layout.fillWidth: true
                             placeholderText: "Custom icon: icon name (e.g. discord) or image path"
                             text: Tray.icons[row.itemId] || ""
-                            onAccepted: Tray.setIcon(row.itemId, text)
+                            onAccepted: if (found) Tray.setIcon(row.itemId, text)
+                        }
+                        Btn {
+                            icon: "image"
+                            variant: "ghost"
+                            onClicked: { iconPicker.target = row.itemId; iconPicker.open(); }
                         }
                         Btn {
                             text: "Set"
-                            enabled: iconField.text !== (Tray.icons[row.itemId] || "")
+                            enabled: iconField.found && iconField.text !== (Tray.icons[row.itemId] || "")
                             onClicked: Tray.setIcon(row.itemId, iconField.text)
                         }
                         Btn {
@@ -152,6 +172,13 @@ Page {
                             enabled: (Tray.icons[row.itemId] || "") !== ""
                             onClicked: { iconField.text = ""; Tray.setIcon(row.itemId, ""); }
                         }
+                    }
+                    Txt {
+                        visible: !iconField.found
+                        text: "No icon called “" + iconField.typed + "” in your icon theme. Try another name, or pick a picture."
+                        size: 12
+                        color: Theme.danger
+                        Layout.fillWidth: true
                     }
                 }
             }

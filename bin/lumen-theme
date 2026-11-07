@@ -416,6 +416,7 @@ case $cmd in
 		;;
 	set) exec "$SETTINGS_BIN" set "$@" ;;
 	get) exec "$SETTINGS_BIN" get "$@" ;;
+	icon-theme) load_settings; icon_theme; echo ;;   # for QS_ICON_THEME
 	toggle-mode)
 		load_settings
 		[[ $mode == dark ]] && next=light || next=dark

@@ -1,3 +1,5 @@
+<p align="center"><img src="share/icons/hicolor/scalable/apps/lumen.svg" width="112" alt="lumen logo"></p>
+
 # lumen
 
 A lightweight desktop for **bspwm on X11**, built with [Quickshell](https://quickshell.outfoxxed.me).

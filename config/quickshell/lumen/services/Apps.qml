@@ -46,7 +46,10 @@ Singleton {
         const c = Object.assign({}, adapter.counts);
         c[e.id] = (c[e.id] || 0) + 1;
         adapter.counts = c;
-        if (e.runInTerminal)
+        // lumen's own Settings entry: open it directly.
+        if (e.id === "lumen-settings")
+            Panels.openSettings(Panels.settingsPage);
+        else if (e.runInTerminal)
             Quickshell.execDetached(["kitty", "-e"].concat(e.command));
         else
             e.execute();

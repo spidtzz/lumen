@@ -1,2 +1,6 @@
 config/kitty/theme.conf
 assets/fonts/*.tmp
+# Fonts downloaded by the installer (tools/fetch-fonts.sh)
+assets/fonts/*.ttf
+assets/fonts/*.otf
+assets/fonts/*.txt

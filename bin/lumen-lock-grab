@@ -1,0 +1,124 @@
+#!/usr/bin/env python3
+"""lumen-lock-grab: take the whole keyboard and mouse for the lock screen.
+
+Started by the lock screen (lock.qml). It grabs the keyboard and pointer on
+the X root window, so while it runs no other program gets any input: no
+shortcuts (sxhkd), no clicks on the bar or windows, no focus changes. Keys are
+printed on stdout for the lock screen to show and check:
+
+    ready            both grabs succeeded
+    char <hex>       a typed character (Unicode code point)
+    backspace | clear | enter | escape
+    error <why>      the grab failed; the lock screen then exits so that
+                     lumen-lock falls back to i3lock
+
+X releases the grabs by itself if this program stops for any reason.
+"""
+import os
+import select
+import sys
+import time
+
+from Xlib import X, XK, display
+
+
+def emit(line):
+    sys.stdout.write(line + "\n")
+    sys.stdout.flush()
+
+
+# Keysyms that aren't plain Latin-1 or Unicode ones (old Arabic and Hebrew
+# codes, keypad keys).
+LEGACY = {0x5AC: 0x060C, 0x5BB: 0x061B, 0x5BF: 0x061F}
+LEGACY.update({0x5C1 + i: 0x0621 + i for i in range(0x5DA - 0x5C1 + 1)})
+LEGACY.update({0x5E0 + i: 0x0640 + i for i in range(0x5F2 - 0x5E0 + 1)})
+LEGACY.update({0xCE0 + i: 0x05D0 + i for i in range(0xCFA - 0xCE0 + 1)})
+LEGACY.update({0xFFB0 + i: ord("0") + i for i in range(10)})
+LEGACY.update({0xFFAA: ord("*"), 0xFFAB: ord("+"), 0xFFAD: ord("-"), 0xFFAE: ord("."), 0xFFAF: ord("/")})
+
+
+def to_char(keysym):
+    if 0x20 <= keysym <= 0x7E or 0xA0 <= keysym <= 0xFF:
+        return keysym
+    if keysym & 0xFF000000 == 0x01000000:
+        return keysym & 0x00FFFFFF
+    return LEGACY.get(keysym)
+
+
+def grab(d, root):
+    mask = X.ButtonPressMask | X.ButtonReleaseMask | X.PointerMotionMask
+    deadline = time.time() + 10
+    while True:
+        k = root.grab_keyboard(False, X.GrabModeAsync, X.GrabModeAsync, X.CurrentTime)
+        p = root.grab_pointer(False, mask, X.GrabModeAsync, X.GrabModeAsync, X.NONE, X.NONE, X.CurrentTime)
+        if k == X.GrabSuccess and p == X.GrabSuccess:
+            return True
+        # Another program holds a grab (an open menu, a drag): try again.
+        if k == X.GrabSuccess:
+            d.ungrab_keyboard(X.CurrentTime)
+        if p == X.GrabSuccess:
+            d.ungrab_pointer(X.CurrentTime)
+        d.flush()
+        if time.time() > deadline:
+            return False
+        time.sleep(0.1)
+
+
+def main():
+    d = display.Display()
+    root = d.screen().root
+    if not grab(d, root):
+        emit("error could not take the keyboard and mouse")
+        return 2
+    emit("ready")
+
+    parent = os.getppid()
+    while True:
+        # Stop (and so release the grabs) as soon as the lock screen is gone.
+        if os.getppid() != parent:
+            return 0
+        if not d.pending_events():
+            select.select([d.fileno()], [], [], 1.0)
+            continue
+        e = d.next_event()
+        if e.type == X.MappingNotify:
+            d.refresh_keyboard_mapping(e)   # keyboard layout switched
+            continue
+        if e.type != X.KeyPress:
+            continue
+
+        state = e.state
+        base = d.keycode_to_keysym(e.detail, 0)
+        if base in (XK.XK_Return, XK.XK_KP_Enter):
+            emit("enter")
+            continue
+        if base == XK.XK_BackSpace:
+            emit("clear" if state & X.ControlMask else "backspace")
+            continue
+        if base == XK.XK_Escape:
+            emit("escape")
+            continue
+        if state & X.ControlMask:
+            if base == XK.XK_u:
+                emit("clear")
+            continue
+        if state & X.Mod1Mask:   # Alt shortcuts type nothing
+            continue
+
+        shift = 1 if state & X.ShiftMask else 0
+        level3 = 4 if state & X.Mod5Mask else 0   # AltGr
+        keysym = d.keycode_to_keysym(e.detail, level3 + shift) or d.keycode_to_keysym(e.detail, shift) or base
+        code = to_char(keysym)
+        # Caps Lock: letters only, the other case.
+        if code is not None and state & X.LockMask:
+            c = chr(code)
+            code = ord(c.lower() if c.isupper() else c.upper()) if c.isalpha() else code
+        if code is not None:
+            emit("char %x" % code)
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        sys.exit(0)

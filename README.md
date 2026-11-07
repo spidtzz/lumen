@@ -129,10 +129,13 @@ never kept, and history can be turned off in Settings › Users. Uses `clipnotif
 
 ## Lock screen
 
-Same design as the login screen. It runs as a separate process from the bar, pauses
-global shortcuts while locked, and if it ever stops without your password, `i3lock`
-locks the screen instead. It locks after the idle time set in Settings › Users and
-before suspend (via `xss-lock`).
+Same design as the login screen, as a separate process from the bar. While it's up,
+a small helper (`lumen-lock-grab`, using python-xlib) takes the whole keyboard and mouse
+with an X grab: no shortcut, click or other window gets any input, and the bar and
+notifications are hidden. Type your password and press Enter (Ctrl+U or
+Ctrl+Backspace clears it; the layout switch keys work). If the lock screen ever stops
+without your password, or can't take the keyboard, `i3lock` locks the screen instead.
+It locks after the idle time set in Settings › Users and before suspend (via `xss-lock`).
 
 ```sh
 lumen-lock --test     # try it safely: Esc closes it
@@ -254,6 +257,7 @@ bin/lumen               open Settings, the launcher, files... from a terminal
 bin/lumen-settings      settings storage, validation and appliers
 bin/lumen-theme         theme engine (bash)
 bin/lumen-lock          lock screen launcher with i3lock fallback
+bin/lumen-lock-grab     takes the keyboard and mouse while locked
 bin/lumen-clipboard     clipboard history
 bin/lumen-capture       screenshots and recordings
 bin/lumen-avatar        profile picture

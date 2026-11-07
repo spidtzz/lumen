@@ -7,9 +7,10 @@
 #
 # The lock screen runs as its own Quickshell process, so a problem in the bar
 # can't unlock the session. Each monitor gets a fullscreen window above all
-# others; while it's up, global shortcuts are paused, apps can't request
-# focus, and keyboard focus is kept on the lock screen. If it ever exits
-# without a correct password, i3lock locks the screen instead.
+# others. lumen-lock-grab takes the whole keyboard and mouse (an X grab), so
+# no shortcut, click or other window can get past it; the bar and
+# notifications are hidden. If the lock screen ever exits without a correct
+# password, or can't take the keyboard, i3lock locks the screen instead.
 set -uo pipefail
 
 SHELL_DIR=${XDG_CONFIG_HOME:-$HOME/.config}/quickshell/lumen
@@ -27,6 +28,7 @@ flock -n 9 || exit 0
 guard_pid=""
 cleanup() {
 	[[ -n $guard_pid ]] && kill "$guard_pid" 2>/dev/null
+	qs -c lumen ipc call panels setLocked false >/dev/null 2>&1
 	[[ -n ${old_ewmh:-} ]] && bspc config ignore_ewmh_focus "$old_ewmh" 2>/dev/null
 	pkill -CONT -x sxhkd 2>/dev/null || true
 }
@@ -35,6 +37,8 @@ trap cleanup EXIT
 if ((TEST == 0)); then
 	pkill -STOP -x sxhkd 2>/dev/null || true # no shortcuts behind the lock
 fi
+# Hide the bar, its popups and notifications while locked.
+qs -c lumen ipc call panels setLocked true >/dev/null 2>&1
 
 # Apps can't ask bspwm for focus while locked (restored afterwards).
 old_ewmh=$(bspc config ignore_ewmh_focus 2>/dev/null)
@@ -63,6 +67,8 @@ guard_pid=$!
 
 wait "$qs_pid"
 status=$?
+# The input grab ends with the lock screen; make sure of it.
+pkill -f "lumen-lock-grab" 2>/dev/null || true
 
 # The lock screen exits with 0 only after a correct password (or Escape in
 # test mode). Anything else means it stopped unexpectedly: lock with i3lock.

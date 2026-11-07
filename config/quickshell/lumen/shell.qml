@@ -19,7 +19,7 @@ ShellRoot {
     // while open loses some of its buttons.
     property bool barsShown: true
     Variants {
-        model: root.barsShown ? Quickshell.screens : []
+        model: root.barsShown && !Panels.locked ? Quickshell.screens : []
         Bar {}
     }
     Timer {
@@ -142,6 +142,14 @@ ShellRoot {
         function toggle(name: string): void { Panels.togglePopup(name, null, null); }
         function close(): void { Panels.closePopup(); }
         function click(): void { Panels.click(); }
+        function setLocked(on: bool): void {
+            Panels.closePopup();
+            Panels.launcherOpen = false;
+            Panels.clipboardOpen = false;
+            Panels.captureOpen = false;
+            Panels.shortcutsOpen = false;
+            Panels.locked = on;
+        }
     }
 
     // Called by lumen-avatar after the picture changes.

@@ -8,6 +8,10 @@ import Quickshell
 Singleton {
     id: root
 
+    // True while the lock screen is up (set by lumen-lock): the bar, its
+    // popups and notifications are hidden.
+    property bool locked: false
+
     // The bar windows (one per screen), for `lumen debug`.
     property var bars: []
 

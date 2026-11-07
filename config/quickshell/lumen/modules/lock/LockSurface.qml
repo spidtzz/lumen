@@ -35,7 +35,6 @@ FloatingWindow {
     Connections {
         target: surface.lock
         function onFailed() {
-            password.text = "";
             shake.restart();
         }
     }
@@ -147,41 +146,45 @@ FloatingWindow {
                     height: 44
                     radius: Theme.radiusSmall
                     color: Theme.field
-                    border.width: password.activeFocus ? 2 : 1
-                    border.color: surface.lock.error !== "" ? Theme.danger
-                        : password.activeFocus ? Theme.accent : Theme.line
+                    border.width: 2
+                    border.color: surface.lock.error !== "" ? Theme.danger : Theme.accent
 
-                    TextInput {
+                    // Dots for what's typed (keys come from lumen-lock-grab).
+                    Text {
                         id: password
-                        anchors.fill: parent
+                        readonly property int count: Array.from(surface.lock.typed).length
+                        anchors.left: parent.left
+                        anchors.right: layout.left
+                        anchors.verticalCenter: parent.verticalCenter
                         anchors.leftMargin: 14
-                        anchors.rightMargin: 14
-                        verticalAlignment: TextInput.AlignVCenter
-                        echoMode: TextInput.Password
-                        passwordCharacter: "•"
+                        anchors.rightMargin: 8
+                        text: "•".repeat(count)
                         color: Theme.ink
-                        selectionColor: Theme.accent
-                        selectedTextColor: Theme.accentFg
                         font.family: Theme.fontFamily
                         font.pixelSize: 16
-                        clip: true
-                        focus: true
-                        enabled: !surface.lock.busy
-                        onTextEdited: surface.lock.error = ""
-                        Keys.onReturnPressed: surface.lock.submit(text)
-                        Keys.onEnterPressed: surface.lock.submit(text)
-                        Keys.onEscapePressed: {
-                            if (surface.lock.testMode) Qt.quit();
-                            else text = "";
-                        }
+                        elide: Text.ElideLeft
                     }
                     Txt {
-                        anchors.fill: password
-                        verticalAlignment: Text.AlignVCenter
-                        text: "Password"
+                        anchors.left: parent.left
+                        anchors.leftMargin: 14
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: surface.lock.inputReady ? "Password" : "Starting…"
                         size: 16
                         muted: true
-                        visible: password.text.length === 0
+                        visible: password.count === 0
+                    }
+                    // Keyboard layout, when there's more than one.
+                    Txt {
+                        id: layout
+                        anchors.right: parent.right
+                        anchors.rightMargin: 12
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: Keyboard.layouts.length > 1
+                        width: visible ? implicitWidth : 0
+                        text: Keyboard.shortOf(Keyboard.current)
+                        size: 12
+                        strong: true
+                        muted: true
                     }
                 }
 
@@ -197,8 +200,7 @@ FloatingWindow {
                         strong: true
                         color: Theme.accentFg
                     }
-                    HoverHandler { cursorShape: Qt.PointingHandCursor }
-                    TapHandler { onTapped: surface.lock.submit(password.text) }
+                    // (Enter submits; the mouse is held by the lock while locked.)
                 }
             }
 
@@ -207,7 +209,7 @@ FloatingWindow {
                 horizontalAlignment: Text.AlignHCenter
                 size: 13
                 text: surface.lock.error !== "" ? surface.lock.error
-                    : surface.lock.busy ? "Checking…" : "Locked. Enter your password to unlock."
+                    : surface.lock.busy ? "Checking…" : "Locked. Type your password and press Enter."
                 color: surface.lock.error !== "" ? Theme.danger : Theme.muted
             }
         }
@@ -223,7 +225,4 @@ FloatingWindow {
         muted: true
     }
 
-    // Clicking anywhere puts the cursor back in the password field.
-    TapHandler { onTapped: password.forceActiveFocus() }
-    Component.onCompleted: password.forceActiveFocus()
 }

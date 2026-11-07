@@ -152,7 +152,7 @@ about mouse clicks while a bar popup is open, so clicking elsewhere closes it.
 | --- | --- | --- |
 | Network | wired and Wi-Fi, connect with password | NetworkManager (nmcli) |
 | Bluetooth | on/off, find, pair, connect, forget devices | BlueZ |
-| Appearance | light/dark, accent, rounded or square corners, text size, title-bar buttons | lumen-theme |
+| Appearance | light/dark, accent, rounded or square corners, text size, focused window outline, title-bar buttons | lumen-theme |
 | Wallpaper | pictures from `~/Pictures/Wallpapers` (optionally its subfolders), system wallpapers or anywhere, or the theme colour; fill, fit, centre, tile, stretch | hsetroot |
 | Bar | edge, workspaces per page, clock, tray grouping, pinned and custom tray icons | |
 | Displays | resolution, refresh rate, rotation, primary, arrangement — undone after 15 s unless kept | xrandr |
@@ -215,9 +215,10 @@ lumen-theme set corners square   # rounded square
 windows (picom) and the login screen. Qt apps use Qt's Fusion style, whose corners are
 already nearly square, and there's no global setting to change them further.
 
-With rounded corners, windows have no coloured bspwm border: bspwm draws borders as
-square frames that picom can't round, so they'd stop short of each corner. Windows you're
-not using are slightly dimmed instead. Square corners bring the border back.
+The focused window gets an accent-coloured outline (Settings › Appearance › Windows).
+Turn it off and windows you're not using are slightly dimmed instead. bspwm draws the
+outline as a square frame, so with rounded corners it can look cut at the corners
+(clearly so in a virtual machine).
 
 File pickers (Open/Save dialogs) come from `xdg-desktop-portal-gtk` for every app
 (`GTK_USE_PORTAL=1`), so they follow light/dark even in Firefox and Thunderbird.

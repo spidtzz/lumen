@@ -14,9 +14,18 @@ import qs.modules.shortcuts
 ShellRoot {
     id: root
 
+    // One bar per screen. Moving the bar to another edge rebuilds the bars
+    // instead of re-anchoring them: an X11 panel window that changes edge
+    // while open loses some of its buttons.
+    property bool barsShown: true
     Variants {
-        model: Quickshell.screens
+        model: root.barsShown ? Quickshell.screens : []
         Bar {}
+    }
+    Timer {
+        id: rebuildBars
+        interval: 60
+        onTriggered: root.barsShown = true
     }
 
     // The notification server (popups are shown by each bar).
@@ -38,7 +47,12 @@ ShellRoot {
 
     Connections {
         target: Theme
-        function onBarPositionChanged() { root.syncPadding(); }
+        function onBarPositionChanged() {
+            root.syncPadding();
+            Panels.closePopup();
+            root.barsShown = false;
+            rebuildBars.restart();
+        }
     }
 
 

@@ -30,7 +30,7 @@ Page {
         }
         SettingRow {
             label: "Corners"
-            description: "Rounded or square, for the shell, windows, GTK apps and the login screen. Rounded windows have no coloured border; windows you're not using are slightly dimmed instead. Qt apps keep their own small corners."
+            description: "Rounded or square, for the shell, windows, GTK apps and the login screen. Qt apps keep their own small corners."
             Seg {
                 options: [{ label: "Rounded", value: "rounded" }, { label: "Square", value: "square" }]
                 value: Theme.rounded ? "rounded" : "square"
@@ -95,6 +95,17 @@ Page {
 
     Card {
         title: "Windows"
+        SettingRow {
+            label: "Focused window outline"
+            description: Theme.conf.compositor === "false"
+                ? "Always shown while the compositor is off (Settings › Performance)."
+                : "An accent-coloured border around the window you're using. Off: other windows are slightly dimmed instead."
+            Toggle {
+                enabled: Theme.conf.compositor !== "false"
+                checked: Theme.conf.window_border !== "false"
+                onToggled: c => Theme.setValue("window_border", c)
+            }
+        }
         SettingRow {
             label: "Title-bar buttons"
             description: "Minimise, maximise and close buttons in apps that draw their own title bar. Off by default: close windows with super + Q. Open apps update after a restart."

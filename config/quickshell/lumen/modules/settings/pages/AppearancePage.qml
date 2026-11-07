@@ -30,7 +30,7 @@ Page {
         }
         SettingRow {
             label: "Corners"
-            description: "Rounded or square, for the shell, windows, GTK apps and the login screen. Qt apps keep their own small corners."
+            description: "Rounded or square, for the shell, windows, GTK apps and the login screen. Rounded windows have no coloured border; windows you're not using are slightly dimmed instead. Qt apps keep their own small corners."
             Seg {
                 options: [{ label: "Rounded", value: "rounded" }, { label: "Square", value: "square" }]
                 value: Theme.rounded ? "rounded" : "square"

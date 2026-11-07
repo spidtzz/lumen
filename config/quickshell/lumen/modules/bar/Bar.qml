@@ -10,7 +10,9 @@ import qs.modules.popups
 // The workspaces stay centred however wide the sides get. On a vertical bar
 // the app name is hidden (there's no room for it).
 PanelWindow {
-    id: bar
+    // Not "bar": the buttons have a "bar" property, and inside a Component
+    // their own (empty) property would hide an id of the same name.
+    id: win
 
     required property var modelData
     screen: modelData
@@ -19,10 +21,10 @@ PanelWindow {
     readonly property bool vertical: edge === "left" || edge === "right"
 
     anchors {
-        top: bar.edge !== "bottom"
-        bottom: bar.edge !== "top"
-        left: bar.edge !== "right"
-        right: bar.edge !== "left"
+        top: win.edge !== "bottom"
+        bottom: win.edge !== "top"
+        left: win.edge !== "right"
+        right: win.edge !== "left"
     }
     implicitHeight: vertical ? 0 : Theme.barThickness
     implicitWidth: vertical ? Theme.barThickness : 0
@@ -30,6 +32,19 @@ PanelWindow {
     // bspwm padding is managed by shell.qml, so don't reserve space twice.
     exclusionMode: ExclusionMode.Ignore
     color: "transparent"
+
+    Component.onCompleted: Panels.bars = Panels.bars.concat([win])
+    Component.onDestruction: Panels.bars = Panels.bars.filter(b => b !== win)
+
+    // Sizes of the bar's parts, for `lumen debug` when something looks wrong.
+    function debugInfo() {
+        const r = it => `${String(it).split("(")[0]} x=${Math.round(it.x)} y=${Math.round(it.y)} w=${Math.round(it.width)} h=${Math.round(it.height)} visible=${it.visible}`;
+        const out = [`bar on ${win.screen ? win.screen.name : "?"} ${win.screen ? win.screen.width + "x" + win.screen.height : ""} edge=${win.edge} window=${win.width}x${win.height}`,
+                     "  body " + r(body), "  end " + r(end)];
+        if (end.item)
+            for (const c of end.item.children) out.push("    " + r(c));
+        return out.join("\n");
+    }
 
     // An item's rectangle in this window's coordinates, for placing popups.
     function anchorOf(item) {
@@ -55,10 +70,10 @@ PanelWindow {
         anchors.fill: parent
         // Gap on the screen edge and both sides; none toward the windows,
         // because bspwm's window_gap already spaces them.
-        anchors.topMargin: bar.edge === "bottom" ? 0 : Theme.gap
-        anchors.bottomMargin: bar.edge === "top" ? 0 : Theme.gap
-        anchors.leftMargin: bar.edge === "right" ? 0 : Theme.gap
-        anchors.rightMargin: bar.edge === "left" ? 0 : Theme.gap
+        anchors.topMargin: win.edge === "bottom" ? 0 : Theme.gap
+        anchors.bottomMargin: win.edge === "top" ? 0 : Theme.gap
+        anchors.leftMargin: win.edge === "right" ? 0 : Theme.gap
+        anchors.rightMargin: win.edge === "left" ? 0 : Theme.gap
 
         radius: Theme.radius
         color: Theme.panel
@@ -70,20 +85,20 @@ PanelWindow {
         // ---- start: launcher + focused app ----
         Grid {
             id: start
-            anchors.left: bar.vertical ? undefined : parent.left
-            anchors.top: bar.vertical ? parent.top : undefined
+            anchors.left: win.vertical ? undefined : parent.left
+            anchors.top: win.vertical ? parent.top : undefined
             anchors.leftMargin: 5
             anchors.topMargin: 5
-            anchors.verticalCenter: bar.vertical ? undefined : parent.verticalCenter
-            anchors.horizontalCenter: bar.vertical ? parent.horizontalCenter : undefined
-            columns: bar.vertical ? 1 : 2
+            anchors.verticalCenter: win.vertical ? undefined : parent.verticalCenter
+            anchors.horizontalCenter: win.vertical ? parent.horizontalCenter : undefined
+            columns: win.vertical ? 1 : 2
             spacing: 10
             verticalItemAlignment: Grid.AlignVCenter
             horizontalItemAlignment: Grid.AlignHCenter
 
             LauncherButton {}
             AppLabel {
-                visible: !bar.vertical
+                visible: !win.vertical
                 // Never run into the centred workspaces.
                 maxWidth: Math.max(0, body.width / 2 - center.width / 2 - 26 - 10 - 5 - 16)
             }
@@ -93,8 +108,8 @@ PanelWindow {
         Workspaces {
             id: center
             anchors.centerIn: parent
-            screenName: bar.screen ? bar.screen.name : ""
-            vertical: bar.vertical
+            screenName: win.screen ? win.screen.name : ""
+            vertical: win.vertical
         }
 
         // ---- end: tray, time, quick settings ----
@@ -102,13 +117,13 @@ PanelWindow {
         // more predictable than one Grid that changes its column count).
         Loader {
             id: end
-            anchors.right: bar.vertical ? undefined : parent.right
-            anchors.bottom: bar.vertical ? parent.bottom : undefined
+            anchors.right: win.vertical ? undefined : parent.right
+            anchors.bottom: win.vertical ? parent.bottom : undefined
             anchors.rightMargin: 5
             anchors.bottomMargin: 5
-            anchors.verticalCenter: bar.vertical ? undefined : parent.verticalCenter
-            anchors.horizontalCenter: bar.vertical ? parent.horizontalCenter : undefined
-            sourceComponent: bar.vertical ? endColumn : endRow
+            anchors.verticalCenter: win.vertical ? undefined : parent.verticalCenter
+            anchors.horizontalCenter: win.vertical ? parent.horizontalCenter : undefined
+            sourceComponent: win.vertical ? endColumn : endRow
         }
 
         Component {
@@ -116,10 +131,10 @@ PanelWindow {
             Row {
                 spacing: 6
                 RecordingButton { anchors.verticalCenter: parent.verticalCenter }
-                TrayArea { bar: bar; anchors.verticalCenter: parent.verticalCenter }
-                KeyboardButton { bar: bar; anchors.verticalCenter: parent.verticalCenter }
-                TimeButton { bar: bar; anchors.verticalCenter: parent.verticalCenter }
-                QsButton { bar: bar; anchors.verticalCenter: parent.verticalCenter }
+                TrayArea { bar: win; anchors.verticalCenter: parent.verticalCenter }
+                KeyboardButton { bar: win; anchors.verticalCenter: parent.verticalCenter }
+                TimeButton { bar: win; anchors.verticalCenter: parent.verticalCenter }
+                QsButton { bar: win; anchors.verticalCenter: parent.verticalCenter }
             }
         }
 
@@ -128,10 +143,10 @@ PanelWindow {
             Column {
                 spacing: 6
                 RecordingButton { vertical: true; anchors.horizontalCenter: parent.horizontalCenter }
-                TrayArea { bar: bar; vertical: true; anchors.horizontalCenter: parent.horizontalCenter }
-                KeyboardButton { bar: bar; vertical: true; anchors.horizontalCenter: parent.horizontalCenter }
-                TimeButton { bar: bar; vertical: true; anchors.horizontalCenter: parent.horizontalCenter }
-                QsButton { bar: bar; vertical: true; anchors.horizontalCenter: parent.horizontalCenter }
+                TrayArea { bar: win; vertical: true; anchors.horizontalCenter: parent.horizontalCenter }
+                KeyboardButton { bar: win; vertical: true; anchors.horizontalCenter: parent.horizontalCenter }
+                TimeButton { bar: win; vertical: true; anchors.horizontalCenter: parent.horizontalCenter }
+                QsButton { bar: win; vertical: true; anchors.horizontalCenter: parent.horizontalCenter }
             }
         }
     }
@@ -143,11 +158,11 @@ PanelWindow {
     PopupWindow {
         id: popupHost
 
-        readonly property bool mine: Panels.popup !== "" && Panels.popupScreen === bar.screen
+        readonly property bool mine: Panels.popup !== "" && Panels.popupScreen === win.screen
         readonly property var content: popupLoader.item
 
-        anchor.window: bar
-        anchor.rect: bar.popupRect(implicitWidth, implicitHeight, Panels.popupAnchor)
+        anchor.window: win
+        anchor.rect: win.popupRect(implicitWidth, implicitHeight, Panels.popupAnchor)
         implicitWidth: content ? content.implicitWidth : 1
         implicitHeight: content ? content.implicitHeight : 1
         grabFocus: false
@@ -187,26 +202,26 @@ PanelWindow {
 
         readonly property int w: 380
         readonly property var pos: (Theme.conf.notif_position || "top-right").split("-")
-        anchor.window: bar
+        anchor.window: win
         anchor.rect: {
             const g = Theme.gap, t = Theme.barThickness;
-            const sw = bar.screen.width, sh = bar.screen.height, h = implicitHeight;
+            const sw = win.screen.width, sh = win.screen.height, h = implicitHeight;
             // The free area of the screen, in screen coordinates.
-            const left = (bar.edge === "left" ? t + 4 : g);
-            const right = sw - (bar.edge === "right" ? t + 4 : g);
-            const top = (bar.edge === "top" ? t + 4 : g);
-            const bottom = sh - (bar.edge === "bottom" ? t + 4 : g);
+            const left = (win.edge === "left" ? t + 4 : g);
+            const right = sw - (win.edge === "right" ? t + 4 : g);
+            const top = (win.edge === "top" ? t + 4 : g);
+            const bottom = sh - (win.edge === "bottom" ? t + 4 : g);
             const x = pos[1] === "left" ? left : pos[1] === "center" ? (sw - w) / 2 : right - w;
             const y = pos[0] === "bottom" ? bottom - h : top;
             // This bar window's position on the screen.
-            const ox = bar.edge === "right" ? sw - t : 0;
-            const oy = bar.edge === "bottom" ? sh - t : 0;
+            const ox = win.edge === "right" ? sw - t : 0;
+            const oy = win.edge === "bottom" ? sh - t : 0;
             return Qt.rect(x - ox, y - oy, 1, 1);
         }
         implicitWidth: w
         implicitHeight: Math.max(1, notifStack.implicitHeight)
         color: "transparent"
-        visible: Notifs.popups.length > 0 && bar.screen === Panels.focusedScreen() && Panels.popup !== "qs"
+        visible: Notifs.popups.length > 0 && win.screen === Panels.focusedScreen() && Panels.popup !== "qs"
 
         Column {
             id: notifStack

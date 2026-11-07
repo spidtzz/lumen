@@ -215,10 +215,9 @@ lumen-theme set corners square   # rounded square
 windows (picom) and the login screen. Qt apps use Qt's Fusion style, whose corners are
 already nearly square, and there's no global setting to change them further.
 
-In a virtual machine, windows keep square corners even with rounded corners on: picom
-renders in software there, and its software renderer rounds a window but not its border,
-so the coloured border would stop short of each corner. On real hardware picom's GPU
-renderer rounds both. The bar, popups and Settings are rounded everywhere.
+With rounded corners, windows have no coloured bspwm border: bspwm draws borders as
+square frames that picom can't round, so they'd stop short of each corner. Windows you're
+not using are slightly dimmed instead. Square corners bring the border back.
 
 File pickers (Open/Save dialogs) come from `xdg-desktop-portal-gtk` for every app
 (`GTK_USE_PORTAL=1`), so they follow light/dark even in Firefox and Thunderbird.

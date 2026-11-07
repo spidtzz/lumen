@@ -54,6 +54,10 @@ ShellRoot {
         function toggle(): void { Panels.toggleSettings(); }
         function open(page: string): void { Panels.openSettings(page); }
         function show(): void { Panels.openSettings(Panels.settingsPage); }
+    }
+    IpcHandler {
+        target: "debug"
+        function bar(): string { return Panels.bars.map(b => b.debugInfo()).join("\n"); }
         function close(): void { Panels.settingsOpen = false; }
     }
 

@@ -246,20 +246,34 @@ kbswitch() {
 # settings restarts it.
 picom_flags() {
 	local f=(--log-file "$STATE/picom.log")
-	# In virtual machines picom renders in software (xrender), which rounds a
-	# window but not its bspwm border: the coloured border would stop short of
-	# each corner. Window corners stay square there; the GPU renderer on real
-	# hardware rounds the border along with the window.
-	if [[ ${CONF[corners]} == square ]] || systemd-detect-virt -q 2>/dev/null; then
+	if [[ ${CONF[corners]} == square ]]; then
 		f+=(--corner-radius 0)
+	else
+		# Rounded windows have no bspwm border (see window_borders), so
+		# windows you're not using are dimmed a little instead.
+		f+=(--inactive-dim 0.08)
 	fi
 	[[ ${CONF[animations]} == false ]] && f+=(--no-fading-openclose --fade-in-step 1 --fade-out-step 1)
 	printf '%s\n' "${f[@]}"
 }
 
+# bspwm draws window borders as square frames. picom can round a window but
+# not that frame (the coloured border would stop short of each corner), so
+# with rounded corners the border is turned off and picom dims unfocused
+# windows instead. Square corners, or no compositor: the usual border.
+window_borders() {
+	has bspc && bspc query -M >/dev/null 2>&1 || return 0
+	if [[ ${CONF[compositor]} == true && ${CONF[corners]} != square ]]; then
+		bspc config border_width 0
+	else
+		bspc config border_width 2
+	fi
+}
+
 apply_compositor() {
 	[[ -n ${DISPLAY:-} ]] || return 0
 	load
+	window_borders
 	if [[ ${CONF[compositor]} != true ]]; then
 		pkill -x picom 2>/dev/null || true
 		rm -f "$STATE/picom.flags"

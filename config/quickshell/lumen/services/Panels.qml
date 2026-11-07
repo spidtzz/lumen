@@ -8,6 +8,9 @@ import Quickshell
 Singleton {
     id: root
 
+    // The bar windows (one per screen), for `lumen debug`.
+    property var bars: []
+
     // ---- Settings app ----
     property bool settingsOpen: false
     property string settingsPage: "appearance"

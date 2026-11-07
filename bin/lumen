@@ -11,6 +11,7 @@
 #   lumen lock              lock the screen
 #   lumen reload            restart the bar and popups (after updating lumen)
 #   lumen theme ...         same as lumen-theme (e.g. lumen theme set mode light)
+#   lumen debug             sizes of the bar's parts, for bug reports
 set -eu
 
 ipc() { exec qs -c lumen ipc call "$@"; }
@@ -34,6 +35,7 @@ case ${1:-help} in
 		echo "lumen: restarted (log: $state/quickshell.log)"
 		;;
 	theme) shift; exec lumen-theme "$@" ;;
-	-h | --help | help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//' ;;
+	debug) ipc debug bar ;;
+	-h | --help | help) sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//' ;;
 	*) echo "lumen: unknown command: $1 (try: lumen help)" >&2; exit 1 ;;
 esac

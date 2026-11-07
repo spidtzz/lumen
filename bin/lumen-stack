@@ -1,0 +1,129 @@
+#!/usr/bin/env python3
+"""lumen-stack: keep the bar above windows.
+
+bspwm restacks the windows it manages whenever focus or layers change, and
+the bar (a "dock" window, which bspwm doesn't manage) can end up underneath a
+floating window. This watches bspwm and puts dock windows back on top, except
+on a monitor showing a fullscreen window (a video, a game), where the bar
+stays behind it. Small lumen windows drawn over the bar (the rounded screen
+corners) are put back above it.
+
+bspwmrc starts it; it stops when the X session ends.
+"""
+import json
+import select
+import subprocess
+import sys
+import time
+
+from Xlib import X, display, error
+
+
+def bspc(*args):
+    try:
+        return subprocess.run(["bspc", *args], capture_output=True, text=True, timeout=2).stdout
+    except (OSError, subprocess.SubprocessError):
+        return ""
+
+
+def fullscreen_areas():
+    """Rectangles of monitors whose visible desktop shows a fullscreen window."""
+    areas = []
+    for mon in bspc("query", "-M", "--names").split():
+        if bspc("query", "-N", "-n", ".fullscreen.window.!hidden", "-d", mon + ":focused").strip():
+            try:
+                r = json.loads(bspc("query", "-T", "-m", mon))["rectangle"]
+                areas.append((r["x"], r["y"], r["width"], r["height"]))
+            except (ValueError, KeyError):
+                pass
+    return areas
+
+
+class Stacker:
+    def __init__(self):
+        self.d = display.Display()
+        self.root = self.d.screen().root
+        self.type_atom = self.d.intern_atom("_NET_WM_WINDOW_TYPE")
+        self.dock_atom = self.d.intern_atom("_NET_WM_WINDOW_TYPE_DOCK")
+        # New windows (a bar being rebuilt, a popup): restack.
+        self.root.change_attributes(event_mask=X.SubstructureNotifyMask)
+
+    def is_dock(self, w):
+        try:
+            p = w.get_full_property(self.type_atom, X.AnyPropertyType)
+        except error.XError:
+            return False
+        return p is not None and self.dock_atom in p.value
+
+    def restack(self):
+        areas = fullscreen_areas()
+        docks, corners = [], []
+        try:
+            children = self.root.query_tree().children
+        except error.XError:
+            return
+        for w in children:
+            try:
+                attrs = w.get_attributes()
+                if attrs.map_state != X.IsViewable:
+                    continue
+                g = w.get_geometry()
+            except error.XError:
+                continue
+            if attrs.override_redirect and g.width <= 32 and g.height <= 32:
+                corners.append(w)
+            elif self.is_dock(w):
+                cx, cy = g.x + g.width // 2, g.y + g.height // 2
+                covered = any(x <= cx < x + wd and y <= cy < y + h for x, y, wd, h in areas)
+                if not covered:
+                    docks.append(w)
+        for w in docks + corners:
+            try:
+                w.configure(stack_mode=X.Above)
+            except error.XError:
+                pass
+        self.d.sync()
+
+    def drain_x(self):
+        """Read pending X events; True if a window appeared."""
+        appeared = False
+        while self.d.pending_events():
+            e = self.d.next_event()
+            if e.type == X.MapNotify:
+                appeared = True
+        return appeared
+
+
+def main():
+    s = Stacker()
+    while True:
+        sub = subprocess.Popen(
+            ["bspc", "subscribe", "node_stack", "node_state", "node_layer", "node_focus",
+             "node_add", "node_remove", "desktop_focus", "node_transfer"],
+            stdout=subprocess.PIPE, text=True, bufsize=1)
+        s.restack()
+        while True:
+            ready, _, _ = select.select([sub.stdout, s.d.fileno()], [], [], 5)
+            changed = False
+            if sub.stdout in ready:
+                line = sub.stdout.readline()
+                if not line:
+                    break   # bspwm restarted or quit
+                changed = True
+            if s.drain_x():
+                changed = True
+            if changed:
+                time.sleep(0.03)   # let bspwm finish restacking first
+                s.restack()
+        sub.wait()
+        # bspwm gone for good (logged out): stop. Restarted: watch again.
+        time.sleep(1)
+        if not bspc("query", "-M"):
+            return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except (KeyboardInterrupt, error.ConnectionClosedError, BrokenPipeError):
+        sys.exit(0)

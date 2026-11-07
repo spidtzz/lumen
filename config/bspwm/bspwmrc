@@ -96,5 +96,8 @@ mkdir -p "$LOGS"
 pgrep -f 'quickshell -c lumen' >/dev/null ||
 	QS_ICON_THEME=$(lumen-theme icon-theme 2>/dev/null) quickshell -c lumen >"$LOGS/quickshell.log" 2>&1 &
 
+# Keep the bar above windows (except fullscreen ones).
+pgrep -f 'lumen-stack' >/dev/null || lumen-stack >/dev/null 2>&1 &
+
 # Per-user additions that survive updates.
 [ -x "$HOME/.config/bspwm/autostart" ] && "$HOME/.config/bspwm/autostart" &

@@ -64,6 +64,18 @@ Page {
     Card {
         title: "Workspaces"
         SettingRow {
+            label: "Style"
+            description: "How desktops look in the bar."
+            Seg {
+                options: [
+                    { label: "Pills", value: "pills" }, { label: "Boxes", value: "boxes" },
+                    { label: "Dots", value: "dots" }, { label: "Numbers", value: "numbers" }
+                ]
+                value: Theme.conf.ws_style || "pills"
+                onPicked: v => Theme.setValue("ws_style", v)
+            }
+        }
+        SettingRow {
             id: wsRow
             readonly property int per: +(Theme.conf.bar_workspaces || 5)
             label: "Workspaces shown at a time"

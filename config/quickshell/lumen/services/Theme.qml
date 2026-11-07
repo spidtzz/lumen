@@ -40,8 +40,9 @@ Singleton {
     readonly property bool barFillets: barAttached && screenCorners && rounded
     // Distance from the screen edge to the bar's inner edge.
     readonly property int barOuter: barAttached ? barSize : barThickness
-    // Space bspwm keeps free for the bar.
-    readonly property int barReserve: barAttached ? barSize + gap : barThickness
+    // Space bspwm keeps free for the bar (bspwm adds its window gap to this,
+    // so windows sit one gap from the bar, as from the screen's other edges).
+    readonly property int barReserve: barAttached ? barSize : barThickness
     // Thickness of the bar's window (with room for the curved ends).
     readonly property int barDepth: barAttached ? barSize + (barFillets ? screenRadius : 0) : barThickness
 

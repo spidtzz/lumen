@@ -21,7 +21,7 @@ Grid {
     readonly property bool moreAfter: all.slice((page + 1) * per).some(d => d.occupied || d.urgent)
 
     columns: vertical ? 1 : 99
-    spacing: 4
+    spacing: style === "dots" ? 0 : 2
 
     // Scroll over the workspaces to switch desktops.
     WheelHandler {
@@ -60,45 +60,94 @@ Grid {
 
     PageArrow { ws: root; forward: false; shown: root.moreBefore }
 
+    // Style (Settings > Bar > Workspaces):
+    //   pills    numbers; the current one is a wider accent pill (default)
+    //   boxes    every desktop the same size; the current one filled
+    //   dots     no numbers: dots, the current one a short bar
+    //   numbers  numbers only; the current one in the accent with a line under it
+    readonly property string style: ["pills", "boxes", "dots", "numbers"].includes(Theme.conf.ws_style)
+        ? Theme.conf.ws_style : "pills"
+    // Size of one desktop along the bar, and across it.
+    readonly property int across: 26
+    function along(active) {
+        switch (style) {
+        case "dots": return active ? 30 : 18;
+        case "boxes": return 26;
+        case "numbers": return 22;
+        default: return active ? 42 : 28;
+        }
+    }
+
     Repeater {
         model: root.shown
 
-        delegate: Rectangle {
+        delegate: Item {
             id: chip
             required property var modelData
 
             readonly property bool active: modelData.focused
-            readonly property int along: active ? 40 : 26
+            readonly property bool occupied: modelData.occupied
+            readonly property color fg: active ? (root.style === "numbers" ? Theme.barAccent : Theme.barAccentFg)
+                : occupied ? Theme.barInk : Theme.barMuted
 
-            width: root.vertical ? 26 : along
-            height: root.vertical ? along : 26
-            radius: Theme.r(13)
-            color: active ? Theme.barAccent : (hover.hovered ? Theme.barField : "transparent")
-            border.width: modelData.urgent && !active ? 1 : 0
-            border.color: Theme.danger
-
+            width: root.vertical ? root.across : root.along(active)
+            height: root.vertical ? root.along(active) : root.across
             Behavior on width { NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutCubic } }
             Behavior on height { NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutCubic } }
-            Behavior on color { ColorAnimation { duration: Theme.animFast } }
 
+            // Background: pill or box (not for dots and numbers).
+            Rectangle {
+                anchors.fill: parent
+                visible: root.style === "pills" || root.style === "boxes"
+                radius: root.style === "boxes" ? Math.max(0, Theme.radiusSmall - 2) : Theme.r(13)
+                color: chip.active ? Theme.barAccent
+                     : hover.hovered ? Theme.barField
+                     : root.style === "boxes" && chip.occupied ? Theme.barField : "transparent"
+                border.width: chip.modelData.urgent && !chip.active ? 1 : 0
+                border.color: Theme.danger
+                Behavior on color { ColorAnimation { duration: Theme.animFast } }
+            }
+
+            // Number (not for dots).
             Text {
                 anchors.centerIn: parent
+                visible: root.style !== "dots"
                 text: chip.modelData.name
                 font.family: Theme.fontFamily
                 font.pixelSize: Math.round(13 * Theme.fontScale)
-                font.weight: Font.Bold
-                color: chip.active ? Theme.barAccentFg
-                     : chip.modelData.occupied ? Theme.barInk : Theme.barMuted
-                opacity: chip.active || chip.modelData.occupied ? 1 : 0.6
+                font.weight: chip.active || chip.occupied ? Font.Bold : Font.Medium
+                font.features: ({ "tnum": 1 })
+                color: chip.modelData.urgent && !chip.active ? Theme.danger : chip.fg
+                opacity: chip.active || chip.occupied ? 1 : 0.65
             }
 
+            // Occupied marker (pills: a dot under the number; numbers: the
+            // current one gets a line).
             Rectangle {
-                visible: chip.modelData.occupied && !chip.active
-                width: 4; height: 4; radius: Theme.r(2)
+                visible: (root.style === "pills" && chip.occupied && !chip.active)
+                      || (root.style === "numbers" && chip.active)
+                width: root.style === "numbers" ? (root.vertical ? 2 : 12) : 4
+                height: root.style === "numbers" ? (root.vertical ? 12 : 2) : 4
+                radius: Theme.r(2)
                 color: Theme.barAccent
-                anchors.horizontalCenter: parent.horizontalCenter
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: 2
+                x: root.vertical && root.style === "numbers" ? 1 : (parent.width - width) / 2
+                y: root.vertical && root.style === "numbers" ? (parent.height - height) / 2 : parent.height - height - 2
+            }
+
+            // Dots style.
+            Rectangle {
+                visible: root.style === "dots"
+                anchors.centerIn: parent
+                width: root.vertical ? 8 : (chip.active ? 22 : 8)
+                height: root.vertical ? (chip.active ? 22 : 8) : 8
+                radius: Theme.r(4)
+                color: chip.modelData.urgent && !chip.active ? Theme.danger
+                     : chip.active ? Theme.barAccent : chip.occupied ? Theme.barInk : Theme.barMuted
+                opacity: chip.active || chip.occupied ? 1 : 0.45
+                scale: hover.hovered && !chip.active ? 1.25 : 1
+                Behavior on width { NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutCubic } }
+                Behavior on height { NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutCubic } }
+                Behavior on scale { NumberAnimation { duration: Theme.animFast } }
             }
 
             HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }
@@ -108,7 +157,10 @@ Grid {
 
     Repeater {
         model: root.pages > 1 ? Math.max(0, root.per - root.shown.length) : 0
-        delegate: Item { width: 26; height: 26 }
+        delegate: Item {
+            width: root.vertical ? root.across : root.along(false)
+            height: root.vertical ? root.along(false) : root.across
+        }
     }
 
     PageArrow { ws: root; forward: true; shown: root.moreAfter }

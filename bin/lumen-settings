@@ -50,6 +50,7 @@ SCHEMA=(
 	"clipboard_history~true~^(true|false)$~-"
 	"notif_position~top-right~^(top|bottom)-(left|center|right)$~-"
 	"bar_workspaces~5~^([3-9]|10)$~-"
+	"ws_style~pills~^(pills|boxes|dots|numbers)$~-"
 	"tray_grouped~true~^(true|false)$~-"
 	"qs_media~true~^(true|false)$~-"
 	"idle_lock~10~^(0|5|10|15|30|60)$~idle"

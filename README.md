@@ -66,8 +66,8 @@ chosen others in `~/.config/mimeapps.list`.
 | `super + a` / `super + d` | Previous / next desktop |
 | `super + w` / `super + s` | Previous / next desktop with windows |
 | `super + Tab` | Last desktop you used |
-| `super + t` / `super + f` | Tiled / fullscreen |
-| `super + shift + f` | Float the window (again to tile it) |
+| `super + t` | Float the window, or tile it again |
+| `super + f` | Fullscreen, or back again |
 | `super + m` | Monocle layout |
 | Volume, mute, mic, brightness, play/pause, next/previous keys | Work as labelled; volume and brightness show their level on screen |
 | `super + Escape` | Reload shortcuts |
@@ -97,7 +97,9 @@ The full list is in [`config/sxhkd/sxhkdrc`](config/sxhkd/sxhkdrc).
   for whatever is playing (MPRIS: music apps, browsers, mpv; can be turned off in
   Settings › Bar); and your notifications. Visual effects are in Settings › Performance.
 
-Popups and notifications are drawn above all windows. Click elsewhere, or the same
+The bar stays above windows (a small helper, `lumen-stack`, puts it back on top when
+bspwm restacks), except over a fullscreen window. Popups and notifications are drawn
+above all windows. Click elsewhere, or the same
 button again, to close them. Notifications can appear in any corner or edge centre
 (Settings › Notifications).
 Scrolling over the workspaces switches desktops.
@@ -162,7 +164,7 @@ about mouse clicks while a bar popup is open, so clicking elsewhere closes it.
 | Bluetooth | on/off, find, pair, connect, forget devices | BlueZ |
 | Appearance | light/dark, accent, rounded or square corners, rounded screen corners, text size, focused window highlight, title-bar buttons | lumen-theme |
 | Wallpaper | pictures from `~/Pictures/Wallpapers` (optionally its subfolders), system wallpapers or anywhere, or the theme colour; fill, fit, centre, tile, stretch | hsetroot |
-| Bar | floating or edge to edge (curved into rounded screen corners), black bar, edge, workspaces per page, clock, media controls, tray grouping, pinned and custom tray icons | |
+| Bar | workspace style (pills, boxes, dots, numbers), floating or edge to edge (curved into rounded screen corners), black bar, edge, workspaces per page, clock, media controls, tray grouping, pinned and custom tray icons | |
 | Displays | resolution, refresh rate, rotation, primary, arrangement — undone after 15 s unless kept | xrandr |
 | Sound | output and input device, volume, mute, volume key step | PipeWire (built into Quickshell) |
 | Keyboard & Mouse | up to four layouts (e.g. English + Persian) in order, switch keys, key repeat, focus follows mouse, pointer speed, natural scrolling, tap to click | setxkbmap, xset, xinput, bspwm |
@@ -263,6 +265,7 @@ bin/lumen-settings      settings storage, validation and appliers
 bin/lumen-theme         theme engine (bash)
 bin/lumen-lock          lock screen launcher with i3lock fallback
 bin/lumen-lock-grab     takes the keyboard and mouse while locked
+bin/lumen-stack         keeps the bar above windows (not over fullscreen ones)
 bin/lumen-clipboard     clipboard history
 bin/lumen-capture       screenshots and recordings
 bin/lumen-avatar        profile picture

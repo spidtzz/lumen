@@ -76,18 +76,6 @@ Page {
     }
 
     Card {
-        title: "Quick settings"
-        SettingRow {
-            label: "Media controls"
-            description: "Play, pause and skip for whatever is playing (music apps, browsers, mpv). Shown only while something is open."
-            Toggle {
-                checked: Theme.conf.qs_media !== "false"
-                onToggled: c => Theme.setValue("qs_media", c)
-            }
-        }
-    }
-
-    Card {
         title: "Tray"
         description: "Icons from running apps (Discord, Steam, network applets, ...)."
 

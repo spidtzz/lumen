@@ -47,7 +47,6 @@ SCHEMA=(
 	"notif_position~top-right~^(top|bottom)-(left|center|right)$~-"
 	"bar_workspaces~5~^([3-9]|10)$~-"
 	"tray_grouped~true~^(true|false)$~-"
-	"qs_media~true~^(true|false)$~-"
 	"idle_lock~10~^(0|5|10|15|30|60)$~idle"
 	"kb_layouts~us~^[a-z]{2,3}(,[a-z]{2,3}){0,3}$~input"
 	"kb_switch~alt_shift~^(alt_shift|ctrl_shift|caps)$~input"

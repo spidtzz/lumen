@@ -14,11 +14,6 @@ gvfs
 gvfs-mtp
 ffmpegthumbnailer
 
-# Sound (PipeWire; usually installed already): volume in the bar, media keys
-pipewire
-pipewire-pulse
-wireplumber
-
 # Quick Settings: Bluetooth, performance mode, screen brightness
 bluez
 bluez-utils

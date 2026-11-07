@@ -21,7 +21,8 @@ cd lumen
 ./install.sh               # install
 ```
 
-Reboot to reach the SDDM login screen and pick the **lumen** session.
+Reboot to reach the SDDM login screen and pick the **bspwm** session (lumen's; the
+bspwm package's plain entry is hidden on lumen's login screen).
 Without SDDM (`--dm none`), log in on tty1 (the installer can start the desktop automatically) or run `startx`.
 
 | Option | Meaning |
@@ -187,7 +188,9 @@ System changes (time zone, login-screen picture) show a password prompt (polkit-
 
 The SDDM theme uses the same design and follows your theme: when you change the
 accent or mode, the login screen matches it the next time it appears.
-It offers user and session pickers, Caps Lock warning, and suspend/restart/shut down.
+At the bottom: the session and user menus (with **Other user…** to type a user name
+that isn't listed) on the left, and a power menu (suspend, hibernate, restart, shut down)
+on the right. Caps Lock is shown under the password.
 
 ```sh
 lumen-avatar set ~/Pictures/me.jpg   # desktop bar + login screen (asks for sudo once)

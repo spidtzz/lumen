@@ -375,7 +375,7 @@ if ((DRY)); then
 	echo "   This was a dry run. Run again without --dry-run to install."
 else
 	if [[ $DM == sddm ]]; then
-		echo "   Reboot to reach the login screen, then pick the 'lumen' session."
+		echo "   Reboot to reach the login screen, then pick the 'bspwm' session."
 	else
 		echo "   Log out and back in on tty1, or run: startx"
 	fi

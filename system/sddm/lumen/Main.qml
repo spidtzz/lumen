@@ -38,17 +38,20 @@ Rectangle {
     property int sessionIndex: sessionModel.lastIndex >= 0 ? sessionModel.lastIndex : 0
     property string errorText: ""
     property bool busy: false
+    property string menu: ""          // open menu: "session", "user" or "power"
+    property bool manualUser: false   // "Other user…": type a user name
 
     readonly property var currentUser: users.count > 0 ? users.itemAt(userIndex) : null
-    readonly property string currentName: currentUser ? currentUser.name : userModel.lastUser
-    readonly property string displayName: currentUser && currentUser.realName !== ""
-        ? currentUser.realName : currentName
-    readonly property string currentIcon: currentUser ? currentUser.icon : ""
+    readonly property string currentName: manualUser ? username.text.trim()
+        : currentUser ? currentUser.name : userModel.lastUser
+    readonly property string displayName: manualUser ? (currentName !== "" ? currentName : "Other user")
+        : currentUser && currentUser.realName !== "" ? currentUser.realName : currentName
+    readonly property string currentIcon: currentUser && !manualUser ? currentUser.icon : ""
     readonly property var currentSession: sessions.count > 0 ? sessions.itemAt(sessionIndex) : null
 
     function login() {
-        if (busy || currentName === "")
-            return;
+        if (busy) return;
+        if (currentName === "") { username.forceActiveFocus(); return; }
         errorText = "";
         busy = true;
         sddm.login(currentName, password.text, sessionIndex);
@@ -79,7 +82,35 @@ Rectangle {
     Repeater {
         id: sessions
         model: sessionModel
-        delegate: Item { required property string name }
+        delegate: Item {
+            required property string name
+            required property string file
+        }
+    }
+
+    // The lumen session runs bspwm, so the plain "bspwm" entry (from the bspwm
+    // package) would be a second, unthemed way into the same thing: hide it.
+    function sessionHidden(i) {
+        const it = sessions.itemAt(i);
+        if (!it || !String(it.file).endsWith("bspwm.desktop")) return false;
+        for (let j = 0; j < sessions.count; j++)
+            if (String(sessions.itemAt(j).file).endsWith("lumen.desktop")) return true;
+        return false;
+    }
+    function lumenSession() {
+        for (let j = 0; j < sessions.count; j++)
+            if (String(sessions.itemAt(j).file).endsWith("lumen.desktop")) return j;
+        return 0;
+    }
+
+    function pickUser(i) {
+        manualUser = i < 0;
+        if (i >= 0) userIndex = i;
+        errorText = "";
+        password.text = "";
+        menu = "";
+        if (manualUser) { username.text = ""; username.forceActiveFocus(); }
+        else password.forceActiveFocus();
     }
 
     // ---- background: soft accent glows ------------------------------------
@@ -235,6 +266,40 @@ Rectangle {
                 elide: Text.ElideRight
             }
 
+            // user name, for "Other user…"
+            Rectangle {
+                visible: root.manualUser
+                width: parent.width
+                height: 44
+                radius: root.rr(9)
+                color: root.cField
+                border.width: username.activeFocus ? 2 : 1
+                border.color: username.activeFocus ? root.cAccent : root.cLine
+                TextInput {
+                    id: username
+                    anchors.fill: parent
+                    anchors.leftMargin: 14
+                    anchors.rightMargin: 14
+                    verticalAlignment: TextInput.AlignVCenter
+                    color: root.cInk
+                    font.family: root.fontName
+                    font.pixelSize: 16
+                    clip: true
+                    onTextEdited: root.errorText = ""
+                    Keys.onReturnPressed: password.forceActiveFocus()
+                    Keys.onEnterPressed: password.forceActiveFocus()
+                    Keys.onTabPressed: password.forceActiveFocus()
+                }
+                Text {
+                    anchors.fill: username
+                    verticalAlignment: Text.AlignVCenter
+                    text: "User name"
+                    color: root.cMuted
+                    font: username.font
+                    visible: username.text.length === 0
+                }
+            }
+
             // password + submit
             Row {
                 width: parent.width
@@ -268,7 +333,10 @@ Rectangle {
                         onTextEdited: root.errorText = ""
                         Keys.onReturnPressed: root.login()
                         Keys.onEnterPressed: root.login()
-                        Keys.onEscapePressed: { text = ""; root.errorText = ""; }
+                        Keys.onEscapePressed: {
+                            if (root.menu !== "") root.menu = "";
+                            else { text = ""; root.errorText = ""; }
+                        }
                     }
                     Text {
                         anchors.fill: password
@@ -316,95 +384,143 @@ Rectangle {
         }
     }
 
-    // ---- user switcher (only with more than one user) ---------------------
-    Row {
-        anchors.top: card.bottom
-        anchors.topMargin: 16
-        anchors.horizontalCenter: parent.horizontalCenter
-        spacing: 6
-        visible: users.count > 1
-
-        Repeater {
-            model: userModel
-            delegate: Chip {
-                required property int index
-                required property string name
-                required property string realName
-                label: realName !== "" ? realName : name
-                selected: index === root.userIndex
-                onClicked: {
-                    root.userIndex = index;
-                    root.errorText = "";
-                    password.text = "";
-                    password.forceActiveFocus();
-                }
-            }
-        }
-    }
-
-    // ---- bottom bar: session picker + power -------------------------------
+    // ---- bottom bar: session and user (left), power (right) ---------------
     Item {
+        id: bottomBar
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         anchors.margins: 24
         height: 40
 
-        Chip {
-            id: sessionBtn
+        Row {
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            visible: sessions.count > 0
-            label: (root.currentSession ? root.currentSession.name : "Session") + (sessionMenu.visible ? "  ▾" : "  ▴")
-            selected: sessionMenu.visible
-            onClicked: sessionMenu.visible = !sessionMenu.visible
+            spacing: 8
+            Chip {
+                id: sessionBtn
+                visible: sessions.count > 0
+                label: (root.currentSession ? root.currentSession.name : "Session") + (root.menu === "session" ? "  ▾" : "  ▴")
+                selected: root.menu === "session"
+                onClicked: root.menu = root.menu === "session" ? "" : "session"
+            }
+            Chip {
+                id: userBtn
+                label: root.displayName + (root.menu === "user" ? "  ▾" : "  ▴")
+                selected: root.menu === "user"
+                onClicked: root.menu = root.menu === "user" ? "" : "user"
+            }
         }
 
-        Row {
+        Chip {
+            id: powerBtn
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
-            spacing: 6
-            Chip { label: "Suspend"; visible: sddm.canSuspend; onClicked: sddm.suspend() }
-            Chip { label: "Restart"; visible: sddm.canReboot; onClicked: sddm.reboot() }
-            Chip { label: "Shut down"; visible: sddm.canPowerOff; onClicked: sddm.powerOff() }
+            visible: sddm.canSuspend || sddm.canHibernate || sddm.canReboot || sddm.canPowerOff
+            label: "Power" + (root.menu === "power" ? "  ▾" : "  ▴")
+            selected: root.menu === "power"
+            onClicked: root.menu = root.menu === "power" ? "" : "power"
         }
     }
 
-    // session list, opening upward like the demo's dropdown near the bottom
-    Rectangle {
-        id: sessionMenu
-        visible: false
-        x: 24
-        y: root.height - 24 - 40 - 8 - height
-        width: Math.max(220, menuCol.implicitWidth + 12)
-        height: menuCol.implicitHeight + 12
+    // Clicking anywhere else closes an open menu.
+    MouseArea {
+        anchors.fill: parent
+        visible: root.menu !== ""
+        onClicked: root.menu = ""
+    }
+
+    // ---- menus, opening upward from their button ---------------------------
+    DropMenu {
+        open: root.menu === "session"
+        anchorItem: sessionBtn
+        items: {
+            const out = [];
+            for (let i = 0; i < sessions.count; i++)
+                if (!root.sessionHidden(i))
+                    out.push({ label: sessions.itemAt(i).name, value: i, checked: i === root.sessionIndex });
+            return out;
+        }
+        onPicked: v => { root.sessionIndex = v; root.menu = ""; password.forceActiveFocus(); }
+    }
+    DropMenu {
+        open: root.menu === "user"
+        anchorItem: userBtn
+        items: {
+            const out = [];
+            for (let i = 0; i < users.count; i++) {
+                const u = users.itemAt(i);
+                out.push({ label: u.realName !== "" ? u.realName + "  ·  " + u.name : u.name, value: i,
+                           checked: !root.manualUser && i === root.userIndex });
+            }
+            out.push({ label: "Other user…", value: -1, checked: root.manualUser });
+            return out;
+        }
+        onPicked: v => root.pickUser(v)
+    }
+    DropMenu {
+        open: root.menu === "power"
+        anchorItem: powerBtn
+        alignRight: true
+        items: [
+            { label: "Suspend", value: "suspend", show: sddm.canSuspend },
+            { label: "Hibernate", value: "hibernate", show: sddm.canHibernate },
+            { label: "Restart", value: "reboot", show: sddm.canReboot },
+            { label: "Shut down", value: "poweroff", show: sddm.canPowerOff }
+        ].filter(i => i.show)
+        onPicked: v => {
+            root.menu = "";
+            if (v === "suspend") sddm.suspend();
+            else if (v === "hibernate") sddm.hibernate();
+            else if (v === "reboot") sddm.reboot();
+            else if (v === "poweroff") sddm.powerOff();
+        }
+    }
+
+    component DropMenu: Rectangle {
+        id: dm
+        property bool open: false
+        property Item anchorItem
+        property bool alignRight: false
+        property var items: []
+        signal picked(var value)
+
+        visible: open
+        // Measured when it opens.
+        readonly property point at: open && anchorItem ? anchorItem.mapToItem(root, 0, 0) : Qt.point(0, 0)
+        x: alignRight && anchorItem ? at.x + anchorItem.width - width : at.x
+        y: at.y - 8 - height
+        width: Math.max(220, dmCol.implicitWidth + 12)
+        height: dmCol.implicitHeight + 12
         radius: root.rr(12)
         color: root.cPanel
         border.color: root.cLine
         border.width: 1
 
         Column {
-            id: menuCol
+            id: dmCol
             anchors.centerIn: parent
-            width: parent.width - 12
+            width: dm.width - 12
             Repeater {
-                model: sessionModel
+                model: dm.items
                 delegate: Rectangle {
-                    required property int index
-                    required property string name
-                    width: menuCol.width
+                    id: row
+                    required property var modelData
+                    width: dmCol.width
+                    implicitWidth: rowText.implicitWidth + 60
                     height: 38
                     radius: root.rr(8)
                     color: rowHover.hovered ? root.cField : "transparent"
                     Text {
+                        id: rowText
                         anchors.left: parent.left
                         anchors.leftMargin: 11
                         anchors.verticalCenter: parent.verticalCenter
-                        text: name
+                        text: row.modelData.label
                         color: root.cInk
                         font.family: root.fontName
                         font.pixelSize: 15
-                        font.weight: index === root.sessionIndex ? Font.Bold : Font.Normal
+                        font.weight: row.modelData.checked ? Font.Bold : Font.Normal
                     }
                     Text {
                         anchors.right: parent.right
@@ -412,17 +528,11 @@ Rectangle {
                         anchors.verticalCenter: parent.verticalCenter
                         text: "✓"
                         color: root.cAccent
-                        visible: index === root.sessionIndex
+                        visible: row.modelData.checked === true
                         font.pixelSize: 15
                     }
                     HoverHandler { id: rowHover; cursorShape: Qt.PointingHandCursor }
-                    TapHandler {
-                        onTapped: {
-                            root.sessionIndex = index;
-                            sessionMenu.visible = false;
-                            password.forceActiveFocus();
-                        }
-                    }
+                    TapHandler { onTapped: dm.picked(row.modelData.value) }
                 }
             }
         }
@@ -457,5 +567,8 @@ Rectangle {
         TapHandler { id: chipTap; onTapped: chip.clicked() }
     }
 
-    Component.onCompleted: password.forceActiveFocus()
+    Component.onCompleted: {
+        if (sessionHidden(sessionIndex)) sessionIndex = lumenSession();
+        password.forceActiveFocus();
+    }
 }

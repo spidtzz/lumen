@@ -5,6 +5,17 @@
 
 export PATH="$HOME/.local/bin:$PATH"
 
+# Started from another login screen's plain "bspwm" session instead of
+# lumen-session: set up the same environment (see bin/lumen-session).
+if [ -z "$LUMEN_SESSION" ]; then
+	export LUMEN_SESSION=1 XDG_CURRENT_DESKTOP=lumen XDG_SESSION_DESKTOP=lumen XDG_SESSION_TYPE=x11
+	export QT_QPA_PLATFORMTHEME=gtk3 XCURSOR_THEME=Adwaita XCURSOR_SIZE=24 GTK_USE_PORTAL=1
+	dbus-update-activation-environment --systemd DISPLAY XAUTHORITY PATH XDG_CURRENT_DESKTOP \
+		XDG_SESSION_DESKTOP XDG_SESSION_TYPE QT_QPA_PLATFORMTHEME XCURSOR_THEME XCURSOR_SIZE GTK_USE_PORTAL 2>/dev/null
+	systemctl --user try-restart xdg-desktop-portal-gtk.service xdg-desktop-portal.service 2>/dev/null
+	command -v spice-vdagent >/dev/null && spice-vdagent
+fi
+
 pgrep -x sxhkd >/dev/null || sxhkd &
 
 # ---- Desktops ---------------------------------------------------------------

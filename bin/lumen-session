@@ -4,6 +4,7 @@
 # (via ~/.xinitrc). The installer also places a copy in /usr/local/bin.
 
 export PATH="$HOME/.local/bin:$PATH"
+export LUMEN_SESSION=1   # bspwmrc: the environment below is already set
 export XDG_CURRENT_DESKTOP=lumen
 export XDG_SESSION_DESKTOP=lumen
 export XDG_SESSION_TYPE=x11

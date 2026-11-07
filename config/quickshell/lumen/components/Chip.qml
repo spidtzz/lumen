@@ -14,7 +14,7 @@ Rectangle {
 
     implicitWidth: row.implicitWidth + (removable ? 16 : 26)
     implicitHeight: 32
-    radius: height / 2
+    radius: Theme.r(height / 2)
     color: checked ? Theme.accent : Theme.field
     border.width: 1
     border.color: checked || hover.hovered ? Theme.accent : Theme.line
@@ -35,7 +35,7 @@ Rectangle {
         }
         Rectangle {
             visible: chip.removable
-            width: 22; height: 22; radius: 11
+            width: 22; height: 22; radius: Theme.r(11)
             color: xHover.hovered ? Theme.panel : "transparent"
             Icon {
                 anchors.centerIn: parent

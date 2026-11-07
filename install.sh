@@ -6,7 +6,7 @@
 #
 # Options:
 #   --profile core|recommended|full   package set (default: recommended)
-#   --fm dolphin|nautilus|none        file manager (asked when interactive)
+#   --fm dolphin|nautilus|none        a second file manager (Thunar is always installed)
 #   --dm sddm|none                    login screen (default: sddm, none for core)
 #   --autostart / --no-autostart      without SDDM: start X automatically on tty1
 #   --link                            symlink configs to this repo (for development)
@@ -23,7 +23,7 @@ DATA_HOME=${XDG_DATA_HOME:-$HOME/.local/share}
 STATE_HOME=${XDG_STATE_HOME:-$HOME/.local/state}
 BACKUP=$STATE_HOME/$NAME/backups/$(date +%Y%m%d-%H%M%S)
 
-PROFILE=recommended FM=ask DM=auto AUTOSTART=ask LINK=0 PACKAGES=1 DRY=0 YES=0
+PROFILE=recommended FM=none DM=auto AUTOSTART=ask LINK=0 PACKAGES=1 DRY=0 YES=0
 
 # ---------------------------------------------------------------- helpers
 c_blue=$'\e[1;34m' c_yellow=$'\e[1;33m' c_red=$'\e[1;31m' c_dim=$'\e[2m' c_off=$'\e[0m'
@@ -64,7 +64,8 @@ while (($#)); do
 	shift
 done
 [[ $PROFILE =~ ^(core|recommended|full)$ ]] || die "--profile must be core, recommended or full"
-[[ $FM =~ ^(ask|dolphin|nautilus|none)$ ]] || die "--fm must be dolphin, nautilus or none"
+[[ $FM =~ ^(thunar|dolphin|nautilus|none)$ ]] || die "--fm must be dolphin, nautilus or none"
+[[ $FM == thunar ]] && FM=none   # always installed
 [[ $DM =~ ^(auto|sddm|none)$ ]] || die "--dm must be sddm or none"
 [[ $DM == auto ]] && { [[ $PROFILE == core ]] && DM=none || DM=sddm; }
 
@@ -106,21 +107,12 @@ read_list() { # read_list core -> package names, comments stripped
 }
 
 # ---------------------------------------------------------------- packages
-choose_fm() {
-	[[ $FM != ask ]] && return 0
-	if ((YES)) || [[ ! -t 0 ]] || [[ $PROFILE != full ]]; then FM=none; return 0; fi
-	local reply
-	read -rp "File manager — 1) Dolphin  2) Nautilus  3) none [3] " reply
-	case $reply in 1) FM=dolphin ;; 2) FM=nautilus ;; *) FM=none ;; esac
-}
-
 install_packages() {
 	((PACKAGES)) || { log "Skipping packages (--no-packages)."; return 0; }
 	local pkgs=()
 	mapfile -t pkgs < <(read_list core)
 	[[ $PROFILE == core ]] || mapfile -t -O "${#pkgs[@]}" pkgs < <(read_list recommended)
 	[[ $PROFILE == full ]] && mapfile -t -O "${#pkgs[@]}" pkgs < <(read_list full)
-	choose_fm
 	case $FM in
 		dolphin) pkgs+=(dolphin breeze-icons) ;;
 		nautilus) pkgs+=(nautilus) ;;
@@ -250,8 +242,45 @@ install_files() {
 				>"$CONFIG_HOME/$NAME/settings.conf"
 		fi
 	fi
+	# Settings > Wallpaper looks here.
+	[[ -d $HOME/Pictures/Wallpapers ]] || run mkdir -p "$HOME/Pictures/Wallpapers"
+	setup_default_apps
 	((BACKED_UP)) && log "Replaced files were backed up to $BACKUP"
 	return 0
+}
+
+# Thunar for folders, Ristretto for pictures, mpv for videos and music.
+# Only types you haven't chosen an app for yourself are set.
+setup_default_apps() {
+	local f=$CONFIG_HOME/mimeapps.list mime line add=()
+	local -A want=([inode/directory]=thunar.desktop)
+	for mime in image/png image/jpeg image/gif image/webp image/bmp image/tiff image/svg+xml image/avif; do
+		want[$mime]=org.xfce.ristretto.desktop
+	done
+	for mime in video/mp4 video/x-matroska video/webm video/quicktime video/x-msvideo video/mpeg video/ogg \
+		audio/mpeg audio/flac audio/ogg audio/x-wav audio/mp4 audio/opus; do
+		want[$mime]=mpv.desktop
+	done
+	for mime in "${!want[@]}"; do
+		[[ -f $f ]] && awk -F= -v m="$mime" '$1 == m { found = 1 } END { exit !found }' "$f" && continue
+		add+=("$mime=${want[$mime]}")
+	done
+	((${#add[@]})) || return 0
+	log "Default apps: Thunar, Ristretto and mpv for ${#add[@]} file types."
+	((DRY)) && { run write "$f"; return 0; }
+	mkdir -p "$CONFIG_HOME"
+	[[ -f $f ]] || printf '[Default Applications]\n' >"$f"
+	grep -q '^\[Default Applications\]' "$f" || printf '\n[Default Applications]\n' >>"$f"
+	# Insert right after the [Default Applications] header.
+	local out=() done=0
+	while IFS= read -r line || [[ -n $line ]]; do
+		out+=("$line")
+		if ((!done)) && [[ $line == '[Default Applications]' ]]; then
+			out+=("${add[@]}")
+			done=1
+		fi
+	done <"$f"
+	printf '%s\n' "${out[@]}" >"$f"
 }
 
 # ---------------------------------------------------------------- system
@@ -350,6 +379,5 @@ else
 		echo "   Log out and back in on tty1, or run: startx"
 	fi
 	echo "   Set your profile picture in Settings > Users (super + comma)."
-	echo "   Shortcuts: super+Return terminal · super+shift+d light/dark · super+shift+a accent"
-	echo "              super+shift+arrows move the bar · super+alt+q log out"
+	echo "   Shortcuts: super+Return terminal · super+space apps · super+/ all shortcuts"
 fi

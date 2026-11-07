@@ -89,7 +89,7 @@ FloatingWindow {
 
                         Layout.fillWidth: true
                         implicitHeight: 86
-                        radius: 12
+                        radius: Theme.r(12)
                         color: selected ? Theme.accent : tileHover.hovered ? Theme.field : Theme.bg
                         border.width: 1
                         border.color: selected ? Theme.accent : Theme.line

@@ -16,15 +16,16 @@ FloatingWindow {
 
     // Pages, grouped into sections in the sidebar.
     readonly property var pages: [
+        { id: "network", section: "Connections", label: "Network", icon: "wifi", file: "NetworkPage.qml" },
+        { id: "bluetooth", section: "Connections", label: "Bluetooth", icon: "bluetooth", file: "BluetoothPage.qml" },
         { id: "appearance", section: "Personalisation", label: "Appearance", icon: "droplet", file: "AppearancePage.qml" },
         { id: "wallpaper", section: "Personalisation", label: "Wallpaper", icon: "image", file: "WallpaperPage.qml" },
         { id: "bar", section: "Personalisation", label: "Bar", icon: "layout", file: "BarPage.qml" },
-        { id: "network", section: "Connections", label: "Network", icon: "wifi", file: "NetworkPage.qml" },
-        { id: "bluetooth", section: "Connections", label: "Bluetooth", icon: "bluetooth", file: "BluetoothPage.qml" },
         { id: "display", section: "Devices", label: "Displays", icon: "monitor", file: "DisplayPage.qml" },
         { id: "sound", section: "Devices", label: "Sound", icon: "volume", file: "SoundPage.qml" },
         { id: "input", section: "Devices", label: "Keyboard & Mouse", icon: "keyboard", file: "InputPage.qml" },
         { id: "notifications", section: "System", label: "Notifications", icon: "bell", file: "NotificationsPage.qml" },
+        { id: "performance", section: "System", label: "Performance", icon: "cpu", file: "PerformancePage.qml" },
         { id: "datetime", section: "System", label: "Date & Time", icon: "clock", file: "DateTimePage.qml" },
         { id: "users", section: "System", label: "Users & Privacy", icon: "user", file: "UsersPage.qml" },
         { id: "about", section: "System", label: "About", icon: "info", file: "AboutPage.qml" }
@@ -79,12 +80,21 @@ FloatingWindow {
                         Layout.topMargin: 6
                         Layout.leftMargin: 6
                         spacing: 10
-                        Avatar { size: 34 }
-                        ColumnLayout {
-                            spacing: 0
-                            Txt { text: "Settings"; size: 18; strong: true }
-                            Txt { text: Theme.userName; size: 12; muted: true }
+                        // The lumen logo, as on the app launcher button.
+                        Rectangle {
+                            implicitWidth: 34
+                            implicitHeight: 34
+                            radius: Theme.r(17)
+                            color: Theme.accent
+                            Icon {
+                                anchors.centerIn: parent
+                                name: "lumen"
+                                size: 22
+                                stroke: 2.2
+                                color: Theme.accentFg
+                            }
                         }
+                        Txt { text: "Settings"; size: 18; strong: true }
                     }
 
                     Flickable {

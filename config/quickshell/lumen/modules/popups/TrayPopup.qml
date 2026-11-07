@@ -11,10 +11,11 @@ PopupCard {
     spacing: 6
 
     readonly property var hidden: Tray.items.filter(i => !Tray.isPinned(i.id))
-    implicitWidth: Math.max(grid.implicitWidth + padding * 2, 64)
+    implicitWidth: grid.implicitWidth + padding * 2
 
     GridLayout {
         id: grid
+        Layout.alignment: Qt.AlignHCenter
         columns: Math.min(4, Math.max(1, root.hidden.length))
         rowSpacing: 2
         columnSpacing: 2

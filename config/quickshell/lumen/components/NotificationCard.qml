@@ -23,7 +23,7 @@ Rectangle {
 
     Layout.fillWidth: true
     implicitHeight: col.implicitHeight + 24
-    radius: 12
+    radius: Theme.r(12)
     color: popup ? Theme.panel : Theme.field
     border.width: critical ? 2 : 1
     border.color: critical ? Theme.danger : Theme.line
@@ -51,7 +51,7 @@ Rectangle {
                 }
                 Rectangle {
                     anchors.fill: parent
-                    radius: 9
+                    radius: Theme.r(9)
                     color: Theme.accent
                     visible: card.iconSource === ""
                     Icon { anchors.centerIn: parent; name: "bell"; size: 16; color: Theme.accentFg }
@@ -85,7 +85,7 @@ Rectangle {
 
             Rectangle {
                 Layout.alignment: Qt.AlignTop
-                width: 24; height: 24; radius: 12
+                width: 24; height: 24; radius: Theme.r(12)
                 color: xHover.hovered ? Theme.line : "transparent"
                 Icon { anchors.centerIn: parent; name: "x"; size: 13; color: Theme.muted }
                 HoverHandler { id: xHover; cursorShape: Qt.PointingHandCursor }

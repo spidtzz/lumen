@@ -42,7 +42,7 @@ BarButton {
             }
             Rectangle {
                 visible: Notifs.list.length > 0 && !Notifs.dnd
-                width: 7; height: 7; radius: 4
+                width: 7; height: 7; radius: Theme.r(4)
                 anchors.right: parent.right
                 anchors.top: parent.top
                 anchors.margins: -1

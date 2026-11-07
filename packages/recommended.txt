@@ -9,6 +9,11 @@ xdg-user-dirs
 # notify-send, for scripts and the test button in Settings > Notifications
 libnotify
 
+# Thunar: trash, USB drives and phones (gvfs), video thumbnails
+gvfs
+gvfs-mtp
+ffmpegthumbnailer
+
 # Quick Settings: Bluetooth, performance mode, screen brightness
 bluez
 bluez-utils

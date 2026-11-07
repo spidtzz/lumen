@@ -85,7 +85,7 @@ Rectangle {
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
         background: Rectangle {
-            radius: 12
+            radius: Theme.r(12)
             color: Theme.panel
             border.width: 1
             border.color: Theme.line
@@ -128,7 +128,7 @@ Rectangle {
                     required property int index
                     width: ListView.view.width - 8
                     height: 38
-                    radius: 8
+                    radius: Theme.r(8)
                     color: index === list.currentIndex ? Theme.field : "transparent"
 
                     Txt {

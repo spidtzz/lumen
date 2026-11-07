@@ -61,20 +61,6 @@ alt + Print
 super + shift + r
 	lumen-capture toggle screen
 
-# @group Theme
-
-# Switch between light and dark
-super + shift + d
-	lumen-theme toggle-mode
-
-# Next accent colour
-super + shift + a
-	lumen-theme cycle-accent
-
-# Move the bar to the top, right, bottom or left edge
-super + shift + {Up,Right,Down,Left}
-	lumen-theme set bar_position {top,right,bottom,left}
-
 # @group Session
 
 # Reload keyboard shortcuts
@@ -111,9 +97,13 @@ super + {Left,Down,Up,Right}
 super + ctrl + {h,j,k,l}
 	bspc node -s {west,south,north,east}
 
-# Make the window tiled, floating or fullscreen
-super + {t,s,f}
-	bspc node -t {tiled,floating,fullscreen}
+# Make the window tiled or fullscreen
+super + {t,f}
+	bspc node -t {tiled,fullscreen}
+
+# Float the window, or tile it again
+super + shift + f
+	bspc node -t ~floating
 
 # Toggle monocle layout
 super + m
@@ -150,9 +140,21 @@ super + shift + {1-9,0}
 	bspc node -d '^{1-9,10}'
 
 # Go to the previous desktop
+super + a
+	bspc desktop -f prev.local
+
+# Go to the next desktop
+super + d
+	bspc desktop -f next.local
+
+# Go to the previous desktop with windows
+super + w
+	bspc desktop -f prev.local.occupied
+
+# Go to the next desktop with windows
+super + s
+	bspc desktop -f next.local.occupied
+
+# Go back to the last desktop you used
 super + Tab
 	bspc desktop -f last
-
-# Go to the next or previous occupied desktop
-super + bracket{left,right}
-	bspc desktop -f {prev,next}.local.occupied

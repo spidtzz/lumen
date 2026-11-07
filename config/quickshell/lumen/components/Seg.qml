@@ -13,7 +13,7 @@ Rectangle {
 
     implicitWidth: Math.max(220, options.length * 84)
     implicitHeight: 38
-    radius: 10
+    radius: Theme.r(10)
     color: Theme.field
     border.width: 1
     border.color: Theme.line
@@ -32,7 +32,7 @@ Rectangle {
 
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                radius: 7
+                radius: Theme.r(7)
                 color: selected ? Theme.accent : hover.hovered ? Theme.panel : "transparent"
                 Behavior on color { ColorAnimation { duration: Theme.animFast } }
 

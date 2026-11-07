@@ -142,7 +142,7 @@ FloatingWindow {
 
                     width: list.width
                     height: win.rowHeight
-                    radius: 12
+                    radius: Theme.r(12)
                     color: current ? Theme.accent : rowHover.hovered ? Theme.field : "transparent"
 
                     RowLayout {
@@ -163,7 +163,7 @@ FloatingWindow {
                             }
                             Rectangle {
                                 anchors.fill: parent
-                                radius: 10
+                                radius: Theme.r(10)
                                 visible: !appIcon.visible
                                 color: row.current ? Theme.accentFg : Theme.field
                                 Icon { anchors.centerIn: parent; name: "app"; size: 18; color: row.current ? Theme.accent : Theme.muted }

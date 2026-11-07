@@ -28,16 +28,23 @@ Grid {
         onWheel: event => Bspwm.cycleDesktop(event.angleDelta.y < 0)
     }
 
+    // Arrows keep their space (when there's more than one page), and a short
+    // last page is padded, so the workspaces always take the same room.
     component PageArrow: Rectangle {
         id: arrow
         property bool forward: true
-        width: root.vertical ? 26 : 16
-        height: root.vertical ? 16 : 26
-        radius: 8
+        property bool shown: false
+        property Item ws: null   // the Workspaces grid (passed in: inline components don't see its id)
+        visible: arrow.ws.pages > 1
+        opacity: shown ? 1 : 0
+        enabled: shown
+        width: arrow.ws.vertical ? 26 : 16
+        height: arrow.ws.vertical ? 16 : 26
+        radius: Theme.r(8)
         color: arrowHover.hovered ? Theme.field : "transparent"
         Icon {
             anchors.centerIn: parent
-            name: root.vertical ? (arrow.forward ? "chevron-down" : "chevron-up")
+            name: arrow.ws.vertical ? (arrow.forward ? "chevron-down" : "chevron-up")
                                 : (arrow.forward ? "chevron-right" : "chevron-left")
             size: 13
             color: Theme.muted
@@ -45,13 +52,13 @@ Grid {
         HoverHandler { id: arrowHover; cursorShape: Qt.PointingHandCursor }
         TapHandler {
             onTapped: {
-                const target = root.all[(root.page + (arrow.forward ? 1 : -1)) * root.per];
+                const target = arrow.ws.all[(arrow.ws.page + (arrow.forward ? 1 : -1)) * arrow.ws.per];
                 if (target) Bspwm.focusDesktop(target.name);
             }
         }
     }
 
-    PageArrow { forward: false; visible: root.moreBefore }
+    PageArrow { ws: root; forward: false; shown: root.moreBefore }
 
     Repeater {
         model: root.shown
@@ -65,7 +72,7 @@ Grid {
 
             width: root.vertical ? 26 : along
             height: root.vertical ? along : 26
-            radius: 13
+            radius: Theme.r(13)
             color: active ? Theme.accent : (hover.hovered ? Theme.field : "transparent")
             border.width: modelData.urgent && !active ? 1 : 0
             border.color: Theme.danger
@@ -87,7 +94,7 @@ Grid {
 
             Rectangle {
                 visible: chip.modelData.occupied && !chip.active
-                width: 4; height: 4; radius: 2
+                width: 4; height: 4; radius: Theme.r(2)
                 color: Theme.accent
                 anchors.horizontalCenter: parent.horizontalCenter
                 anchors.bottom: parent.bottom
@@ -99,5 +106,10 @@ Grid {
         }
     }
 
-    PageArrow { forward: true; visible: root.moreAfter }
+    Repeater {
+        model: root.pages > 1 ? Math.max(0, root.per - root.shown.length) : 0
+        delegate: Item { width: 26; height: 26 }
+    }
+
+    PageArrow { ws: root; forward: true; shown: root.moreAfter }
 }

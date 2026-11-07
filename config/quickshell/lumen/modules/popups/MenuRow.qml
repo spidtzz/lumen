@@ -17,7 +17,7 @@ Rectangle {
     Layout.fillWidth: true
     implicitWidth: rowLayout.implicitWidth + 22
     implicitHeight: 36
-    radius: 8
+    radius: Theme.r(8)
     opacity: enabled ? 1 : 0.45
     color: hover.hovered && enabled ? Theme.field : "transparent"
 

@@ -35,7 +35,7 @@ Item {
     Rectangle {
         id: mask
         anchors.fill: parent
-        radius: width / 2
+        radius: Theme.r(width / 2)
         visible: false
         layer.enabled: true
     }
@@ -52,7 +52,7 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: width / 2
+        radius: Theme.r(width / 2)
         color: Theme.accent
         visible: img.status !== Image.Ready
         Text {

@@ -8,54 +8,110 @@ Page {
     title: "Keyboard & Mouse"
     description: "Layouts, key repeat and pointer settings."
 
-    readonly property var known: [
-        { value: "us", label: "English (US)" }, { value: "gb", label: "English (UK)" },
-        { value: "ir", label: "Persian" }, { value: "ara", label: "Arabic" },
-        { value: "tr", label: "Turkish" }, { value: "de", label: "German" },
-        { value: "fr", label: "French" }, { value: "es", label: "Spanish" },
-        { value: "it", label: "Italian" }, { value: "pt", label: "Portuguese" },
-        { value: "br", label: "Portuguese (Brazil)" }, { value: "ru", label: "Russian" },
-        { value: "ua", label: "Ukrainian" }, { value: "pl", label: "Polish" },
-        { value: "nl", label: "Dutch" }, { value: "se", label: "Swedish" },
-        { value: "no", label: "Norwegian" }, { value: "dk", label: "Danish" },
-        { value: "fi", label: "Finnish" }, { value: "gr", label: "Greek" },
-        { value: "il", label: "Hebrew" }, { value: "in", label: "Hindi" },
-        { value: "jp", label: "Japanese" }, { value: "kr", label: "Korean" }
-    ]
-    readonly property var layouts: (Theme.conf.kb_layouts || "us").split(",")
+    readonly property var layouts: Keyboard.layouts
+    // Every layout lumen knows a name for, A–Z, for the "Add" list.
+    readonly property var known: Object.keys(Keyboard.names)
+        .map(k => ({ value: k, label: Keyboard.names[k] }))
+        .sort((a, b) => a.label.localeCompare(b.label))
+    readonly property string switchKeys: ({ alt_shift: "Alt + Shift", ctrl_shift: "Ctrl + Shift", caps: "Caps Lock" })[Theme.conf.kb_switch || "alt_shift"]
 
-    function labelFor(code) {
-        const k = known.find(x => x.value === code);
-        return k ? k.label : code;
-    }
     function setLayouts(list) { Theme.setValue("kb_layouts", list.join(",")); }
+    function move(i, by) {
+        const l = layouts.slice();
+        const j = i + by;
+        if (j < 0 || j >= l.length) return;
+        [l[i], l[j]] = [l[j], l[i]];
+        setLayouts(l);
+    }
 
     Card {
         title: "Keyboard layouts"
-        description: "The first layout is the default. Up to four."
+        description: page.layouts.length > 1
+            ? "Switch with " + page.switchKeys + ", or click " + Keyboard.shortOf(Keyboard.current) + " in the bar. The first layout is the one you start with."
+            : "Add a second layout to type in another language."
 
-        Flow {
-            Layout.fillWidth: true
-            spacing: 8
-            Repeater {
-                model: page.layouts
-                delegate: Chip {
-                    required property string modelData
-                    required property int index
-                    text: page.labelFor(modelData)
-                    checked: index === 0
-                    removable: page.layouts.length > 1
-                    // Clicking a layout makes it the default.
-                    onClicked: if (index > 0) page.setLayouts([modelData].concat(page.layouts.filter(l => l !== modelData)))
-                    onRemoved: page.setLayouts(page.layouts.filter(l => l !== modelData))
+        Repeater {
+            model: page.layouts
+            delegate: Rectangle {
+                id: row
+                required property string modelData
+                required property int index
+                readonly property bool active: Keyboard.current === modelData
+
+                Layout.fillWidth: true
+                implicitHeight: 56
+                radius: Theme.radiusSmall
+                color: Theme.field
+                border.width: active && page.layouts.length > 1 ? 2 : 1
+                border.color: active && page.layouts.length > 1 ? Theme.accent : Theme.line
+
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.leftMargin: 12
+                    anchors.rightMargin: 8
+                    spacing: 12
+
+                    // Short name, as shown in the bar.
+                    Rectangle {
+                        implicitWidth: 40
+                        implicitHeight: 30
+                        radius: Theme.r(8)
+                        color: row.active ? Theme.accent : Theme.panel
+                        border.width: 1
+                        border.color: row.active ? Theme.accent : Theme.line
+                        Txt {
+                            anchors.centerIn: parent
+                            text: Keyboard.shortOf(row.modelData)
+                            size: 12
+                            strong: true
+                            color: row.active ? Theme.accentFg : Theme.ink
+                        }
+                    }
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 0
+                        Txt { text: Keyboard.nameOf(row.modelData); strong: true; Layout.fillWidth: true; elide: Text.ElideRight; wrapMode: Text.NoWrap }
+                        Txt {
+                            text: [row.index === 0 ? "Default" : "", row.active && page.layouts.length > 1 ? "In use now" : ""]
+                                .filter(t => t !== "").join(" · ")
+                            visible: text !== ""
+                            size: 12
+                            muted: true
+                        }
+                    }
+                    Btn {
+                        visible: !row.active
+                        text: "Use now"
+                        variant: "ghost"
+                        onClicked: Keyboard.set(row.modelData)
+                    }
+                    Btn {
+                        icon: "chevron-up"
+                        variant: "ghost"
+                        enabled: row.index > 0
+                        onClicked: page.move(row.index, -1)
+                    }
+                    Btn {
+                        icon: "chevron-down"
+                        variant: "ghost"
+                        enabled: row.index < page.layouts.length - 1
+                        onClicked: page.move(row.index, 1)
+                    }
+                    Btn {
+                        icon: "trash"
+                        variant: "ghost"
+                        enabled: page.layouts.length > 1
+                        onClicked: page.setLayouts(page.layouts.filter(l => l !== row.modelData))
+                    }
                 }
             }
         }
 
         SettingRow {
             label: "Add a layout"
-            visible: page.layouts.length < 4
+            description: page.layouts.length < 4 ? "" : "Four is the most X11 allows. Remove one to add another."
             Dropdown {
+                enabled: page.layouts.length < 4
                 searchable: true
                 placeholder: "Choose a language…"
                 options: page.known.filter(k => !page.layouts.includes(k.value))
@@ -63,10 +119,16 @@ Page {
                 onPicked: v => page.setLayouts(page.layouts.concat([v]))
             }
         }
+    }
+
+    Card {
+        title: "Switching layouts"
+        description: "Press and release the keys together, without another key. Left or right keys both work, and AltGr shortcuts aren't affected."
+        opacity: page.layouts.length > 1 ? 1 : 0.5
+        enabled: page.layouts.length > 1
 
         SettingRow {
-            visible: page.layouts.length > 1
-            label: "Switch layouts with"
+            label: "Switch with"
             Seg {
                 options: [
                     { label: "Alt + Shift", value: "alt_shift" },
@@ -80,7 +142,7 @@ Page {
 
         Field {
             Layout.fillWidth: true
-            placeholderText: "Type here to test"
+            placeholderText: "Try it here: type, switch, type again"
         }
     }
 

@@ -43,7 +43,7 @@ Page {
         RowLayout {
             spacing: 16
             Rectangle {
-                width: 64; height: 64; radius: 18
+                width: 64; height: 64; radius: Theme.r(18)
                 color: Theme.accent
                 Icon { anchors.centerIn: parent; name: "lumen"; size: 40; stroke: 2.2; color: Theme.accentFg }
             }

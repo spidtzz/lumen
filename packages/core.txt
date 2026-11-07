@@ -39,6 +39,12 @@ quickshell
 # Compositor: rounded corners, shadows, fades
 picom
 
+# Files, pictures and videos: Thunar (with thumbnails), Ristretto, mpv
+thunar
+tumbler
+ristretto
+mpv
+
 # Terminal and fonts (Noto covers Persian/Arabic and other scripts)
 kitty
 ttf-jetbrains-mono

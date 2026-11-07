@@ -19,7 +19,7 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: 8
+        radius: Theme.r(8)
         color: mouse.containsMouse ? Theme.field : "transparent"
     }
 

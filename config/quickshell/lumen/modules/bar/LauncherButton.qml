@@ -8,7 +8,7 @@ Rectangle {
 
     implicitWidth: 26
     implicitHeight: 26
-    radius: 13
+    radius: Theme.r(13)
     color: Panels.launcherOpen || hover.hovered ? Theme.accent : Theme.field
     border.width: 1
     border.color: Panels.launcherOpen || hover.hovered ? Theme.accent : Theme.line

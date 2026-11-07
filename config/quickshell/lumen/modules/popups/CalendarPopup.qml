@@ -34,12 +34,15 @@ PopupCard {
             out.push(loc.dayName((weekStart + i) % 7, Locale.NarrowFormat));
         return out;
     }
+    // Always six weeks (42 days), so the popup keeps its height from month
+    // to month. Days of the months before and after are shown faintly.
     readonly property var cells: {
-        const first = new Date(viewYear, viewMonth, 1);
-        const len = new Date(viewYear, viewMonth + 1, 0).getDate();
+        const lead = (new Date(viewYear, viewMonth, 1).getDay() - weekStart + 7) % 7;
         const out = [];
-        for (let i = 0; i < (first.getDay() - weekStart + 7) % 7; i++) out.push(0);
-        for (let d = 1; d <= len; d++) out.push(d);
+        for (let i = 0; i < 42; i++) {
+            const d = new Date(viewYear, viewMonth, 1 - lead + i);
+            out.push({ day: d.getDate(), inMonth: d.getMonth() === viewMonth, y: d.getFullYear(), m: d.getMonth() });
+        }
         return out;
     }
 
@@ -52,6 +55,8 @@ PopupCard {
             text: cal.loc.standaloneMonthName(cal.viewMonth, Locale.LongFormat) + " " + cal.viewYear
             strong: true
             size: 15
+            wrapMode: Text.NoWrap
+            elide: Text.ElideRight
         }
         Btn { icon: "chevron-right"; variant: "ghost"; onClicked: cal.step(1) }
     }
@@ -79,21 +84,21 @@ PopupCard {
             model: cal.cells
             delegate: Rectangle {
                 id: day
-                required property int modelData
-                readonly property bool isToday: modelData > 0 && clock.date.getFullYear() === cal.viewYear
-                    && clock.date.getMonth() === cal.viewMonth && clock.date.getDate() === modelData
+                required property var modelData
+                readonly property bool isToday: clock.date.getFullYear() === modelData.y
+                    && clock.date.getMonth() === modelData.m && clock.date.getDate() === modelData.day
 
                 Layout.fillWidth: true
                 implicitHeight: 34
-                radius: 8
+                radius: Theme.r(8)
                 color: isToday ? Theme.accent : "transparent"
                 Txt {
                     anchors.centerIn: parent
-                    visible: day.modelData > 0
-                    text: day.modelData
+                    text: day.modelData.day
                     size: 13
                     strong: day.isToday
-                    color: day.isToday ? Theme.accentFg : Theme.ink
+                    color: day.isToday ? Theme.accentFg : day.modelData.inMonth ? Theme.ink : Theme.muted
+                    opacity: day.modelData.inMonth || day.isToday ? 1 : 0.45
                 }
             }
         }

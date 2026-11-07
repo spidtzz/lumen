@@ -24,6 +24,8 @@ Rectangle {
     readonly property color cOnAccent: cfg("on_accent", "#081123")
     readonly property color cDanger: cfg("danger", "#f75d59")
     readonly property bool darkMode: cfg("mode", "dark") === "dark"
+    readonly property bool squareCorners: cfg("corners", "rounded") === "square"
+    function rr(n) { return squareCorners ? 0 : n; }
     readonly property string fontName: fontLoader.status === FontLoader.Ready
         ? fontLoader.name : cfg("font", "sans-serif")
 
@@ -140,7 +142,7 @@ Rectangle {
         anchors.verticalCenterOffset: 60
         width: 380
         height: cardCol.implicitHeight + 48
-        radius: 14
+        radius: root.rr(14)
         color: root.cPanel
         border.color: root.cLine
         border.width: 1
@@ -185,7 +187,7 @@ Rectangle {
                 Rectangle {
                     id: avMask
                     anchors.fill: parent
-                    radius: width / 2
+                    radius: root.rr(width / 2)
                     visible: false
                     layer.enabled: true
                 }
@@ -200,7 +202,7 @@ Rectangle {
                 }
                 Rectangle {
                     anchors.fill: parent
-                    radius: width / 2
+                    radius: root.rr(width / 2)
                     color: root.cAccent
                     visible: avImg.status !== Image.Ready
                     Text {
@@ -215,7 +217,7 @@ Rectangle {
                 Rectangle { // ring
                     anchors.fill: parent
                     anchors.margins: -4
-                    radius: width / 2
+                    radius: root.rr(width / 2)
                     color: "transparent"
                     border.color: root.cLine
                     border.width: 2
@@ -241,7 +243,7 @@ Rectangle {
                 Rectangle {
                     width: parent.width - submit.width - parent.spacing
                     height: 44
-                    radius: 9
+                    radius: root.rr(9)
                     color: root.cField
                     border.width: password.activeFocus ? 2 : 1
                     border.color: root.errorText !== "" ? root.cDanger
@@ -281,7 +283,7 @@ Rectangle {
                 Rectangle {
                     id: submit
                     width: 44; height: 44
-                    radius: 9
+                    radius: root.rr(9)
                     color: submitHover.hovered ? Qt.lighter(root.cAccent, 1.08) : root.cAccent
                     scale: submitTap.pressed ? 0.95 : 1
                     Behavior on scale { NumberAnimation { duration: 80 } }
@@ -376,7 +378,7 @@ Rectangle {
         y: root.height - 24 - 40 - 8 - height
         width: Math.max(220, menuCol.implicitWidth + 12)
         height: menuCol.implicitHeight + 12
-        radius: 12
+        radius: root.rr(12)
         color: root.cPanel
         border.color: root.cLine
         border.width: 1
@@ -392,7 +394,7 @@ Rectangle {
                     required property string name
                     width: menuCol.width
                     height: 38
-                    radius: 8
+                    radius: root.rr(8)
                     color: rowHover.hovered ? root.cField : "transparent"
                     Text {
                         anchors.left: parent.left
@@ -435,7 +437,7 @@ Rectangle {
 
         implicitWidth: chipText.implicitWidth + 28
         implicitHeight: 36
-        radius: 999
+        radius: root.rr(999)
         color: selected ? root.cAccent : root.cField
         border.width: 1
         border.color: selected ? root.cAccent : chipHover.hovered ? root.cAccent : root.cLine

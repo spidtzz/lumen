@@ -14,7 +14,7 @@ Page {
         title: "Position"
         SettingRow {
             label: "Edge"
-            description: "Also: super + shift + arrow keys."
+            description: "Which side of the screen the bar sits on."
             Seg {
                 options: [
                     { label: "Top", value: "top" }, { label: "Bottom", value: "bottom" },

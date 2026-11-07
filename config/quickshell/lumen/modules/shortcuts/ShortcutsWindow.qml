@@ -116,7 +116,7 @@ FloatingWindow {
                                     required property var modelData
                                     Layout.fillWidth: true
                                     implicitHeight: Math.max(36, rowLayout.implicitHeight + 10)
-                                    radius: 8
+                                    radius: Theme.r(8)
                                     color: rowHover.hovered ? Theme.field : "transparent"
 
                                     RowLayout {
@@ -171,7 +171,7 @@ FloatingWindow {
                                                         visible: !parent.modelData.sep
                                                         implicitWidth: keyText.implicitWidth + 14
                                                         height: 24
-                                                        radius: 6
+                                                        radius: Theme.r(6)
                                                         color: Theme.bg
                                                         border.width: 1
                                                         border.color: Theme.line

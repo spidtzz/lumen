@@ -19,7 +19,7 @@ Slider {
         y: s.topPadding + s.availableHeight / 2 - height / 2
         width: s.availableWidth
         height: 8
-        radius: 4
+        radius: Theme.r(4)
         color: Theme.field
         border.width: 1
         border.color: Theme.line
@@ -27,7 +27,7 @@ Slider {
         Rectangle {
             width: s.visualPosition * parent.width
             height: parent.height
-            radius: 4
+            radius: Theme.r(4)
             color: Theme.accent
         }
     }
@@ -37,7 +37,7 @@ Slider {
         y: s.topPadding + s.availableHeight / 2 - height / 2
         width: 20
         height: 20
-        radius: 10
+        radius: Theme.r(10)
         color: Theme.panel
         border.width: 3
         border.color: Theme.accent

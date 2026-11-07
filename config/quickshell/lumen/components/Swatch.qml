@@ -11,7 +11,7 @@ Rectangle {
 
     width: 36
     height: 36
-    radius: 18
+    radius: Theme.r(18)
     color: swatch
     border.width: 2
     border.color: selected ? Theme.panel : Theme.line
@@ -19,7 +19,7 @@ Rectangle {
     Rectangle {
         anchors.fill: parent
         anchors.margins: -5
-        radius: width / 2
+        radius: Theme.r(width / 2)
         color: "transparent"
         border.width: 3
         border.color: Theme.accent

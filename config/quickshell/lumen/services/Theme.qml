@@ -27,6 +27,8 @@ Singleton {
     // Every key in settings.conf (see `lumen-settings keys`), as strings.
     property var conf: ({})
     readonly property bool clock24h: conf.clock_24h !== "false"
+    readonly property bool rounded: conf.corners !== "square"     // Settings > Appearance
+    readonly property bool animations: conf.animations !== "false" // Settings > Performance
 
     // ---- palette (same names as the UI demo) ----
     property color bg: "#070f1f"
@@ -49,13 +51,16 @@ Singleton {
     property int avatarRevision: 0   // bumped by `qs -c lumen ipc call avatar changed`
 
     // ---- metrics ----
-    readonly property int radius: 14        // cards
-    readonly property int radiusSmall: 9    // buttons, fields
+    readonly property int radius: r(14)       // cards
+    readonly property int radiusSmall: r(9)   // buttons, fields
     readonly property int gap: 10           // matches bspwm window_gap
     readonly property int barSize: 36       // visible bar thickness
     readonly property int barThickness: barSize + gap  // space reserved from bspwm
-    readonly property int animFast: 120
-    readonly property int animNormal: 180
+    readonly property int animFast: animations ? 120 : 0
+    readonly property int animNormal: animations ? 180 : 0
+
+    // A corner radius, or 0 with square corners (Settings > Appearance).
+    function r(n) { return rounded ? n : 0; }
 
     Behavior on bg { ColorAnimation { duration: root.animNormal } }
     Behavior on panel { ColorAnimation { duration: root.animNormal } }

@@ -14,7 +14,14 @@ BarButton {
     onClicked: Keyboard.next()
     onRightClicked: Panels.togglePopup("keyboard", bar.screen, bar.anchorOf(btn))
 
+    // Same width for EN, FA, ... so switching doesn't move the bar.
+    TextMetrics { id: widest; font: label.font; text: "WW" }
+    contentWidth: widest.advanceWidth
+
     Text {
+        id: label
+        width: btn.vertical ? implicitWidth : btn.contentWidth
+        horizontalAlignment: Text.AlignHCenter
         text: Keyboard.shortOf(Keyboard.current)
         font.family: Theme.fontFamily
         font.pixelSize: Math.round(12 * Theme.fontScale)

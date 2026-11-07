@@ -5,7 +5,7 @@ import qs.components
 
 Page {
     title: "Appearance"
-    description: "Colours, text and effects. Changes apply to the shell, apps and the login screen."
+    description: "Colours, corners and text. Changes apply to the shell, apps and the login screen."
 
     readonly property var accents: [
         { id: "blue", label: "Blue", light: "#2867e4", dark: "#71a3ff" },
@@ -26,6 +26,15 @@ Page {
                 options: [{ label: "Light", value: "light" }, { label: "Dark", value: "dark" }]
                 value: Theme.mode
                 onPicked: v => Theme.setValue("mode", v)
+            }
+        }
+        SettingRow {
+            label: "Corners"
+            description: "Rounded or square, for the shell, windows, GTK apps and the login screen. Qt apps keep their own small corners."
+            Seg {
+                options: [{ label: "Rounded", value: "rounded" }, { label: "Square", value: "square" }]
+                value: Theme.rounded ? "rounded" : "square"
+                onPicked: v => Theme.setValue("corners", v)
             }
         }
     }
@@ -92,18 +101,6 @@ Page {
             Toggle {
                 checked: Theme.conf.window_buttons === "true"
                 onToggled: c => Theme.setValue("window_buttons", c)
-            }
-        }
-    }
-
-    Card {
-        title: "Effects"
-        SettingRow {
-            label: "Compositor"
-            description: "Rounded corners, shadows and fades (picom). Turn off for the lightest setup."
-            Toggle {
-                checked: Theme.conf.compositor !== "false"
-                onToggled: c => Theme.setValue("compositor", c)
             }
         }
     }

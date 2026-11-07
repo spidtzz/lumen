@@ -17,9 +17,13 @@ Singleton {
         de: "German", fr: "French", es: "Spanish", it: "Italian", pt: "Portuguese",
         br: "Portuguese (Brazil)", ru: "Russian", ua: "Ukrainian", pl: "Polish", nl: "Dutch",
         se: "Swedish", no: "Norwegian", dk: "Danish", fi: "Finnish", gr: "Greek",
-        il: "Hebrew", "in": "Hindi", jp: "Japanese", kr: "Korean"
+        il: "Hebrew", "in": "Hindi", jp: "Japanese", kr: "Korean",
+        af: "Dari / Pashto (Afghanistan)", pk: "Urdu", az: "Azerbaijani", kz: "Kazakh",
+        cz: "Czech", sk: "Slovak", hu: "Hungarian", ro: "Romanian", bg: "Bulgarian",
+        rs: "Serbian", hr: "Croatian", ch: "Swiss", be: "Belgian", th: "Thai",
+        vn: "Vietnamese", cn: "Chinese", ca: "Canadian (French)", ge: "Georgian", am: "Armenian"
     })
-    readonly property var shortNames: ({ us: "EN", gb: "GB", ir: "FA", ara: "AR", il: "HE", "in": "HI", jp: "JA", kr: "KO", se: "SV", dk: "DA", gr: "EL", br: "PT" })
+    readonly property var shortNames: ({ us: "EN", gb: "GB", ir: "FA", ara: "AR", il: "HE", "in": "HI", jp: "JA", kr: "KO", se: "SV", dk: "DA", gr: "EL", br: "PT", pk: "UR", af: "AF", cz: "CS", rs: "SR", vn: "VI", cn: "ZH", ge: "KA", am: "HY", ua: "UK" })
 
     function nameOf(code) { return names[code] || code; }
     function shortOf(code) { return shortNames[code] || code.toUpperCase(); }

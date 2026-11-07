@@ -123,7 +123,7 @@ FloatingWindow {
                 Rectangle {
                     anchors.fill: parent
                     anchors.margins: -4
-                    radius: width / 2
+                    radius: Theme.r(width / 2)
                     color: "transparent"
                     border.color: Theme.line
                     border.width: 2

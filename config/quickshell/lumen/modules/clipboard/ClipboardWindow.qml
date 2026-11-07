@@ -184,7 +184,7 @@ FloatingWindow {
 
                         width: list.width - 8
                         height: 54
-                        radius: 10
+                        radius: Theme.r(10)
                         color: selected ? Theme.accent : rowHover.hovered ? Theme.field : "transparent"
 
                         RowLayout {
@@ -196,7 +196,7 @@ FloatingWindow {
                             Rectangle {
                                 implicitWidth: 34
                                 implicitHeight: 34
-                                radius: 8
+                                radius: Theme.r(8)
                                 color: row.selected ? Theme.accentFg : Theme.field
                                 clip: true
                                 Image {
@@ -238,7 +238,7 @@ FloatingWindow {
 
                             Rectangle {
                                 visible: rowHover.hovered
-                                width: 26; height: 26; radius: 13
+                                width: 26; height: 26; radius: Theme.r(13)
                                 color: trashHover.hovered ? (row.selected ? Theme.accentFg : Theme.line) : "transparent"
                                 Icon {
                                     anchors.centerIn: parent

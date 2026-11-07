@@ -13,27 +13,103 @@ Page {
 
     readonly property string current: Theme.conf.wallpaper || ""
     readonly property string mode: Theme.conf.wallpaper_mode || "fill"
-    property var found: []
+    readonly property string folder: Theme.home + "/Pictures/Wallpapers"
+    readonly property bool subfolders: Theme.conf.wallpaper_subfolders !== "false"
+    property var found: []      // in your Wallpapers folder
+    property var system: []     // shipped with the system
 
     function choose(path) { Theme.setValue("wallpaper", path); }
+    function rescan() { finder.running = false; finder.running = true; }
+    onSubfoldersChanged: rescan()
 
-    // Pictures in the usual places.
+    // Pictures in ~/Pictures/Wallpapers (and its subfolders if chosen), then
+    // the system wallpaper folders.
     Process {
         id: finder
         running: true
         command: ["sh", "-c",
-            "find \"$HOME/Pictures\" /usr/share/backgrounds /usr/share/wallpapers -maxdepth 4 -type f " +
-            "\\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' \\) 2>/dev/null | head -n 60"]
+            "d=\"$1\"; mkdir -p \"$d\"; " +
+            "find -L \"$d\" $2 -type f \\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \\) " +
+            "2>/dev/null | sort | head -n 300; echo ---; " +
+            "find /usr/share/backgrounds /usr/share/wallpapers -maxdepth 4 -type f " +
+            "\\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' \\) 2>/dev/null | sort | head -n 60",
+            "sh", page.folder, page.subfolders ? "-mindepth 1" : "-maxdepth 1"]
         stdout: StdioCollector {
-            onStreamFinished: page.found = text.split("\n").filter(l => l !== "" && !l.includes("~"))
+            onStreamFinished: {
+                const parts = text.split("---\n");
+                const clean = t => (t || "").split("\n").filter(l => l !== "" && !l.includes("~"));
+                page.found = clean(parts[0]);
+                page.system = clean(parts[1]);
+            }
+        }
+    }
+
+    // Picture grid, shared by both cards.
+    component Thumbs: GridLayout {
+        id: grid
+        property var files: []
+        // Passed in: inline components don't see the page's id.
+        property string current
+        property string folder
+        signal picked(string path)
+        visible: files.length > 0
+        Layout.fillWidth: true
+        columns: 3
+        rowSpacing: 10
+        columnSpacing: 10
+
+        Repeater {
+            model: grid.files
+            delegate: Rectangle {
+                id: thumb
+                required property string modelData
+                readonly property bool selected: modelData === grid.current
+
+                Layout.fillWidth: true
+                Layout.preferredHeight: width * 9 / 16
+                radius: Theme.radiusSmall
+                color: Theme.field
+                clip: true
+                border.width: selected ? 3 : 1
+                border.color: selected ? Theme.accent : thumbHover.hovered ? Theme.accent : Theme.line
+
+                Image {
+                    anchors.fill: parent
+                    anchors.margins: thumb.border.width
+                    source: "file://" + thumb.modelData
+                    asynchronous: true
+                    sourceSize: Qt.size(320, 180)
+                    fillMode: Image.PreserveAspectCrop
+                }
+                // Subfolder name, when pictures come from more than one folder.
+                Rectangle {
+                    readonly property string sub: {
+                        const rel = thumb.modelData.startsWith(grid.folder + "/") ? thumb.modelData.slice(grid.folder.length + 1) : "";
+                        const i = rel.lastIndexOf("/");
+                        return i > 0 ? rel.slice(0, i) : "";
+                    }
+                    visible: sub !== ""
+                    anchors.left: parent.left
+                    anchors.bottom: parent.bottom
+                    anchors.margins: 6
+                    width: subText.implicitWidth + 12
+                    height: subText.implicitHeight + 4
+                    radius: Theme.r(6)
+                    color: Theme.panel
+                    opacity: 0.9
+                    Txt { id: subText; anchors.centerIn: parent; text: parent.sub; size: 11; strong: true }
+                }
+                HoverHandler { id: thumbHover; cursorShape: Qt.PointingHandCursor }
+                TapHandler { onTapped: grid.picked(thumb.modelData) }
+            }
         }
     }
 
     FileDialog {
         id: picker
         title: "Choose a wallpaper"
-        nameFilters: ["Images (*.png *.jpg *.jpeg)"]
-        currentFolder: "file://" + Theme.home + "/Pictures"
+        nameFilters: ["Images (*.png *.jpg *.jpeg *.webp)"]
+        currentFolder: "file://" + page.folder
         onAccepted: page.choose(decodeURIComponent(String(selectedFile).replace(/^file:\/\//, "")))
     }
 
@@ -92,44 +168,36 @@ Page {
     }
 
     Card {
-        title: "Pictures"
-        description: page.found.length > 0 ? "From Pictures and the system wallpaper folders."
-                                           : "No pictures found in ~/Pictures. Use “Choose a picture” or put some there."
+        title: "Your wallpapers"
+        description: page.found.length > 0
+            ? page.found.length + (page.found.length === 1 ? " picture" : " pictures") + " in ~/Pictures/Wallpapers."
+            : "Put pictures in ~/Pictures/Wallpapers and they show up here."
 
-        GridLayout {
-            visible: page.found.length > 0
-            Layout.fillWidth: true
-            columns: 3
-            rowSpacing: 10
-            columnSpacing: 10
-
-            Repeater {
-                model: page.found
-                delegate: Rectangle {
-                    id: thumb
-                    required property string modelData
-                    readonly property bool selected: modelData === page.current
-
-                    Layout.fillWidth: true
-                    Layout.preferredHeight: width * 9 / 16
-                    radius: Theme.radiusSmall
-                    color: Theme.field
-                    clip: true
-                    border.width: selected ? 3 : 1
-                    border.color: selected ? Theme.accent : thumbHover.hovered ? Theme.accent : Theme.line
-
-                    Image {
-                        anchors.fill: parent
-                        anchors.margins: thumb.border.width
-                        source: "file://" + thumb.modelData
-                        asynchronous: true
-                        sourceSize: Qt.size(320, 180)
-                        fillMode: Image.PreserveAspectCrop
-                    }
-                    HoverHandler { id: thumbHover; cursorShape: Qt.PointingHandCursor }
-                    TapHandler { onTapped: page.choose(thumb.modelData) }
-                }
+        SettingRow {
+            label: "Include subfolders"
+            description: "Also show pictures in folders inside Wallpapers."
+            Toggle {
+                checked: page.subfolders
+                onToggled: c => Theme.setValue("wallpaper_subfolders", c)
             }
         }
+
+        RowLayout {
+            spacing: 8
+            Btn {
+                text: "Open folder"
+                icon: "folder"
+                onClicked: Quickshell.execDetached(["gio", "open", page.folder])
+            }
+            Btn { text: "Refresh"; icon: "refresh"; variant: "ghost"; onClicked: page.rescan() }
+        }
+
+        Thumbs { files: page.found; current: page.current; folder: page.folder; onPicked: path => page.choose(path) }
+    }
+
+    Card {
+        visible: page.system.length > 0
+        title: "System wallpapers"
+        Thumbs { files: page.system; current: page.current; onPicked: path => page.choose(path) }
     }
 }

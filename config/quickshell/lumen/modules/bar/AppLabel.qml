@@ -9,7 +9,8 @@ Text {
 
     readonly property bool empty: Bspwm.focusedClass === ""
     text: empty ? "Desktop" : Bspwm.focusedClass
-    width: Math.min(implicitWidth, maxWidth)
+    // A fixed slot: a long or short name never changes the layout.
+    width: Math.min(Math.round(200 * Theme.fontScale), maxWidth)
     elide: Text.ElideRight
     font.family: Theme.fontFamily
     font.pixelSize: Math.round(15 * Theme.fontScale)

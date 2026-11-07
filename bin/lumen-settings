@@ -39,6 +39,8 @@ SCHEMA=(
 	"compositor~true~^(true|false)$~compositor"
 	"focus_follows_mouse~true~^(true|false)$~wm"
 	"window_buttons~false~^(true|false)$~theme"
+	"corners~rounded~^(rounded|square)$~corners"
+	"animations~true~^(true|false)$~compositor"
 	"clipboard_history~true~^(true|false)$~-"
 	"notif_position~top-right~^(top|bottom)-(left|center|right)$~-"
 	"bar_workspaces~5~^([3-9]|10)$~-"
@@ -53,6 +55,7 @@ SCHEMA=(
 	"tap_to_click~true~^(true|false)$~input"
 	"wallpaper~~^(/.{1,500})?$~theme"
 	"wallpaper_mode~fill~^(fill|fit|center|tile|stretch)$~theme"
+	"wallpaper_subfolders~true~^(true|false)$~-"
 )
 
 schema_field() { # schema_field key index
@@ -237,25 +240,44 @@ kbswitch() {
 		}'
 }
 
+# picom's options that follow settings: square corners, no fades without
+# animations. The file it was started with is remembered so a change in
+# settings restarts it.
+picom_flags() {
+	local f=(--log-file "$STATE/picom.log")
+	[[ ${CONF[corners]} == square ]] && f+=(--corner-radius 0)
+	[[ ${CONF[animations]} == false ]] && f+=(--no-fading-openclose --fade-in-step 1 --fade-out-step 1)
+	printf '%s\n' "${f[@]}"
+}
+
 apply_compositor() {
 	[[ -n ${DISPLAY:-} ]] || return 0
 	load
 	if [[ ${CONF[compositor]} != true ]]; then
 		pkill -x picom 2>/dev/null || true
+		rm -f "$STATE/picom.flags"
 		return 0
 	fi
-	pgrep -x picom >/dev/null && return 0
 	mkdir -p "$STATE"
+	local flags
+	mapfile -t flags < <(picom_flags)
+	if pgrep -x picom >/dev/null; then
+		[[ $(printf '%s\n' "${flags[@]}") == "$(cat "$STATE/picom.flags" 2>/dev/null)" ]] && return 0
+		pkill -x picom 2>/dev/null || true
+		local i
+		for i in 1 2 3 4 5 6 7 8 9 10; do pgrep -x picom >/dev/null || break; sleep 0.1; done
+	fi
+	printf '%s\n' "${flags[@]}" >"$STATE/picom.flags"
 	# Software rendering in virtual machines: virtual GPUs often show black
 	# windows with picom's GPU backend.
 	if systemd-detect-virt -q 2>/dev/null; then
 		# Virtual GPUs also miss partial redraws (windows flashing black when
 		# popups appear), so redraw the whole screen each frame there.
-		picom -b --backend xrender --no-use-damage --log-file "$STATE/picom.log" 2>/dev/null ||
-			picom -b --backend xrender --log-file "$STATE/picom.log"
+		picom -b --backend xrender --no-use-damage "${flags[@]}" 2>/dev/null ||
+			picom -b --backend xrender "${flags[@]}"
 	else
-		picom -b --log-file "$STATE/picom.log" ||
-			picom -b --backend xrender --log-file "$STATE/picom.log"
+		picom -b "${flags[@]}" ||
+			picom -b --backend xrender "${flags[@]}"
 	fi
 }
 
@@ -292,6 +314,7 @@ apply_what() {
 		theme) apply_theme ;;
 		input) apply_input ;;
 		compositor) apply_compositor ;;
+		corners) apply_theme; apply_compositor ;;
 		display) apply_display ;;
 		idle) apply_idle ;;
 		wm) apply_wm ;;

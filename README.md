@@ -27,7 +27,7 @@ Without SDDM (`--dm none`), log in on tty1 (the installer can start the desktop 
 | Option | Meaning |
 | --- | --- |
 | `--profile core\|recommended\|full` | Package set. `recommended` is the default. |
-| `--fm dolphin\|nautilus\|none` | Install and theme a file manager. |
+| `--fm dolphin\|nautilus\|none` | Also install a second file manager (Thunar is always installed). |
 | `--dm sddm\|none` | Login screen. `sddm` by default, `none` with the core profile. |
 | `--autostart` / `--no-autostart` | Without SDDM: start X automatically on tty1. |
 | `--link` | Symlink configs to the repo instead of copying (for development). |
@@ -35,6 +35,11 @@ Without SDDM (`--dm none`), log in on tty1 (the installer can start the desktop 
 | `-y`, `--yes` | Don't ask questions. |
 
 Backups of anything replaced go to `~/.local/state/lumen/backups/<date>/`.
+
+Apps included: **Thunar** for files (with thumbnails; trash and USB drives via gvfs in
+the recommended profile), **Ristretto** for pictures and **mpv** for videos and music.
+The installer makes them the default apps for those file types, unless you've already
+chosen others in `~/.config/mimeapps.list`.
 
 ## Shortcuts
 
@@ -54,11 +59,12 @@ Backups of anything replaced go to `~/.local/state/lumen/backups/<date>/`.
 | `super + q` | Close window |
 | `super + 1…9, 0` / `super + shift + 1…9, 0` | Go to / send to desktop 1–10 |
 | `super + h j k l` | Focus window in a direction |
-| `super + t / s / f` | Tiled / floating / fullscreen |
+| `super + a` / `super + d` | Previous / next desktop |
+| `super + w` / `super + s` | Previous / next desktop with windows |
+| `super + Tab` | Last desktop you used |
+| `super + t` / `super + f` | Tiled / fullscreen |
+| `super + shift + f` | Float the window (again to tile it) |
 | `super + m` | Monocle layout |
-| `super + shift + d` | Light ↔ dark |
-| `super + shift + a` | Next accent colour |
-| `super + shift + arrows` | Move the bar to that edge |
 | `super + Escape` | Reload shortcuts |
 | `super + alt + r` / `super + alt + q` | Restart bspwm / log out |
 
@@ -142,16 +148,17 @@ about mouse clicks while a bar popup is open, so clicking elsewhere closes it.
 
 | Page | What you can change | Uses |
 | --- | --- | --- |
-| Appearance | light/dark, accent, text size, title-bar buttons, compositor | lumen-theme |
-| Bar | edge, workspaces per page, clock, tray grouping, pinned and custom tray icons | |
-| Wallpaper | a picture (from Pictures, system wallpapers or anywhere) or the theme colour; fill, fit, centre, tile, stretch | hsetroot |
-| Displays | resolution, refresh rate, rotation, primary, arrangement — undone after 15 s unless kept | xrandr |
-| Sound | output and input device, volume, mute | PipeWire (built into Quickshell) |
 | Network | wired and Wi-Fi, connect with password | NetworkManager (nmcli) |
 | Bluetooth | on/off, find, pair, connect, forget devices | BlueZ |
-| Keyboard & Mouse | up to four layouts (e.g. English + Persian) and the switch keys, key repeat, focus follows mouse, pointer speed, natural scrolling, tap to click | setxkbmap, xset, xinput, bspwm |
+| Appearance | light/dark, accent, rounded or square corners, text size, title-bar buttons | lumen-theme |
+| Wallpaper | pictures from `~/Pictures/Wallpapers` (optionally its subfolders), system wallpapers or anywhere, or the theme colour; fill, fit, centre, tile, stretch | hsetroot |
+| Bar | edge, workspaces per page, clock, tray grouping, pinned and custom tray icons | |
+| Displays | resolution, refresh rate, rotation, primary, arrangement — undone after 15 s unless kept | xrandr |
+| Sound | output and input device, volume, mute | PipeWire (built into Quickshell) |
+| Keyboard & Mouse | up to four layouts (e.g. English + Persian) in order, switch keys, key repeat, focus follows mouse, pointer speed, natural scrolling, tap to click | setxkbmap, xset, xinput, bspwm |
 | Date & Time | time zone, network time, 24-hour clock | timedatectl |
 | Notifications | pop-up position, Do Not Disturb, clear history, test notification | |
+| Performance | power mode, compositor, animations, live processor and memory use | power-profiles-daemon, picom |
 | Users | profile picture, password, lock after idle, test the lock screen, clipboard history | lumen-avatar, passwd, xss-lock |
 | About | system details, copy to clipboard | |
 
@@ -191,13 +198,18 @@ If another login manager is already enabled, the installer asks before replacing
 
 ## Theming
 
-Your choices live in `~/.config/lumen/settings.conf`. Change them with the shortcuts above or:
+Your choices live in `~/.config/lumen/settings.conf`. Change them in Settings (Appearance, Bar) or:
 
 ```sh
 lumen-theme set accent teal      # blue violet teal green orange pink mono
 lumen-theme set mode light       # light dark
 lumen-theme set bar_position left
+lumen-theme set corners square   # rounded square
 ```
+
+**Square corners** apply to the shell, GTK 3/4 and libadwaita apps (through `gtk.css`),
+windows (picom) and the login screen. Qt apps use Qt's Fusion style, whose corners are
+already nearly square, and there's no global setting to change them further.
 
 `lumen-theme` writes:
 

@@ -102,6 +102,7 @@ PopupCard {
             status: !PowerProfiles.hasPerformanceProfile ? "Not supported here"
                   : active ? "On" : PowerProfiles.profile === PowerProfile.PowerSaver ? "Power saver" : "Balanced"
             onClicked: PowerProfiles.profile = active ? PowerProfile.Balanced : PowerProfile.Performance
+            onRightClicked: Panels.openSettings("performance")
         }
         Tile {
             readonly property bool fxOn: Theme.conf.compositor !== "false"
@@ -110,6 +111,7 @@ PopupCard {
             active: fxOn
             status: fxOn ? "Shadows and fades" : "Off"
             onClicked: Theme.setValue("compositor", !fxOn)
+            onRightClicked: Panels.openSettings("performance")
         }
     }
 
@@ -226,7 +228,7 @@ PopupCard {
         height: powerCol.implicitHeight + 12
         x: qs.width - width - qs.padding
         y: qs.padding + 46
-        radius: 12
+        radius: Theme.r(12)
         color: Theme.panel
         border.width: 1
         border.color: Theme.line

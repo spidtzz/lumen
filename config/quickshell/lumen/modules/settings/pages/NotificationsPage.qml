@@ -32,7 +32,7 @@ Page {
                 height: vertical ? parent.height - 16 : 10
                 x: Theme.barPosition === "right" ? parent.width - width - 6 : vertical ? 6 : 8
                 y: Theme.barPosition === "bottom" ? parent.height - height - 6 : vertical ? 8 : 6
-                radius: 5
+                radius: Theme.r(5)
                 color: Theme.panel
                 border.width: 1
                 border.color: Theme.line
@@ -48,7 +48,7 @@ Page {
 
                     width: 96
                     height: 34
-                    radius: 8
+                    radius: Theme.r(8)
                     x: p[1] === "left" ? 26 : p[1] === "center" ? (parent.width - width) / 2 : parent.width - width - 26
                     y: p[0] === "top" ? 28 : parent.height - height - 28
                     color: selected ? Theme.accent : spotHover.hovered ? Theme.field : Theme.panel
@@ -58,8 +58,8 @@ Page {
                     Column {
                         anchors.centerIn: parent
                         spacing: 4
-                        Rectangle { width: 54; height: 4; radius: 2; color: spot.selected ? Theme.accentFg : Theme.ink; opacity: 0.8 }
-                        Rectangle { width: 36; height: 4; radius: 2; color: spot.selected ? Theme.accentFg : Theme.muted; opacity: 0.8 }
+                        Rectangle { width: 54; height: 4; radius: Theme.r(2); color: spot.selected ? Theme.accentFg : Theme.ink; opacity: 0.8 }
+                        Rectangle { width: 36; height: 4; radius: Theme.r(2); color: spot.selected ? Theme.accentFg : Theme.muted; opacity: 0.8 }
                     }
                     HoverHandler { id: spotHover; cursorShape: Qt.PointingHandCursor }
                     TapHandler { onTapped: Theme.setValue("notif_position", spot.modelData) }

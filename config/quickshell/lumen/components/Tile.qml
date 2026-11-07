@@ -15,7 +15,7 @@ Rectangle {
 
     Layout.fillWidth: true
     implicitHeight: 56
-    radius: 12
+    radius: Theme.r(12)
     color: active ? Theme.accent : hover.hovered ? Qt.lighter(Theme.field, Theme.dark ? 1.25 : 0.97) : Theme.field
     border.width: 1
     border.color: active ? Theme.accent : Theme.line

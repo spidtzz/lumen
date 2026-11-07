@@ -31,7 +31,7 @@ case ${1:-help} in
 		sleep 0.3
 		state=${XDG_STATE_HOME:-$HOME/.local/state}/lumen
 		mkdir -p "$state"
-		QS_ICON_THEME=$(lumen-theme icon-theme 2>/dev/null) setsid -f qs -c lumen >"$state/quickshell.log" 2>&1
+		setsid -f qs -c lumen >"$state/quickshell.log" 2>&1
 		echo "lumen: restarted (log: $state/quickshell.log)"
 		;;
 	theme) shift; exec lumen-theme "$@" ;;

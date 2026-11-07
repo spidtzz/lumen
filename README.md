@@ -215,12 +215,10 @@ lumen-theme set corners square   # rounded square
 windows (picom) and the login screen. Qt apps use Qt's Fusion style, whose corners are
 already nearly square, and there's no global setting to change them further.
 
-The focused window is highlighted in the accent colour (Settings › Appearance › Windows):
-with square corners by bspwm's outline, with rounded corners by a soft glow from picom
-(bspwm's outline is a square frame picom can't round, so it would look cut at the
-corners). Turned off, windows you're not using are slightly dimmed instead. picom runs
-with `~/.local/state/lumen/picom.conf`, which includes your `~/.config/picom/picom.conf`
-and adds these window rules.
+The focused window gets an accent-coloured outline (Settings › Appearance › Windows).
+Turn it off and windows you're not using are slightly dimmed instead. bspwm draws the
+outline as a square frame, so with rounded corners it can look cut at the corners
+(clearly so in a virtual machine).
 
 File pickers (Open/Save dialogs) come from `xdg-desktop-portal-gtk` for every app
 (`GTK_USE_PORTAL=1`), so they follow light/dark even in Firefox and Thunderbird.

@@ -59,9 +59,20 @@ Singleton {
         return out;
     }
 
-    // Keep the bar's network icon current.
+    // Keep the bar's network icon current: NetworkManager reports changes
+    // (`nmcli monitor`), so refresh only when something happens, a moment
+    // later to let a burst of changes settle. A slow timer is the backstop.
+    Process {
+        id: monitor
+        running: root.available
+        command: ["nmcli", "monitor"]
+        stdout: SplitParser { onRead: _ => settle.restart() }
+        onExited: if (root.available) monitorRestart.start()
+    }
+    Timer { id: monitorRestart; interval: 5000; onTriggered: monitor.running = true }
+    Timer { id: settle; interval: 400; onTriggered: root.refresh() }
     Timer {
-        interval: 10000
+        interval: 120000
         repeat: true
         running: root.available
         onTriggered: root.refresh()

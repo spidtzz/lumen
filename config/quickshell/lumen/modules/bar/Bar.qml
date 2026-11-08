@@ -287,7 +287,10 @@ PanelWindow {
     // ---- rounded screen corners (Settings > Appearance) ----
     // Small black corner pieces above everything, one per screen corner.
     Variants {
-        model: Theme.screenCorners ? ["top-left", "top-right", "bottom-left", "bottom-right"] : []
+        // Not over fullscreen apps: they skip the compositor for speed
+        // (Settings > Performance), which only works with nothing on top.
+        model: Theme.screenCorners && !(win.fullscreenApp && Theme.conf.fullscreen_direct !== "false")
+            ? ["top-left", "top-right", "bottom-left", "bottom-right"] : []
         PopupWindow {
             id: cornerWin
             required property string modelData

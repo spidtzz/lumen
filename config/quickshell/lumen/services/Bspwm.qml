@@ -76,14 +76,6 @@ Singleton {
         classQuery.running = true;
     }
 
-    Process {
-        id: focusEvents
-        command: ["bspc", "subscribe", "node_focus", "node_add", "node_remove", "node_transfer", "desktop_focus"]
-        running: true
-        stdout: SplitParser { onRead: data => root.queryClass() }
-        onExited: focusRestart.start()
-    }
-    Timer { id: focusRestart; interval: 1000; onTriggered: { focusEvents.running = true; root.queryClass(); } }
 
     Process {
         id: classQuery
@@ -110,10 +102,15 @@ Singleton {
 
     Process {
         id: subscriber
-        command: ["bspc", "subscribe", "report"]
+        // One subscription for everything: the report (desktops, layouts,
+        // fullscreen) and the events that change the focused window's class.
+        command: ["bspc", "subscribe", "report", "node_focus", "node_add", "node_remove", "node_transfer", "desktop_focus"]
         running: true
         stdout: SplitParser {
-            onRead: data => root.parse(data)
+            onRead: data => {
+                if (data.startsWith("W")) root.parse(data);
+                else root.queryClass();
+            }
         }
         // bspwm restarts (super+alt+r) end the subscription; reconnect.
         onExited: restart.start()
@@ -122,6 +119,6 @@ Singleton {
     Timer {
         id: restart
         interval: 1000
-        onTriggered: subscriber.running = true
+        onTriggered: { subscriber.running = true; root.queryClass(); }
     }
 }

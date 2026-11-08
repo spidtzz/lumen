@@ -31,8 +31,9 @@ newest() { ls -1 "$DIR" 2>/dev/null | sort -rn | head -1; }
 
 notify_shell() { has qs && { qs -c lumen ipc call clipboard changed >/dev/null 2>&1 & } || true; }
 
+# Read the setting straight from the file (no extra process per copy).
 enabled() {
-	[[ $("$(dirname "$(readlink -f "$0")")/lumen-settings" get clipboard_history 2>/dev/null) != false ]]
+	! grep -qsx 'clipboard_history=false' "${XDG_CONFIG_HOME:-$HOME/.config}/lumen/settings.conf"
 }
 
 # Save the current clipboard as a new entry (unless it repeats the newest).

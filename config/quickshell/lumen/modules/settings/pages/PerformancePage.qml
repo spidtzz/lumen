@@ -139,6 +139,15 @@ Page {
             }
         }
         SettingRow {
+            label: "Full speed for fullscreen apps"
+            description: "Games and videos in fullscreen skip the compositor: smoother and with less delay. Rounded screen corners aren't drawn over them."
+            Toggle {
+                enabled: Theme.conf.compositor !== "false"
+                checked: Theme.conf.fullscreen_direct !== "false"
+                onToggled: c => Theme.setValue("fullscreen_direct", c)
+            }
+        }
+        SettingRow {
             label: "Animate moving and resizing"
             description: "Windows glide into place when they tile, move or resize. Experimental in picom: turn off if windows flicker."
             Toggle {

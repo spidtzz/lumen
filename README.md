@@ -171,7 +171,7 @@ about mouse clicks while a bar popup is open, so clicking elsewhere closes it.
 | Keyboard & Mouse | up to four layouts (e.g. English + Persian) in order, switch keys, key repeat, focus follows mouse, pointer speed, natural scrolling, tap to click | setxkbmap, xset, xinput, bspwm |
 | Date & Time | time zone, network time, 24-hour clock | timedatectl |
 | Notifications | pop-up position, Do Not Disturb, clear history, test notification | |
-| Performance | power mode, compositor, animations (shell and windows: open/close, switching desktops, moving/resizing), live processor and memory use | power-profiles-daemon, picom |
+| Performance | power mode, compositor, animations (shell and windows: open/close, switching desktops, moving/resizing), full speed for fullscreen apps, live processor and memory use | power-profiles-daemon, picom |
 | Users | profile picture, password, lock after idle, test the lock screen, clipboard history | lumen-avatar, passwd, xss-lock |
 | About | system details, copy to clipboard | |
 

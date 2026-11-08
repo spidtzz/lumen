@@ -47,6 +47,7 @@ SCHEMA=(
 	"corners~rounded~^(rounded|square)$~corners"
 	"animations~true~^(true|false)$~compositor"
 	"window_motion~true~^(true|false)$~compositor"
+	"fullscreen_direct~true~^(true|false)$~compositor"
 	"window_border~true~^(true|false)$~compositor"
 	"clipboard_history~true~^(true|false)$~-"
 	"notif_position~top-right~^(top|bottom)-(left|center|right)$~-"
@@ -205,7 +206,11 @@ layout_hotkey() {
 # Keycodes are the standard evdev ones.
 kbswitch() {
 	has xinput || die "xinput is needed for layout switching"
-	stdbuf -oL xinput test-xi2 --root | awk -v cmd="$0 layout-hotkey" \
+	# xinput reports every input event, mouse movement included; grep (fast)
+	# keeps only key presses/releases and clicks, so awk wakes up only for those.
+	stdbuf -oL xinput test-xi2 --root |
+		grep --line-buffered --no-group-separator -A2 -E '\((RawKeyPress|RawKeyRelease|RawButtonPress)\)' |
+		awk -v cmd="$0 layout-hotkey" \
 		-v flag="${XDG_RUNTIME_DIR:-/tmp}/lumen-popup-open" \
 		-v click="qs -c lumen ipc call panels click" '
 		function isalt(k) { return k == 64 || k == 108 }
@@ -256,6 +261,9 @@ picom_flags() {
 	local f=(--config "$STATE/picom.conf" --log-file "$STATE/picom.log")
 	[[ ${CONF[corners]} == square ]] && f+=(--corner-radius 0)
 	[[ ${CONF[animations]} == false ]] && f+=(--no-fading-openclose --fade-in-step 1 --fade-out-step 1)
+	# Fullscreen apps (games, videos) skip the compositor: full speed, no
+	# extra frame of delay. The pause avoids flicker when switching.
+	[[ ${CONF[fullscreen_direct]} != false ]] && f+=(--unredir-if-possible --unredir-if-possible-delay 400)
 	printf '%s\n' "${f[@]}"
 }
 

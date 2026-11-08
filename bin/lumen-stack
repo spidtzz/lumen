@@ -11,7 +11,7 @@ corners) are put back above it.
 
 bspwmrc starts it; it stops when the X session ends.
 """
-import json
+import os
 import select
 import subprocess
 import sys
@@ -27,17 +27,15 @@ def bspc(*args):
         return ""
 
 
-def fullscreen_areas():
-    """Rectangles of monitors whose visible desktop shows a fullscreen window."""
-    areas = []
-    for mon in bspc("query", "-M", "--names").split():
-        if bspc("query", "-N", "-n", ".fullscreen.window.!hidden", "-d", mon + ":focused").strip():
-            try:
-                r = json.loads(bspc("query", "-T", "-m", mon))["rectangle"]
-                areas.append((r["x"], r["y"], r["width"], r["height"]))
-            except (ValueError, KeyError):
-                pass
-    return areas
+def fullscreen_ids():
+    """Fullscreen windows bspwm knows of (one bspc call for all monitors)."""
+    ids = []
+    for line in bspc("query", "-N", "-n", ".fullscreen.window").split():
+        try:
+            ids.append(int(line, 16))
+        except ValueError:
+            pass
+    return ids
 
 
 class Stacker:
@@ -56,8 +54,23 @@ class Stacker:
             return False
         return p is not None and self.dock_atom in p.value
 
+    def fullscreen_areas(self):
+        """Screen areas covered by a fullscreen window that's showing (windows
+        on other desktops are unmapped, so they don't count)."""
+        areas = []
+        for wid in fullscreen_ids():
+            w = self.d.create_resource_object("window", wid)
+            try:
+                if w.get_attributes().map_state != X.IsViewable:
+                    continue
+                g = w.get_geometry()
+            except error.XError:
+                continue
+            areas.append((g.x, g.y, g.width, g.height))
+        return areas
+
     def restack(self):
-        areas = fullscreen_areas()
+        areas = self.fullscreen_areas()
         docks, corners, behind = [], [], []
         try:
             children = self.root.query_tree().children
@@ -105,20 +118,28 @@ def main():
         sub = subprocess.Popen(
             ["bspc", "subscribe", "node_stack", "node_state", "node_layer", "node_focus",
              "node_add", "node_remove", "desktop_focus", "node_transfer"],
-            stdout=subprocess.PIPE, text=True, bufsize=1)
+            stdout=subprocess.PIPE, bufsize=0)
+        fd = sub.stdout.fileno()
         s.restack()
-        while True:
-            ready, _, _ = select.select([sub.stdout, s.d.fileno()], [], [], 5)
+        alive = True
+        while alive:
+            ready, _, _ = select.select([fd, s.d.fileno()], [], [], 5)
             changed = False
-            if sub.stdout in ready:
-                line = sub.stdout.readline()
-                if not line:
+            if fd in ready:
+                if not os.read(fd, 65536):
                     break   # bspwm restarted or quit
                 changed = True
             if s.drain_x():
                 changed = True
             if changed:
-                time.sleep(0.03)   # let bspwm finish restacking first
+                # Let bspwm finish (one action often sends several events),
+                # read everything that arrived meanwhile, then restack once.
+                time.sleep(0.03)
+                while select.select([fd], [], [], 0)[0]:
+                    if not os.read(fd, 65536):
+                        alive = False
+                        break
+                s.drain_x()
                 s.restack()
         sub.wait()
         # bspwm gone for good (logged out): stop. Restarted: watch again.

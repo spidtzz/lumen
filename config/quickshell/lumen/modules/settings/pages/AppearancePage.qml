@@ -234,6 +234,14 @@ Page {
             }
         }
         SettingRow {
+            label: "Firefox and LibreWolf"
+            description: "Toolbar, tabs, menus and the new tab page, in every profile. Restart the browser to see changes."
+            Toggle {
+                checked: Theme.conf.theme_browser === "true"
+                onToggled: c => Theme.setValue("theme_browser", c)
+            }
+        }
+        SettingRow {
             label: "btop"
             description: "The terminal system monitor. Reopen it to see changes."
             Toggle {

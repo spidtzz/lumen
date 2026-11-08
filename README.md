@@ -3,7 +3,7 @@
 # lumen
 
 A lightweight desktop for **bspwm on X11**, built with [Quickshell](https://quickshell.outfoxxed.me).
-One theme — fourteen accent colours (the same as [Pane](https://github.com/spidtzz/pane)) in light, dark and black — applied to the shell, GTK 3, GTK 4/libadwaita, Qt and KDE apps, kitty and bspwm, and optionally to Discord, btop and zathura. The accent can follow your wallpaper.
+One theme — fourteen accent colours (the same as [Pane](https://github.com/spidtzz/pane)) in light, dark and black — applied to the shell, GTK 3, GTK 4/libadwaita, Qt and KDE apps, kitty and bspwm, and optionally to Firefox, LibreWolf, Discord, btop and zathura. The accent can follow your wallpaper.
 
 > **Status: stage 3 of 4.** Session, login and lock screens, installer, theme system, bar with
 > quick settings, notifications, app launcher and Settings app. Coming next: shortcut viewer.
@@ -163,7 +163,7 @@ about mouse clicks while a bar popup is open, so clicking elsewhere closes it.
 | --- | --- | --- |
 | Network | wired and Wi-Fi, connect with password | NetworkManager (nmcli) |
 | Bluetooth | on/off, find, pair, connect, forget devices | BlueZ |
-| Appearance | light/dark/black, accent (or automatic from the wallpaper), other apps (Discord, btop, zathura; experimental), rounded or square corners, rounded screen corners, text size, focused window highlight, title-bar buttons | lumen-theme |
+| Appearance | light/dark/black, accent (or automatic from the wallpaper), other apps (Firefox, LibreWolf, Discord, btop, zathura; experimental), rounded or square corners, rounded screen corners, text size, focused window highlight, title-bar buttons | lumen-theme |
 | Wallpaper | pictures from `~/Pictures/Wallpapers` (optionally its subfolders), system wallpapers or anywhere, or the theme colour; fill, fit, centre, tile, stretch | hsetroot |
 | Bar | workspace style (pills, boxes, dots, numbers), floating or edge to edge (curved into rounded screen corners), black bar, edge, workspaces per page, clock, media controls, tray grouping, pinned and custom tray icons | |
 | Displays | resolution, refresh rate, rotation, primary, arrangement — undone after 15 s unless kept | xrandr |
@@ -230,7 +230,9 @@ wallpaper with ffmpeg (installed with mpv), finds its most common vivid hue and 
 nearest of the fourteen accents (mono for greyscale pictures). It runs again whenever the
 wallpaper changes; choosing an accent yourself turns it off.
 
-**Other apps (experimental)**, in Settings › Appearance: Discord through Vesktop, Vencord,
+**Other apps (experimental)**, in Settings › Appearance: Firefox and LibreWolf (a marked
+block in each profile's `chrome/userChrome.css` and `userContent.css`, and the pref that
+enables them in `user.js`; restart the browser), Discord through Vesktop, Vencord,
 Equicord or Equibop (a `lumen.css` theme, turned on in the mod's settings, live), btop
 (`~/.config/btop/themes/lumen.theme`) and zathura (`include lumen-colors`). Turning one off
 removes the theme and the setting again.

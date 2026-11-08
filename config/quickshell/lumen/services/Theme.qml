@@ -151,6 +151,8 @@ Singleton {
         }
     }
 
+    Timer { id: paletteRetry; interval: 500; onTriggered: paletteFile.reload() }
+
     FileView {
         path: root.dataHome + "/lumen/palettes/" + root.accentName + "-dark.conf"
         watchChanges: true
@@ -167,6 +169,11 @@ Singleton {
         path: root.dataHome + "/lumen/palettes/" + root.accentName + "-" + root.mode + ".conf"
         watchChanges: true
         onFileChanged: reload()
+        // A new accent's palette may only be copied in a moment later (by
+        // lumen-theme): try again a few times.
+        property int tries: 0
+        onPathChanged: tries = 0
+        onLoadFailed: if (tries++ < 8) paletteRetry.restart()
         onLoaded: {
             const p = root.parseConf(text());
             const map = {

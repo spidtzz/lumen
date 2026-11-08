@@ -70,6 +70,7 @@ SCHEMA=(
 	"theme_btop~false~^(true|false)$~theme"
 	"theme_discord~false~^(true|false)$~theme"
 	"theme_zathura~false~^(true|false)$~theme"
+	"theme_browser~false~^(true|false)$~theme"
 	"wallpaper_subfolders~true~^(true|false)$~-"
 )
 

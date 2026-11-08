@@ -45,6 +45,7 @@ Item {
         "skip-back": "M19 20L9 12l10-8v16z M5 19V5",
         "skip-forward": "M5 4l10 8-10 8V4z M19 5v14",
         "music": "M9 18V5l12-2v13 M3 18a3 3 0 1 0 6 0a3 3 0 1 0-6 0 M15 16a3 3 0 1 0 6 0a3 3 0 1 0-6 0",
+        "arrow-right": "M5 12h14 M12 5l7 7-7 7",
         "app": "M4 4h6v6H4z M14 4h6v6h-6z M4 14h6v6H4z M14 14h6v6h-6z",
         "droplet": "M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z",
         "monitor": "M4 3h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M8 21h8 M12 17v4",

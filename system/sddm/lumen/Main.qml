@@ -3,6 +3,7 @@
 // which lumen-theme keeps in sync with the desktop theme.
 import QtQuick
 import QtQuick.Effects
+import QtQuick.Shapes
 
 Rectangle {
     id: root
@@ -275,10 +276,18 @@ Rectangle {
                 color: root.cField
                 border.width: username.activeFocus ? 2 : 1
                 border.color: username.activeFocus ? root.cAccent : root.cLine
+                SIcon {
+                    anchors.left: parent.left
+                    anchors.leftMargin: 13
+                    anchors.verticalCenter: parent.verticalCenter
+                    name: "user"
+                    size: 17
+                    color: root.cMuted
+                }
                 TextInput {
                     id: username
                     anchors.fill: parent
-                    anchors.leftMargin: 14
+                    anchors.leftMargin: 40
                     anchors.rightMargin: 14
                     verticalAlignment: TextInput.AlignVCenter
                     color: root.cInk
@@ -314,10 +323,19 @@ Rectangle {
                     border.color: root.errorText !== "" ? root.cDanger
                         : password.activeFocus ? root.cAccent : root.cLine
 
+                    SIcon {
+                        id: lockIcon
+                        anchors.left: parent.left
+                        anchors.leftMargin: 13
+                        anchors.verticalCenter: parent.verticalCenter
+                        name: "lock"
+                        size: 17
+                        color: root.errorText !== "" ? root.cDanger : root.cMuted
+                    }
                     TextInput {
                         id: password
                         anchors.fill: parent
-                        anchors.leftMargin: 14
+                        anchors.leftMargin: 40
                         anchors.rightMargin: 14
                         verticalAlignment: TextInput.AlignVCenter
                         echoMode: TextInput.Password
@@ -358,11 +376,20 @@ Rectangle {
 
                     Text {
                         anchors.centerIn: parent
-                        text: root.busy ? "…" : "→"
+                        visible: root.busy
+                        text: "…"
                         color: root.cOnAccent
                         font.family: root.fontName
                         font.pixelSize: 22
                         font.weight: Font.Bold
+                    }
+                    SIcon {
+                        anchors.centerIn: parent
+                        visible: !root.busy
+                        name: "arrow-right"
+                        size: 20
+                        stroke: 2.4
+                        color: root.cOnAccent
                     }
                     HoverHandler { id: submitHover; cursorShape: Qt.PointingHandCursor }
                     TapHandler { id: submitTap; onTapped: root.login() }
@@ -399,6 +426,7 @@ Rectangle {
             spacing: 8
             Chip {
                 id: sessionBtn
+                icon: "monitor"
                 visible: sessions.count > 0
                 label: (root.currentSession ? root.currentSession.name : "Session") + (root.menu === "session" ? "  ▾" : "  ▴")
                 selected: root.menu === "session"
@@ -406,6 +434,7 @@ Rectangle {
             }
             Chip {
                 id: userBtn
+                icon: "user"
                 label: root.displayName + (root.menu === "user" ? "  ▾" : "  ▴")
                 selected: root.menu === "user"
                 onClicked: root.menu = root.menu === "user" ? "" : "user"
@@ -414,6 +443,7 @@ Rectangle {
 
         Chip {
             id: powerBtn
+            icon: "power"
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             visible: sddm.canSuspend || sddm.canHibernate || sddm.canReboot || sddm.canPowerOff
@@ -438,7 +468,7 @@ Rectangle {
             const out = [];
             for (let i = 0; i < sessions.count; i++)
                 if (!root.sessionHidden(i))
-                    out.push({ label: sessions.itemAt(i).name, value: i, checked: i === root.sessionIndex });
+                    out.push({ label: sessions.itemAt(i).name, value: i, icon: "monitor", checked: i === root.sessionIndex });
             return out;
         }
         onPicked: v => { root.sessionIndex = v; root.menu = ""; password.forceActiveFocus(); }
@@ -451,9 +481,9 @@ Rectangle {
             for (let i = 0; i < users.count; i++) {
                 const u = users.itemAt(i);
                 out.push({ label: u.realName !== "" ? u.realName + "  ·  " + u.name : u.name, value: i,
-                           checked: !root.manualUser && i === root.userIndex });
+                           icon: "user", checked: !root.manualUser && i === root.userIndex });
             }
-            out.push({ label: "Other user…", value: -1, checked: root.manualUser });
+            out.push({ label: "Other user…", value: -1, icon: "user-plus", checked: root.manualUser });
             return out;
         }
         onPicked: v => root.pickUser(v)
@@ -463,10 +493,10 @@ Rectangle {
         anchorItem: powerBtn
         alignRight: true
         items: [
-            { label: "Suspend", value: "suspend", show: sddm.canSuspend },
-            { label: "Hibernate", value: "hibernate", show: sddm.canHibernate },
-            { label: "Restart", value: "reboot", show: sddm.canReboot },
-            { label: "Shut down", value: "poweroff", show: sddm.canPowerOff }
+            { label: "Suspend", value: "suspend", icon: "moon", show: sddm.canSuspend },
+            { label: "Hibernate", value: "hibernate", icon: "download", show: sddm.canHibernate },
+            { label: "Restart", value: "reboot", icon: "refresh", show: sddm.canReboot },
+            { label: "Shut down", value: "poweroff", icon: "power", show: sddm.canPowerOff }
         ].filter(i => i.show)
         onPicked: v => {
             root.menu = "";
@@ -507,14 +537,23 @@ Rectangle {
                     id: row
                     required property var modelData
                     width: dmCol.width
-                    implicitWidth: rowText.implicitWidth + 60
+                    implicitWidth: rowText.implicitWidth + 90
                     height: 38
                     radius: root.rr(8)
                     color: rowHover.hovered ? root.cField : "transparent"
-                    Text {
-                        id: rowText
+                    SIcon {
+                        id: rowIcon
                         anchors.left: parent.left
                         anchors.leftMargin: 11
+                        anchors.verticalCenter: parent.verticalCenter
+                        name: row.modelData.icon || ""
+                        size: 16
+                        color: row.modelData.checked ? root.cAccent : root.cMuted
+                    }
+                    Text {
+                        id: rowText
+                        anchors.left: rowIcon.right
+                        anchors.leftMargin: 10
                         anchors.verticalCenter: parent.verticalCenter
                         text: row.modelData.label
                         color: root.cInk
@@ -522,14 +561,15 @@ Rectangle {
                         font.pixelSize: 15
                         font.weight: row.modelData.checked ? Font.Bold : Font.Normal
                     }
-                    Text {
+                    SIcon {
                         anchors.right: parent.right
                         anchors.rightMargin: 11
                         anchors.verticalCenter: parent.verticalCenter
-                        text: "✓"
+                        name: "check"
+                        size: 16
+                        stroke: 2.4
                         color: root.cAccent
                         visible: row.modelData.checked === true
-                        font.pixelSize: 15
                     }
                     HoverHandler { id: rowHover; cursorShape: Qt.PointingHandCursor }
                     TapHandler { onTapped: dm.picked(row.modelData.value) }
@@ -539,13 +579,52 @@ Rectangle {
     }
 
     // ---- small reusable button in the demo's chip style -------------------
+    // Line icons (24×24 Feather-style paths, as in the desktop's Icon).
+    component SIcon: Item {
+        id: ic
+        property string name
+        property color color: root.cInk
+        property real size: 18
+        property real stroke: 2
+        readonly property var paths: ({
+            "lock": "M5 11h14a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2z M7 11V7a5 5 0 0 1 10 0v4",
+            "user": "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2 M8 7a4 4 0 1 0 8 0a4 4 0 1 0-8 0",
+            "user-plus": "M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2 M4.5 7a4 4 0 1 0 8 0a4 4 0 1 0-8 0 M20 8v6 M23 11h-6",
+            "monitor": "M4 3h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M8 21h8 M12 17v4",
+            "power": "M18.36 6.64a9 9 0 1 1-12.73 0 M12 2v10",
+            "moon": "M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z",
+            "download": "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4 M7 10l5 5 5-5 M12 15V3",
+            "refresh": "M23 4v6h-6 M1 20v-6h6 M3.51 9a9 9 0 0 1 14.85-3.36L23 10 M1 14l4.64 4.36A9 9 0 0 0 20.49 15",
+            "arrow-right": "M5 12h14 M12 5l7 7-7 7",
+            "check": "M20 6L9 17l-5-5"
+        })
+        width: size
+        height: size
+        Shape {
+            anchors.centerIn: parent
+            width: 24
+            height: 24
+            scale: ic.size / 24
+            preferredRendererType: Shape.CurveRenderer
+            ShapePath {
+                strokeColor: ic.color
+                strokeWidth: ic.stroke
+                fillColor: "transparent"
+                capStyle: ShapePath.RoundCap
+                joinStyle: ShapePath.RoundJoin
+                PathSvg { path: ic.paths[ic.name] || "" }
+            }
+        }
+    }
+
     component Chip: Rectangle {
         id: chip
+        property string icon: ""
         property string label
         property bool selected: false
         signal clicked()
 
-        implicitWidth: chipText.implicitWidth + 28
+        implicitWidth: chipRow.implicitWidth + 28
         implicitHeight: 36
         radius: root.rr(999)
         color: selected ? root.cAccent : root.cField
@@ -554,14 +633,25 @@ Rectangle {
         scale: chipTap.pressed ? 0.97 : 1
         Behavior on scale { NumberAnimation { duration: 80 } }
 
-        Text {
-            id: chipText
+        Row {
+            id: chipRow
             anchors.centerIn: parent
-            text: chip.label
-            color: chip.selected ? root.cOnAccent : root.cInk
-            font.family: root.fontName
-            font.pixelSize: 14
-            font.weight: Font.Bold
+            spacing: 8
+            SIcon {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: chip.icon !== ""
+                name: chip.icon
+                size: 16
+                color: chip.selected ? root.cOnAccent : root.cInk
+            }
+            Text {
+                anchors.verticalCenter: parent.verticalCenter
+                text: chip.label
+                color: chip.selected ? root.cOnAccent : root.cInk
+                font.family: root.fontName
+                font.pixelSize: 14
+                font.weight: Font.Bold
+            }
         }
         HoverHandler { id: chipHover; cursorShape: Qt.PointingHandCursor }
         TapHandler { id: chipTap; onTapped: chip.clicked() }

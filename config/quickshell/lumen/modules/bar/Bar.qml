@@ -233,6 +233,25 @@ PanelWindow {
         }
     }
 
+    // ---- rounded screen corners where an edge-to-edge bar meets them ----
+    // (Drawn by the bar itself: the separate corner windows below can't be
+    // relied on to stay above it.)
+    Repeater {
+        model: Theme.screenCorners && Theme.barAttached && !win.fullscreenApp
+            ? (win.edge === "top" ? ["top-left", "top-right"]
+             : win.edge === "bottom" ? ["bottom-left", "bottom-right"]
+             : win.edge === "left" ? ["top-left", "bottom-left"] : ["top-right", "bottom-right"]) : []
+        delegate: Fillet {
+            required property string modelData
+            corner: modelData
+            r: Theme.screenRadius
+            fill: "black"
+            x: modelData.endsWith("left") ? 0 : win.width - r
+            y: modelData.startsWith("top") ? 0 : win.height - r
+            z: 10
+        }
+    }
+
     // ---- rounded screen corners (Settings > Appearance) ----
     // Small black corner pieces above everything, one per screen corner.
     Variants {

@@ -149,14 +149,23 @@ FloatingWindow {
                     border.width: 2
                     border.color: surface.lock.error !== "" ? Theme.danger : Theme.accent
 
+                    Icon {
+                        id: lockIcon
+                        anchors.left: parent.left
+                        anchors.leftMargin: 13
+                        anchors.verticalCenter: parent.verticalCenter
+                        name: "lock"
+                        size: 17
+                        color: surface.lock.error !== "" ? Theme.danger : Theme.muted
+                    }
                     // Dots for what's typed (keys come from lumen-lock-grab).
                     Text {
                         id: password
                         readonly property int count: Array.from(surface.lock.typed).length
-                        anchors.left: parent.left
+                        anchors.left: lockIcon.right
                         anchors.right: layout.left
                         anchors.verticalCenter: parent.verticalCenter
-                        anchors.leftMargin: 14
+                        anchors.leftMargin: 10
                         anchors.rightMargin: 8
                         text: "•".repeat(count)
                         color: Theme.ink
@@ -165,8 +174,8 @@ FloatingWindow {
                         elide: Text.ElideLeft
                     }
                     Txt {
-                        anchors.left: parent.left
-                        anchors.leftMargin: 14
+                        anchors.left: lockIcon.right
+                        anchors.leftMargin: 10
                         anchors.verticalCenter: parent.verticalCenter
                         text: surface.lock.inputReady ? "Password" : "Starting…"
                         size: 16
@@ -174,17 +183,22 @@ FloatingWindow {
                         visible: password.count === 0
                     }
                     // Keyboard layout, when there's more than one.
-                    Txt {
+                    Row {
                         id: layout
                         anchors.right: parent.right
                         anchors.rightMargin: 12
                         anchors.verticalCenter: parent.verticalCenter
                         visible: Keyboard.layouts.length > 1
                         width: visible ? implicitWidth : 0
-                        text: Keyboard.shortOf(Keyboard.current)
-                        size: 12
-                        strong: true
-                        muted: true
+                        spacing: 5
+                        Icon { anchors.verticalCenter: parent.verticalCenter; name: "keyboard"; size: 15; color: Theme.muted }
+                        Txt {
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: Keyboard.shortOf(Keyboard.current)
+                            size: 12
+                            strong: true
+                            muted: true
+                        }
                     }
                 }
 
@@ -195,9 +209,18 @@ FloatingWindow {
                     color: Theme.accent
                     Txt {
                         anchors.centerIn: parent
-                        text: surface.lock.busy ? "…" : "→"
+                        visible: surface.lock.busy
+                        text: "…"
                         size: 22
                         strong: true
+                        color: Theme.accentFg
+                    }
+                    Icon {
+                        anchors.centerIn: parent
+                        visible: !surface.lock.busy
+                        name: "arrow-right"
+                        size: 20
+                        stroke: 2.4
                         color: Theme.accentFg
                     }
                     // (Enter submits; the mouse is held by the lock while locked.)

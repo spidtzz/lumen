@@ -29,4 +29,7 @@ systemctl --user try-restart xdg-desktop-portal-gtk.service xdg-desktop-portal.s
 # Inside a virtual machine: clipboard sharing and auto-resize.
 command -v spice-vdagent >/dev/null && spice-vdagent
 
+# Keep awake (Quick Settings) lasts for one session only.
+rm -f "${XDG_RUNTIME_DIR:-/tmp}/lumen-awake"
+
 exec bspwm

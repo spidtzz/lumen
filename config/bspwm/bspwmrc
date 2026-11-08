@@ -9,6 +9,7 @@ export PATH="$HOME/.local/bin:$PATH"
 # lumen-session: set up the same environment (see bin/lumen-session).
 if [ -z "$LUMEN_SESSION" ]; then
 	export LUMEN_SESSION=1 XDG_CURRENT_DESKTOP=lumen XDG_SESSION_DESKTOP=lumen XDG_SESSION_TYPE=x11
+	rm -f "${XDG_RUNTIME_DIR:-/tmp}/lumen-awake"   # Keep awake lasts one session
 	export QT_QPA_PLATFORMTHEME=gtk3 XCURSOR_THEME=Adwaita XCURSOR_SIZE=24 GTK_USE_PORTAL=1
 	dbus-update-activation-environment --systemd DISPLAY XAUTHORITY PATH XDG_CURRENT_DESKTOP \
 		XDG_SESSION_DESKTOP XDG_SESSION_TYPE QT_QPA_PLATFORMTHEME XCURSOR_THEME XCURSOR_SIZE GTK_USE_PORTAL 2>/dev/null

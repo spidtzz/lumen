@@ -24,7 +24,7 @@ Rectangle {
     readonly property color cAccent: cfg("accent", "#71a3ff")
     readonly property color cOnAccent: cfg("on_accent", "#081123")
     readonly property color cDanger: cfg("danger", "#f75d59")
-    readonly property bool darkMode: cfg("mode", "dark") === "dark"
+    readonly property bool darkMode: cfg("mode", "dark") !== "light"   // dark or black
     readonly property bool squareCorners: cfg("corners", "rounded") === "square"
     function rr(n) { return squareCorners ? 0 : n; }
     readonly property string fontName: fontLoader.status === FontLoader.Ready

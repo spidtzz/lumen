@@ -12,6 +12,7 @@
 #   lumen-settings kbswitch             watch for the layout-switch keys (bspwmrc runs this)
 #   lumen-settings sysinfo              system details for the About page
 #   lumen-settings awake on|off|status  keep the screen on (Quick Settings)
+#   lumen-settings auto-accent          pick the accent from the wallpaper now
 #
 # Settings live in ~/.config/lumen/settings.conf (key=value). Unknown keys and
 # comments are kept, so it's safe to edit by hand.
@@ -30,8 +31,8 @@ has() { command -v "$1" >/dev/null 2>&1; }
 # ---------------------------------------------------------------- schema
 # key ~ default ~ allowed (regex) ~ applier
 SCHEMA=(
-	"mode~dark~^(light|dark)$~theme"
-	"accent~blue~^(blue|violet|teal|green|orange|pink|mono)$~theme"
+	"mode~dark~^(light|dark|black)$~theme"
+	"accent~blue~^(blue|violet|teal|green|orange|pink|red|amber|lime|cyan|sky|indigo|fuchsia|mono)$~theme"
 	"bar_position~top~^(top|bottom|left|right)$~-"
 	"bar_style~floating~^(floating|attached)$~-"
 	"bar_black~false~^(true|false)$~-"
@@ -65,6 +66,10 @@ SCHEMA=(
 	"tap_to_click~true~^(true|false)$~input"
 	"wallpaper~~^(/.{1,500})?$~theme"
 	"wallpaper_mode~fill~^(fill|fit|center|tile|stretch)$~theme"
+	"accent_auto~false~^(true|false)$~theme"
+	"theme_btop~false~^(true|false)$~theme"
+	"theme_discord~false~^(true|false)$~theme"
+	"theme_zathura~false~^(true|false)$~theme"
 	"wallpaper_subfolders~true~^(true|false)$~-"
 )
 
@@ -189,6 +194,19 @@ layout_next() {
 	[[ $cur == *,* ]] || return 0
 	cur=${cur#*,}
 	layout_set "${cur%%,*}"
+}
+
+# Automatic accent (Settings > Appearance): the accent nearest to the
+# wallpaper's main colour (lumen-accent-pick). Only stores it; the caller
+# applies the theme.
+auto_accent() {
+	load
+	[[ ${CONF[accent_auto]} == true ]] || return 0
+	local wp=${CONF[wallpaper]} pick
+	[[ -n $wp && -f $wp ]] || return 0
+	pick=$("$BIN_DIR/lumen-accent-pick" "$wp" 2>/dev/null) || return 0
+	[[ $pick =~ $(schema_field accent 2) ]] || return 0
+	[[ $pick == "${CONF[accent]}" ]] || store accent "$pick"
 }
 
 # Called by the watcher when a switch combination is released.
@@ -524,8 +542,13 @@ case $cmd in
 		pattern=$(schema_field "$1" 2) || die "unknown key: $1 (see: lumen-settings keys)"
 		[[ $2 =~ $pattern ]] || die "invalid value for $1: '$2' (allowed: $pattern)"
 		store "$1" "$2"
+		# Choosing an accent yourself turns automatic accents off; a new
+		# wallpaper (or turning them on) picks one from the wallpaper.
+		[[ $1 == accent ]] && store accent_auto false
+		[[ $1 == wallpaper || ($1 == accent_auto && $2 == true) ]] && auto_accent
 		apply_what "$(schema_field "$1" 3)"
 		;;
+	auto-accent) auto_accent; apply_what theme ;;
 	apply) apply_what "${1:-session}" ;;
 	keys)
 		for row in "${SCHEMA[@]}"; do

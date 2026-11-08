@@ -71,7 +71,7 @@ Singleton {
     property color success: "#53be70"
     property color warning: "#edb345"
 
-    readonly property bool dark: mode === "dark"
+    readonly property bool dark: mode !== "light"   // dark or black
 
     // ---- user (picture set with `lumen-avatar set <image>`) ----
     readonly property string userName: Quickshell.env("USER") || ""
@@ -136,7 +136,7 @@ Singleton {
         onLoaded: {
             const c = root.parseConf(text());
             root.conf = c;
-            if (c.mode === "light" || c.mode === "dark")
+            if (c.mode === "light" || c.mode === "dark" || c.mode === "black")
                 root.mode = c.mode;
             if (c.accent)
                 root.accentName = c.accent;

@@ -7,13 +7,21 @@ Page {
     title: "Appearance"
     description: "Colours, corners and text. Changes apply to the shell, apps and the login screen."
 
+    // The accents of Pane, same values (share/palettes, tools/gen-palettes.py).
     readonly property var accents: [
         { id: "blue", label: "Blue", light: "#2867e4", dark: "#71a3ff" },
         { id: "violet", label: "Violet", light: "#7e4ed7", dark: "#ad8dfd" },
-        { id: "teal", label: "Teal", light: "#00837e", dark: "#00bdb6" },
-        { id: "green", label: "Green", light: "#00893d", dark: "#4ac06c" },
+        { id: "teal", label: "Teal", light: "#007470", dark: "#00bdb6" },
+        { id: "green", label: "Green", light: "#277a40", dark: "#4ac06c" },
         { id: "orange", label: "Orange", light: "#ac5700", dark: "#ef852e" },
         { id: "pink", label: "Pink", light: "#c32777", dark: "#f075aa" },
+        { id: "red", label: "Red", light: "#cc272e", dark: "#f97770" },
+        { id: "amber", label: "Amber", light: "#8a6700", dark: "#cf9c00" },
+        { id: "lime", label: "Lime", light: "#587500", dark: "#8eb533" },
+        { id: "cyan", label: "Cyan", light: "#007386", dark: "#00b8d6" },
+        { id: "sky", label: "Sky", light: "#0573aa", dark: "#19affe" },
+        { id: "indigo", label: "Indigo", light: "#5c5be2", dark: "#9099ff" },
+        { id: "fuchsia", label: "Fuchsia", light: "#a839b0", dark: "#d67edb" },
         { id: "mono", label: "Mono", light: "#222222", dark: "#e4e4e4" }
     ]
 
@@ -21,9 +29,9 @@ Page {
         title: "Style"
         SettingRow {
             label: "Mode"
-            description: "Light or dark, for the shell and every app."
+            description: "For the shell and every app. Black is dark on pure black (for OLED screens)."
             Seg {
-                options: [{ label: "Light", value: "light" }, { label: "Dark", value: "dark" }]
+                options: [{ label: "Light", value: "light" }, { label: "Dark", value: "dark" }, { label: "Black", value: "black" }]
                 value: Theme.mode
                 onPicked: v => Theme.setValue("mode", v)
             }
@@ -49,26 +57,85 @@ Page {
 
     Card {
         title: "Accent colour"
-        description: "Used for selections, the focused window and highlights."
+        readonly property bool autoAccent: Theme.conf.accent_auto === "true"
+        readonly property bool hasPicture: (Theme.conf.wallpaper || "") !== ""
+        description: autoAccent
+            ? "Automatic: " + (accents.find(a => a.id === Theme.accentName) || { label: Theme.accentName }).label
+              + ", the closest to your wallpaper's main colour. It changes with the wallpaper."
+            : "Used for selections, the focused window and highlights."
 
         // Fixed-size tiles, so choosing one never moves the others.
         Flow {
+            id: accentFlow
             Layout.fillWidth: true
             spacing: 10
+
+            // Automatic: picked from the wallpaper (needs a picture).
+            Rectangle {
+                id: autoTile
+                readonly property bool selected: Theme.conf.accent_auto === "true"
+                width: 92
+                height: 88
+                radius: Theme.radiusSmall
+                opacity: (Theme.conf.wallpaper || "") !== "" ? 1 : 0.45
+                color: selected || autoHover.hovered ? Theme.field : "transparent"
+                border.width: selected ? 2 : 1
+                border.color: selected ? Theme.accent : Theme.line
+                Behavior on color { ColorAnimation { duration: Theme.animFast; easing.type: Theme.easeOut } }
+
+                Rectangle {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    y: 14
+                    width: 34
+                    height: 34
+                    radius: Theme.r(17)
+                    gradient: Gradient {
+                        orientation: Gradient.Horizontal
+                        GradientStop { position: 0.0; color: Theme.dark ? "#71a3ff" : "#2867e4" }
+                        GradientStop { position: 0.5; color: Theme.dark ? "#f075aa" : "#c32777" }
+                        GradientStop { position: 1.0; color: Theme.dark ? "#cf9c00" : "#8a6700" }
+                    }
+                    Icon {
+                        anchors.centerIn: parent
+                        name: autoTile.selected ? "check" : "image"
+                        size: 17
+                        stroke: autoTile.selected ? 2.6 : 2
+                        color: "#ffffff"
+                    }
+                }
+                Txt {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.bottom: parent.bottom
+                    anchors.bottomMargin: 12
+                    text: "Auto"
+                    size: 12
+                    strong: true
+                    muted: !autoTile.selected
+                    wrapMode: Text.NoWrap
+                }
+                HoverHandler { id: autoHover; cursorShape: Qt.PointingHandCursor }
+                TapHandler {
+                    onTapped: if ((Theme.conf.wallpaper || "") !== "")
+                        Theme.setValue("accent_auto", !autoTile.selected)
+                }
+            }
+
             Repeater {
                 model: accents
                 delegate: Rectangle {
                     id: tile
                     required property var modelData
-                    readonly property bool selected: Theme.accentName === modelData.id
+                    // With Auto on, the picked colour is outlined but not checked.
+                    readonly property bool current: Theme.accentName === modelData.id
+                    readonly property bool selected: current && Theme.conf.accent_auto !== "true"
                     readonly property color swatch: Theme.dark ? modelData.dark : modelData.light
 
                     width: 92
                     height: 88
                     radius: Theme.radiusSmall
                     color: selected ? Theme.field : tileHover.hovered ? Theme.field : "transparent"
-                    border.width: selected ? 2 : 1
-                    border.color: selected ? tile.swatch : Theme.line
+                    border.width: current ? 2 : 1
+                    border.color: current ? tile.swatch : Theme.line
                     Behavior on color { ColorAnimation { duration: Theme.animFast; easing.type: Theme.easeOut } }
 
                     Rectangle {
@@ -150,6 +217,36 @@ Page {
             Toggle {
                 checked: Theme.conf.window_buttons === "true"
                 onToggled: c => Theme.setValue("window_buttons", c)
+            }
+        }
+    }
+
+    Card {
+        title: "Other apps (experimental)"
+        description: "Your colours in apps that have their own themes. Each writes a lumen theme into the app's theme folder and turns it on; switching it off removes it again. GTK, Qt and KDE apps and kitty follow the theme already."
+
+        SettingRow {
+            label: "Discord"
+            description: "Through Vesktop, Vencord, Equicord or Equibop (installed and opened once). Updates live."
+            Toggle {
+                checked: Theme.conf.theme_discord === "true"
+                onToggled: c => Theme.setValue("theme_discord", c)
+            }
+        }
+        SettingRow {
+            label: "btop"
+            description: "The terminal system monitor. Reopen it to see changes."
+            Toggle {
+                checked: Theme.conf.theme_btop === "true"
+                onToggled: c => Theme.setValue("theme_btop", c)
+            }
+        }
+        SettingRow {
+            label: "zathura"
+            description: "The keyboard-driven PDF viewer. Reopen it to see changes."
+            Toggle {
+                checked: Theme.conf.theme_zathura === "true"
+                onToggled: c => Theme.setValue("theme_zathura", c)
             }
         }
     }

@@ -3,7 +3,7 @@
 # lumen
 
 A lightweight desktop for **bspwm on X11**, built with [Quickshell](https://quickshell.outfoxxed.me).
-One theme — seven accent colours in light and dark — applied to the shell, GTK 3, GTK 4/libadwaita, Qt and KDE apps, kitty and bspwm.
+One theme — fourteen accent colours (the same as [Pane](https://github.com/spidtzz/pane)) in light, dark and black — applied to the shell, GTK 3, GTK 4/libadwaita, Qt and KDE apps, kitty and bspwm, and optionally to Discord, btop and zathura. The accent can follow your wallpaper.
 
 > **Status: stage 3 of 4.** Session, login and lock screens, installer, theme system, bar with
 > quick settings, notifications, app launcher and Settings app. Coming next: shortcut viewer.
@@ -163,7 +163,7 @@ about mouse clicks while a bar popup is open, so clicking elsewhere closes it.
 | --- | --- | --- |
 | Network | wired and Wi-Fi, connect with password | NetworkManager (nmcli) |
 | Bluetooth | on/off, find, pair, connect, forget devices | BlueZ |
-| Appearance | light/dark, accent, rounded or square corners, rounded screen corners, text size, focused window highlight, title-bar buttons | lumen-theme |
+| Appearance | light/dark/black, accent (or automatic from the wallpaper), other apps (Discord, btop, zathura; experimental), rounded or square corners, rounded screen corners, text size, focused window highlight, title-bar buttons | lumen-theme |
 | Wallpaper | pictures from `~/Pictures/Wallpapers` (optionally its subfolders), system wallpapers or anywhere, or the theme colour; fill, fit, centre, tile, stretch | hsetroot |
 | Bar | workspace style (pills, boxes, dots, numbers), floating or edge to edge (curved into rounded screen corners), black bar, edge, workspaces per page, clock, media controls, tray grouping, pinned and custom tray icons | |
 | Displays | resolution, refresh rate, rotation, primary, arrangement — undone after 15 s unless kept | xrandr |
@@ -218,11 +218,22 @@ If another login manager is already enabled, the installer asks before replacing
 Your choices live in `~/.config/lumen/settings.conf`. Change them in Settings (Appearance, Bar) or:
 
 ```sh
-lumen-theme set accent teal      # blue violet teal green orange pink mono
-lumen-theme set mode light       # light dark
+lumen-theme set accent teal      # blue violet teal green orange pink red amber lime cyan sky indigo fuchsia mono
+lumen-theme set mode light       # light dark black
+lumen-settings set accent_auto true   # accent from the wallpaper (lumen-accent-pick)
 lumen-theme set bar_position left
 lumen-theme set corners square   # rounded square
 ```
+
+**Automatic accent** (Settings › Appearance › Auto): `lumen-accent-pick` shrinks the
+wallpaper with ffmpeg (installed with mpv), finds its most common vivid hue and picks the
+nearest of the fourteen accents (mono for greyscale pictures). It runs again whenever the
+wallpaper changes; choosing an accent yourself turns it off.
+
+**Other apps (experimental)**, in Settings › Appearance: Discord through Vesktop, Vencord,
+Equicord or Equibop (a `lumen.css` theme, turned on in the mod's settings, live), btop
+(`~/.config/btop/themes/lumen.theme`) and zathura (`include lumen-colors`). Turning one off
+removes the theme and the setting again.
 
 **Square corners** apply to the shell, GTK 3/4 and libadwaita apps (through `gtk.css`),
 windows (picom) and the login screen. Qt apps use Qt's Fusion style, whose corners are
@@ -267,6 +278,7 @@ bin/lumen-theme         theme engine (bash)
 bin/lumen-lock          lock screen launcher with i3lock fallback
 bin/lumen-lock-grab     takes the keyboard and mouse while locked
 bin/lumen-stack         keeps the bar above windows (not over fullscreen ones)
+bin/lumen-accent-pick   the accent closest to a picture's main colour (ffmpeg + Python)
 bin/lumen-clipboard     clipboard history
 bin/lumen-capture       screenshots and recordings
 bin/lumen-avatar        profile picture

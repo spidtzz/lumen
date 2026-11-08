@@ -65,6 +65,7 @@ bspc rule -a '*:*:lumen Launcher' state=floating center=on sticky=on border=off 
 bspc rule -a '*:*:lumen Clipboard' state=floating center=on sticky=on border=off layer=above focus=on
 bspc rule -a '*:*:lumen Capture' state=floating center=on sticky=on border=off layer=above focus=on
 bspc rule -a '*:*:lumen Shortcuts' state=floating center=on sticky=on border=off layer=above focus=on
+bspc rule -a '*:*:lumen Session' state=fullscreen sticky=on border=off layer=above focus=on
 
 # ---- Session ----------------------------------------------------------------
 xsetroot -cursor_name left_ptr

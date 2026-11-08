@@ -255,34 +255,12 @@ PopupCard {
             spacing: 2
 
             // the menu
-            MenuRow { visible: qs.confirm === "menu"; icon: "lock"; text: "Lock"; onClicked: qs.run(["lumen-lock"]) }
-            MenuRow { visible: qs.confirm === "menu"; icon: "log-out"; text: "Log out\u2026"; onClicked: qs.confirm = "logout" }
-            MenuRow { visible: qs.confirm === "menu"; icon: "restart"; text: "Restart\u2026"; onClicked: qs.confirm = "restart" }
-            MenuRow { visible: qs.confirm === "menu"; icon: "power"; text: "Shut down\u2026"; onClicked: qs.confirm = "shutdown" }
-
-            // confirmation
-            Txt {
-                visible: qs.confirm !== "menu"
-                Layout.margins: 8
-                Layout.fillWidth: true
-                text: qs.confirm === "logout" ? "Log out now?" : qs.confirm === "restart" ? "Restart now?" : "Shut down now?"
-                strong: true
-            }
-            RowLayout {
-                visible: qs.confirm !== "menu"
-                Layout.fillWidth: true
-                Layout.margins: 4
-                spacing: 6
-                Btn { Layout.fillWidth: true; text: "Cancel"; variant: "ghost"; onClicked: qs.confirm = "menu" }
-                Btn {
-                    Layout.fillWidth: true
-                    text: qs.confirm === "logout" ? "Log out" : qs.confirm === "restart" ? "Restart" : "Shut down"
-                    variant: "danger"
-                    onClicked: qs.run(qs.confirm === "logout" ? ["bspc", "quit"]
-                                    : qs.confirm === "restart" ? ["systemctl", "reboot"]
-                                    : ["systemctl", "poweroff"])
-                }
-            }
+            MenuRow { icon: "lock"; text: "Lock"; onClicked: qs.run(["lumen-lock"]) }
+            // Log out, restart and shut down ask in the session menu (super + p).
+            MenuRow { icon: "log-out"; text: "Log out\u2026"; onClicked: Panels.openSession("logout") }
+            MenuRow { icon: "moon"; text: "Suspend"; onClicked: qs.run(["systemctl", "suspend"]) }
+            MenuRow { icon: "restart"; text: "Restart\u2026"; onClicked: Panels.openSession("restart") }
+            MenuRow { icon: "power"; text: "Shut down\u2026"; onClicked: Panels.openSession("shutdown") }
         }
     }
 }

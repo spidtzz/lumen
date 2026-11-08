@@ -8,6 +8,7 @@ import qs.modules.launcher
 import qs.modules.clipboard
 import qs.modules.capture
 import qs.modules.shortcuts
+import qs.modules.session
 
 // lumen — a desktop shell for bspwm.
 // Run with: quickshell -c lumen   (bspwmrc starts it automatically)
@@ -122,6 +123,17 @@ ShellRoot {
     IpcHandler {
         target: "shortcuts"
         function toggle(): void { Panels.toggleShortcuts(); }
+    }
+
+    // Session menu (super + p).
+    LazyLoader {
+        active: Panels.sessionOpen
+        SessionWindow {}
+    }
+    IpcHandler {
+        target: "session"
+        function toggle(): void { Panels.toggleSession(); }
+        function open(action: string): void { Panels.openSession(action); }
     }
 
     // super + space

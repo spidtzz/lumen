@@ -27,6 +27,18 @@ Singleton {
     }
     function toggleSettings() { settingsOpen ? (settingsOpen = false) : openSettings(""); }
 
+    // ---- session menu (super + p): lock, log out, suspend, restart, shut down ----
+    property bool sessionOpen: false
+    property string sessionAction: ""   // open straight at this one's "are you sure?"
+    function openSession(action) {
+        popup = "";
+        launcherOpen = false;
+        clipboardOpen = false;
+        sessionAction = action || "";
+        sessionOpen = true;
+    }
+    function toggleSession() { sessionOpen ? (sessionOpen = false) : openSession(""); }
+
     // ---- launcher ----
     property bool launcherOpen: false
     function toggleLauncher() {

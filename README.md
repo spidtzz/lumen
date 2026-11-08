@@ -58,6 +58,7 @@ chosen others in `~/.config/mimeapps.list`.
 | `super + n` | Quick settings |
 | `super + c` | Calendar |
 | `super + shift + l` | Lock the screen |
+| `super + p` | Session menu: lock, log out, suspend, restart, shut down |
 | `super + i` | Settings |
 | `super + e` | File manager (Thunar) |
 | `super + q` | Close window |

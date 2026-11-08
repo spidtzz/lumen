@@ -35,6 +35,10 @@ super + v
 super + shift + l
 	lumen-lock
 
+# Session menu: lock, log out, suspend, restart, shut down
+super + p
+	qs -c lumen ipc call session toggle
+
 # Open quick settings
 super + n
 	qs -c lumen ipc call panels toggle qs

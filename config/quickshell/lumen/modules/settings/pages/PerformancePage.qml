@@ -132,10 +132,19 @@ Page {
         }
         SettingRow {
             label: "Animations"
-            description: "Motion in the bar, popups and Settings, and windows fading in and out."
+            description: "Motion in the bar, popups and Settings, and windows opening, closing and switching desktops."
             Toggle {
                 checked: Theme.animations
                 onToggled: c => Theme.setValue("animations", c)
+            }
+        }
+        SettingRow {
+            label: "Animate moving and resizing"
+            description: "Windows glide into place when they tile, move or resize. Experimental in picom: turn off if windows flicker."
+            Toggle {
+                enabled: Theme.animations && Theme.conf.compositor !== "false"
+                checked: Theme.conf.window_motion !== "false"
+                onToggled: c => Theme.setValue("window_motion", c)
             }
         }
     }

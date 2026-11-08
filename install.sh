@@ -132,7 +132,11 @@ install_packages() {
 	log "Profile '$PROFILE': ${#pkgs[@]} packages, ${#missing[@]} to install."
 	if ((${#missing[@]})); then
 		printf '   %s\n' "${missing[*]}"
-		local flags=(-S --needed)
+		# -Syu, never -S alone: installing a newer package on a system that
+		# isn't up to date is a partial upgrade, and Quickshell (built against
+		# Qt's private API) then fails with "undefined symbol ... Qt_6_PRIVATE_API".
+		log "Updating the system first (pacman -Syu), so the new packages match it."
+		local flags=(-Syu --needed)
 		((YES)) && flags+=(--noconfirm)
 		run sudo pacman "${flags[@]}" "${missing[@]}"
 	fi

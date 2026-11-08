@@ -23,7 +23,6 @@ PopupCard {
     readonly property var btConnected: bt ? bt.devices.values.filter(d => d.connected) : []
 
     PwObjectTracker { objects: qs.sink ? [qs.sink] : [] }
-    Component.onCompleted: Brightness.refresh()
 
     function close() { Panels.closePopup(); }
     function run(cmd) { close(); Quickshell.execDetached(cmd); }
@@ -33,6 +32,7 @@ PopupCard {
     // toggles, and you, Settings and power along the bottom.
     readonly property bool flipped: Theme.barPosition !== "top"
     Component.onCompleted: {
+        Brightness.refresh();
         if (!flipped) return;
         const col = header.parent;
         for (const it of [notifHeader, notifEmpty, notifList, divider, media, volumeRow, brightnessRow, toggles, header]) {

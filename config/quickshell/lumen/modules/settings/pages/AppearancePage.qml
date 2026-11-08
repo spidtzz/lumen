@@ -69,7 +69,7 @@ Page {
                     color: selected ? Theme.field : tileHover.hovered ? Theme.field : "transparent"
                     border.width: selected ? 2 : 1
                     border.color: selected ? tile.swatch : Theme.line
-                    Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                    Behavior on color { ColorAnimation { duration: Theme.animFast; easing.type: Theme.easeOut } }
 
                     Rectangle {
                         anchors.horizontalCenter: parent.horizontalCenter

@@ -84,20 +84,27 @@ Singleton {
     readonly property int gap: 10           // matches bspwm window_gap
     readonly property int barSize: 36       // visible bar thickness
     readonly property int barThickness: barSize + gap  // space reserved from bspwm
-    readonly property int animFast: animations ? 120 : 0
-    readonly property int animNormal: animations ? 180 : 0
+    // Motion: one set of durations and curves for the whole shell, all eased.
+    // Settings > Performance > Animations turns them off (duration 0).
+    readonly property int animFast: animations ? 150 : 0     // hover, press, colour
+    readonly property int animNormal: animations ? 260 : 0   // popups, switches, pages
+    readonly property int animSlow: animations ? 380 : 0     // windows, lock screen
+    readonly property int easeOut: Easing.OutCubic           // things arriving
+    readonly property int easeIn: Easing.InCubic             // things leaving
+    readonly property int easeInOut: Easing.InOutCubic       // things moving
+    readonly property int easeSpring: Easing.OutBack         // small playful pops
 
     // A corner radius, or 0 with square corners (Settings > Appearance).
     function r(n) { return rounded ? n : 0; }
 
-    Behavior on bg { ColorAnimation { duration: root.animNormal } }
-    Behavior on panel { ColorAnimation { duration: root.animNormal } }
-    Behavior on field { ColorAnimation { duration: root.animNormal } }
-    Behavior on ink { ColorAnimation { duration: root.animNormal } }
-    Behavior on muted { ColorAnimation { duration: root.animNormal } }
-    Behavior on line { ColorAnimation { duration: root.animNormal } }
-    Behavior on accent { ColorAnimation { duration: root.animNormal } }
-    Behavior on accentFg { ColorAnimation { duration: root.animNormal } }
+    Behavior on bg { ColorAnimation { duration: root.animNormal; easing.type: root.easeOut } }
+    Behavior on panel { ColorAnimation { duration: root.animNormal; easing.type: root.easeOut } }
+    Behavior on field { ColorAnimation { duration: root.animNormal; easing.type: root.easeOut } }
+    Behavior on ink { ColorAnimation { duration: root.animNormal; easing.type: root.easeOut } }
+    Behavior on muted { ColorAnimation { duration: root.animNormal; easing.type: root.easeOut } }
+    Behavior on line { ColorAnimation { duration: root.animNormal; easing.type: root.easeOut } }
+    Behavior on accent { ColorAnimation { duration: root.animNormal; easing.type: root.easeOut } }
+    Behavior on accentFg { ColorAnimation { duration: root.animNormal; easing.type: root.easeOut } }
 
     function parseConf(text) {
         const out = {};

@@ -42,6 +42,6 @@ Slider {
         border.width: 3
         border.color: Theme.accent
         scale: s.pressed ? 1.1 : 1
-        Behavior on scale { NumberAnimation { duration: 80 } }
+        Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.easeOut } }
     }
 }

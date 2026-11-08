@@ -198,6 +198,14 @@ PanelWindow {
 
         readonly property bool mine: Panels.popup !== "" && Panels.popupScreen === win.screen
         readonly property var content: popupLoader.item
+        // The popup stays loaded while it animates out.
+        property string shown: ""
+        readonly property bool alive: mine || fx.t > 0.001
+        onMineChanged: if (mine) shown = Panels.popup
+        Connections {
+            target: Panels
+            function onPopupChanged() { if (popupHost.mine) popupHost.shown = Panels.popup; }
+        }
 
         anchor.window: win
         anchor.rect: win.popupRect(implicitWidth, implicitHeight, Panels.popupAnchor)
@@ -208,20 +216,43 @@ PanelWindow {
         visible: false
 
         function sync() {
-            const show = mine && content !== null;
+            const show = alive && content !== null;
             if (visible !== show) visible = show;
         }
-        onMineChanged: sync()
+        onAliveChanged: sync()
         onContentChanged: sync()
         onVisibleChanged: if (!visible && mine) Panels.closePopup()
 
+        // Opening: fades in and glides out of the bar while growing slightly;
+        // closing plays it back.
+        Item {
+            id: fx
+            property real t: popupHost.mine && popupHost.content !== null ? 1 : 0
+            Behavior on t { NumberAnimation { duration: fx.t < 0.5 ? Theme.animNormal : Theme.animFast; easing.type: fx.t < 0.5 ? Theme.easeOut : Theme.easeIn } }
+            readonly property real slide: (1 - t) * 10
+            width: popupLoader.width
+            height: popupLoader.height
+            opacity: t
+            transform: [
+                Translate {
+                    x: win.edge === "left" ? -fx.slide : win.edge === "right" ? fx.slide : 0
+                    y: win.edge === "top" ? -fx.slide : win.edge === "bottom" ? fx.slide : 0
+                },
+                Scale {
+                    origin.x: win.edge === "left" ? 0 : win.edge === "right" ? fx.width : fx.width / 2
+                    origin.y: win.edge === "top" ? 0 : win.edge === "bottom" ? fx.height : fx.height / 2
+                    xScale: 0.96 + 0.04 * fx.t
+                    yScale: 0.96 + 0.04 * fx.t
+                }
+            ]
+
         Loader {
             id: popupLoader
-            active: popupHost.mine
+            active: popupHost.alive
             width: item ? item.implicitWidth : 0
             height: item ? item.implicitHeight : 0
             source: {
-                switch (Panels.popup) {
+                switch (popupHost.shown) {
                 case "calendar": return "../popups/CalendarPopup.qml";
                 case "qs": return "../popups/QuickSettings.qml";
                 case "tray": return "../popups/TrayPopup.qml";
@@ -230,6 +261,7 @@ PanelWindow {
                 default: return "";
                 }
             }
+        }
         }
     }
 
@@ -286,10 +318,16 @@ PanelWindow {
         implicitWidth: w
         implicitHeight: 56
         color: "transparent"
-        visible: Osd.shown && win.screen === Panels.focusedScreen()
+        // Stays up while it fades out.
+        readonly property bool here: win.screen === Panels.focusedScreen()
+        visible: here && (Osd.shown || osdCard.opacity > 0.01)
 
         Rectangle {
+            id: osdCard
             anchors.fill: parent
+            opacity: Osd.shown ? 1 : 0
+            Behavior on opacity { NumberAnimation { duration: Osd.shown ? Theme.animFast : Theme.animNormal; easing.type: Osd.shown ? Theme.easeOut : Theme.easeIn } }
+            transform: Translate { y: (1 - osdCard.opacity) * 12 }
             radius: Theme.radius
             color: Theme.panel
             border.width: 1
@@ -314,7 +352,7 @@ PanelWindow {
                         height: parent.height
                         radius: parent.radius
                         color: Theme.accent
-                        Behavior on width { NumberAnimation { duration: Theme.animFast } }
+                        Behavior on width { NumberAnimation { duration: Theme.animFast; easing.type: Theme.easeOut } }
                     }
                 }
                 Txt {
@@ -359,6 +397,21 @@ PanelWindow {
             id: notifStack
             width: notifHost.w
             spacing: 8
+            // New notifications slide in from the screen edge; the others
+            // glide to their new place.
+            add: Transition {
+                NumberAnimation { property: "opacity"; from: 0; to: 1; duration: Theme.animNormal; easing.type: Theme.easeOut }
+                NumberAnimation {
+                    property: "x"
+                    from: (Theme.conf.notif_position || "top-right").endsWith("left") ? -40 : 40
+                    to: 0
+                    duration: Theme.animSlow
+                    easing.type: Theme.easeOut
+                }
+            }
+            move: Transition {
+                NumberAnimation { properties: "x,y"; duration: Theme.animNormal; easing.type: Theme.easeInOut }
+            }
             Repeater {
                 model: Notifs.popups
                 delegate: NotificationCard {

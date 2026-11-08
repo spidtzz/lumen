@@ -18,8 +18,8 @@ BarButton {
             SequentialAnimation on opacity {
                 running: Recorder.recording
                 loops: Animation.Infinite
-                NumberAnimation { to: 0.35; duration: 700 }
-                NumberAnimation { to: 1; duration: 700 }
+                NumberAnimation { to: 0.35; duration: 700; easing.type: Easing.InOutSine }
+                NumberAnimation { to: 1; duration: 700; easing.type: Easing.InOutSine }
             }
         }
         TextMetrics { id: widest; font: elapsed.font; text: "88:88" }

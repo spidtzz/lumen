@@ -19,7 +19,7 @@ Rectangle {
     border.width: 1
     border.color: checked || hover.hovered ? Theme.accent : Theme.line
     scale: tap.pressed ? 0.97 : 1
-    Behavior on scale { NumberAnimation { duration: 80 } }
+    Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.easeOut } }
 
     RowLayout {
         id: row

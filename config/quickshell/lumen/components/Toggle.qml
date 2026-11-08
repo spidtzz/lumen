@@ -16,7 +16,7 @@ Rectangle {
     border.width: 1
     border.color: checked ? Theme.accent : hover.hovered ? Theme.accent : Theme.line
     activeFocusOnTab: true
-    Behavior on color { ColorAnimation { duration: Theme.animFast } }
+    Behavior on color { ColorAnimation { duration: Theme.animFast; easing.type: Theme.easeOut } }
 
     // The knob, centred vertically with the same 4px inset on both sides.
     Rectangle {
@@ -24,7 +24,7 @@ Rectangle {
         y: (sw.height - height) / 2
         x: sw.checked ? sw.width - width - 4 : 4
         color: sw.checked ? Theme.accentFg : Theme.ink
-        Behavior on x { NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutCubic } }
+        Behavior on x { NumberAnimation { duration: Theme.animNormal; easing.type: Theme.easeInOut } }
     }
 
     HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }

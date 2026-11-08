@@ -13,8 +13,8 @@ Rectangle {
     border.width: 1
     border.color: Panels.launcherOpen || hover.hovered ? Theme.barAccent : Theme.barLine
     scale: tap.pressed ? 0.92 : 1
-    Behavior on color { ColorAnimation { duration: Theme.animFast } }
-    Behavior on scale { NumberAnimation { duration: 80 } }
+    Behavior on color { ColorAnimation { duration: Theme.animFast; easing.type: Theme.easeOut } }
+    Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.easeOut } }
 
     Icon {
         anchors.centerIn: parent

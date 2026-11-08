@@ -105,7 +105,7 @@ Grid {
                      : root.style === "boxes" && chip.occupied ? Theme.barField : "transparent"
                 border.width: chip.modelData.urgent && !chip.active ? 1 : 0
                 border.color: Theme.danger
-                Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                Behavior on color { ColorAnimation { duration: Theme.animFast; easing.type: Theme.easeOut } }
             }
 
             // Number (not for dots).
@@ -147,7 +147,7 @@ Grid {
                 scale: hover.hovered && !chip.active ? 1.25 : 1
                 Behavior on width { NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutCubic } }
                 Behavior on height { NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutCubic } }
-                Behavior on scale { NumberAnimation { duration: Theme.animFast } }
+                Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.easeOut } }
             }
 
             HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }

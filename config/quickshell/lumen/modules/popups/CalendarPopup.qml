@@ -23,6 +23,9 @@ PopupCard {
         if (m < 0) { m = 11; y--; }
         if (m > 11) { m = 0; y++; }
         viewMonth = m; viewYear = y;
+        // The new month slides in from the side you're going to.
+        monthIn.dir = n;
+        monthIn.restart();
     }
     Component.onCompleted: goToday()
 
@@ -62,10 +65,19 @@ PopupCard {
     }
 
     GridLayout {
+        id: days
         Layout.fillWidth: true
         columns: 7
         rowSpacing: 3
         columnSpacing: 3
+        transform: Translate { id: daysShift }
+
+        ParallelAnimation {
+            id: monthIn
+            property int dir: 1
+            NumberAnimation { target: daysShift; property: "x"; from: 18 * monthIn.dir; to: 0; duration: Theme.animNormal; easing.type: Theme.easeOut }
+            NumberAnimation { target: days; property: "opacity"; from: 0.2; to: 1; duration: Theme.animNormal; easing.type: Theme.easeOut }
+        }
 
         Repeater {
             model: cal.weekdays

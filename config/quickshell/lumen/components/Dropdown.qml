@@ -47,7 +47,7 @@ Rectangle {
             size: 16
             color: Theme.muted
             rotation: popup.opened ? 180 : 0
-            Behavior on rotation { NumberAnimation { duration: Theme.animFast } }
+            Behavior on rotation { NumberAnimation { duration: Theme.animFast; easing.type: Theme.easeOut } }
         }
     }
 

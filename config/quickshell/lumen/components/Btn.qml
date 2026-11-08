@@ -30,8 +30,8 @@ Rectangle {
     scale: tap.pressed && enabled ? 0.97 : 1
     activeFocusOnTab: true
 
-    Behavior on scale { NumberAnimation { duration: 80 } }
-    Behavior on color { ColorAnimation { duration: Theme.animFast } }
+    Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.easeOut } }
+    Behavior on color { ColorAnimation { duration: Theme.animFast; easing.type: Theme.easeOut } }
 
     RowLayout {
         id: row

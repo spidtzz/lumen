@@ -68,6 +68,7 @@ FloatingWindow {
 
     // ---- clock ----
     Column {
+        NumberAnimation on opacity { from: 0; to: 1; duration: Theme.animSlow * 1.4; easing.type: Theme.easeOut }
         anchors.horizontalCenter: parent.horizontalCenter
         anchors.bottom: card.top
         anchors.bottomMargin: 40
@@ -90,7 +91,10 @@ FloatingWindow {
     Rectangle {
         id: card
         anchors.centerIn: parent
-        anchors.verticalCenterOffset: 60
+        anchors.verticalCenterOffset: 60 + rise
+        property real rise: 0
+        NumberAnimation on rise { from: 24; to: 0; duration: Theme.animSlow; easing.type: Theme.easeOut }
+        NumberAnimation on opacity { from: 0; to: 1; duration: Theme.animSlow; easing.type: Theme.easeOut }
         width: 380
         height: cardCol.implicitHeight + 48
         radius: Theme.radius
@@ -102,9 +106,9 @@ FloatingWindow {
         SequentialAnimation {
             id: shake
             loops: 2
-            NumberAnimation { target: shakeX; property: "x"; to: -10; duration: 50 }
-            NumberAnimation { target: shakeX; property: "x"; to: 10; duration: 80 }
-            NumberAnimation { target: shakeX; property: "x"; to: 0; duration: 50 }
+            NumberAnimation { target: shakeX; property: "x"; to: -10; duration: 50; easing.type: Easing.OutSine }
+            NumberAnimation { target: shakeX; property: "x"; to: 10; duration: 80; easing.type: Easing.InOutSine }
+            NumberAnimation { target: shakeX; property: "x"; to: 0; duration: 50; easing.type: Easing.InSine }
         }
 
         Column {

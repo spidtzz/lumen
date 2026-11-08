@@ -20,7 +20,7 @@ Rectangle {
     implicitHeight: vertical ? inner.childrenRect.height + padding * 2 : 26
     radius: Theme.r(13)
     color: open ? Theme.barAccent : hover.hovered ? Theme.barField : "transparent"
-    Behavior on color { ColorAnimation { duration: Theme.animFast } }
+    Behavior on color { ColorAnimation { duration: Theme.animFast; easing.type: Theme.easeOut } }
 
     Item {
         id: inner

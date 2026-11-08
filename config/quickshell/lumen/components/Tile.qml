@@ -21,8 +21,8 @@ Rectangle {
     border.color: active ? Theme.accent : Theme.line
     opacity: enabled ? 1 : 0.5
     scale: tap.pressed ? 0.98 : 1
-    Behavior on color { ColorAnimation { duration: Theme.animFast } }
-    Behavior on scale { NumberAnimation { duration: 80 } }
+    Behavior on color { ColorAnimation { duration: Theme.animFast; easing.type: Theme.easeOut } }
+    Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.easeOut } }
 
     RowLayout {
         anchors.fill: parent

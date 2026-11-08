@@ -39,6 +39,7 @@ FloatingWindow {
     Item {
         anchors.fill: parent
         focus: true
+        NumberAnimation on opacity { from: 0; to: 1; duration: Theme.animSlow; easing.type: Theme.easeOut }
         Keys.onEscapePressed: Panels.settingsOpen = false
         Keys.onPressed: event => {
             if (event.modifiers & Qt.ControlModifier) {
@@ -138,7 +139,9 @@ FloatingWindow {
                                     implicitHeight: 36
                                     radius: Theme.radiusSmall
                                     color: selected ? Theme.accent : hover.hovered ? Theme.panel : "transparent"
-                                    Behavior on color { ColorAnimation { duration: Theme.animFast } }
+                                    scale: tap.pressed ? 0.98 : 1
+                                    Behavior on scale { NumberAnimation { duration: Theme.animFast; easing.type: Theme.easeOut } }
+                                    Behavior on color { ColorAnimation { duration: Theme.animFast; easing.type: Theme.easeOut } }
 
                                     RowLayout {
                                         anchors.fill: parent
@@ -160,7 +163,7 @@ FloatingWindow {
                                         }
                                     }
                                     HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }
-                                    TapHandler { onTapped: Panels.settingsPage = item.modelData.id }
+                                    TapHandler { id: tap; onTapped: Panels.settingsPage = item.modelData.id }
                                 }
                                     }
                                 }
@@ -187,10 +190,20 @@ FloatingWindow {
 
             // ---- page ----
             Loader {
+                id: pageLoader
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 source: Qt.resolvedUrl("pages/" + win.currentPage.file)
                 asynchronous: false
+                clip: true
+                // A new page fades in while rising a little.
+                onLoaded: { pageIn.target = item; pageIn.restart(); }
+                ParallelAnimation {
+                    id: pageIn
+                    property Item target
+                    NumberAnimation { target: pageIn.target; property: "opacity"; from: 0; to: 1; duration: Theme.animNormal; easing.type: Theme.easeOut }
+                    NumberAnimation { target: pageIn.target; property: "y"; from: 14; to: 0; duration: Theme.animNormal; easing.type: Theme.easeOut }
+                }
             }
         }
     }

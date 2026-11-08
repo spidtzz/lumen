@@ -90,6 +90,9 @@ FloatingWindow {
         anchors.fill: parent
         radius: Theme.radius
         color: Theme.panel
+        // Arrives with a short, eased fade and grow.
+        NumberAnimation on opacity { from: 0; to: 1; duration: Theme.animSlow; easing.type: Theme.easeOut }
+        NumberAnimation on scale { from: 0.96; to: 1; duration: Theme.animSlow; easing.type: Theme.easeOut }
         border.width: 1
         border.color: Theme.line
 

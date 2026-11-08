@@ -35,6 +35,9 @@ FloatingWindow {
         id: card
         width: win.width
         implicitHeight: col.implicitHeight + 32
+        // Arrives with a short, eased fade and grow.
+        NumberAnimation on opacity { from: 0; to: 1; duration: Theme.animSlow; easing.type: Theme.easeOut }
+        NumberAnimation on scale { from: 0.96; to: 1; duration: Theme.animSlow; easing.type: Theme.easeOut }
         radius: Theme.radius
         color: Theme.panel
         border.width: 1

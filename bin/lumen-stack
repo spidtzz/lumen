@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""lumen-stack: keep the bar above windows.
+"""lumen-stack: keep the bar above windows, and out of the way of fullscreen apps.
 
 bspwm restacks the windows it manages whenever focus or layers change, and
 the bar (a "dock" window, which bspwm doesn't manage) can end up underneath a
-floating window. This watches bspwm and puts dock windows back on top, except
-on a monitor showing a fullscreen window (a video, a game), where the bar
-stays behind it. Small lumen windows drawn over the bar (the rounded screen
+floating window. This watches bspwm and puts dock windows back on top. On a
+monitor showing a fullscreen window (a video, a game) the bar goes to the
+bottom instead, so the app covers it and gets every click (the bar also
+hides its contents there). Small lumen windows drawn over the bar (the rounded screen
 corners) are put back above it.
 
 bspwmrc starts it; it stops when the X session ends.
@@ -57,7 +58,7 @@ class Stacker:
 
     def restack(self):
         areas = fullscreen_areas()
-        docks, corners = [], []
+        docks, corners, behind = [], [], []
         try:
             children = self.root.query_tree().children
         except error.XError:
@@ -75,8 +76,12 @@ class Stacker:
             elif self.is_dock(w):
                 cx, cy = g.x + g.width // 2, g.y + g.height // 2
                 covered = any(x <= cx < x + wd and y <= cy < y + h for x, y, wd, h in areas)
-                if not covered:
-                    docks.append(w)
+                (behind if covered else docks).append(w)
+        for w in behind:
+            try:
+                w.configure(stack_mode=X.Below)
+            except error.XError:
+                pass
         for w in docks + corners:
             try:
                 w.configure(stack_mode=X.Above)

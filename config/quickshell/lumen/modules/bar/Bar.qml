@@ -29,6 +29,14 @@ PanelWindow {
     implicitHeight: vertical ? 0 : Theme.barDepth
     implicitWidth: vertical ? Theme.barDepth : 0
 
+    // A fullscreen app on this monitor: the bar steps aside (lumen-stack also
+    // moves the bar's window below it, so clicks reach the app).
+    readonly property bool fullscreenApp: {
+        const m = Bspwm.monitorFor(screen ? screen.name : "");
+        return m ? m.fullscreen : false;
+    }
+    onFullscreenAppChanged: if (fullscreenApp && Panels.popupScreen === screen) Panels.closePopup()
+
     // This window's position on the screen, for placing popups in screen terms.
     readonly property int screenX: edge === "right" && screen ? screen.width - Theme.barDepth : 0
     readonly property int screenY: edge === "bottom" && screen ? screen.height - Theme.barDepth : 0
@@ -78,6 +86,7 @@ PanelWindow {
             : win.edge === "left" ? ["top-left", "bottom-left"] : ["top-right", "bottom-right"]) : []
         delegate: Fillet {
             required property string modelData
+            visible: !win.fullscreenApp
             corner: modelData
             r: Theme.screenRadius
             fill: Theme.barBg
@@ -92,6 +101,7 @@ PanelWindow {
 
     Rectangle {
         id: body
+        visible: !win.fullscreenApp
         anchors.fill: parent
         // Floating: a gap on the screen edge and both sides; none toward the
         // windows, because bspwm's window_gap already spaces them.

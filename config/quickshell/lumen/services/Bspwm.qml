@@ -5,7 +5,8 @@ import Quickshell
 import Quickshell.Io
 
 // Live bspwm state from `bspc subscribe report`.
-// monitors: [{ name, focused, layout, desktops: [{ name, focused, occupied, urgent }] }]
+// monitors: [{ name, focused, layout, fullscreen, desktops: [{ name, focused, occupied, urgent }] }]
+// fullscreen: the focused window on that monitor's visible desktop is fullscreen.
 Singleton {
     id: root
 
@@ -13,6 +14,10 @@ Singleton {
 
     function monitor(name) {
         return monitors.find(m => m.name === name) ?? null;
+    }
+
+    function monitorFor(screenName) {
+        return monitor(screenName) ?? (monitors.length === 1 ? monitors[0] : null);
     }
 
     function desktopsFor(screenName) {
@@ -44,7 +49,7 @@ Singleton {
             const k = item[0];
             const v = item.slice(1);
             if (k === "M" || k === "m") {
-                cur = { name: v, focused: k === "M", layout: "tiled", desktops: [] };
+                cur = { name: v, focused: k === "M", layout: "tiled", fullscreen: false, desktops: [] };
                 mons.push(cur);
             } else if ("OoFfUu".includes(k) && cur) {
                 cur.desktops.push({
@@ -55,6 +60,8 @@ Singleton {
                 });
             } else if (k === "L" && cur) {
                 cur.layout = v === "M" ? "monocle" : "tiled";
+            } else if (k === "T" && cur) {
+                cur.fullscreen = v === "=";
             }
         }
         root.monitors = mons;

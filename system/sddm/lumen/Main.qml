@@ -27,10 +27,7 @@ Rectangle {
     readonly property bool darkMode: cfg("mode", "dark") !== "light"   // dark or black
     readonly property bool squareCorners: cfg("corners", "rounded") === "square"
     function rr(n) { return squareCorners ? 0 : n; }
-    readonly property string fontName: fontLoader.status === FontLoader.Ready
-        ? fontLoader.name : cfg("font", "sans-serif")
-
-    FontLoader { id: fontLoader; source: "fonts/SpaceGrotesk.ttf" }
+    readonly property string fontName: cfg("font", "IBM Plex Sans") === "Space Grotesk" ? "IBM Plex Sans" : cfg("font", "IBM Plex Sans")
 
     color: cBg
 

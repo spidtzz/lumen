@@ -50,6 +50,7 @@ mpv
 # Terminal and fonts (Noto covers Persian/Arabic and other scripts)
 kitty
 ttf-jetbrains-mono
+ttf-ibm-plex
 noto-fonts
 
 # Theming: GTK 3/4, Qt, cursor, live reload, light/dark for libadwaita apps

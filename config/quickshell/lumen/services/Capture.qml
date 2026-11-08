@@ -22,7 +22,7 @@ Singleton {
     readonly property int delay: [0, 3, 5, 10].includes(parseInt(conf.capture_delay)) ? parseInt(conf.capture_delay) : 0
     readonly property bool pointer: conf.capture_pointer === "true"
     readonly property bool audio: conf.capture_audio === "true"
-    readonly property bool clipboard: conf.capture_clipboard === "true"
+    readonly property bool save: conf.capture_save !== "false"   // screenshots: copy and save, or copy only
     readonly property string area: conf.capture_area ?? ""
     function set(key, value) {
         if (String(conf["capture_" + key]) !== String(value))

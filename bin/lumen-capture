@@ -16,12 +16,13 @@
 #   --monitor NAME       this monitor
 #   --delay N            wait N seconds first
 #   --pointer | --no-pointer      include the mouse pointer
-#   --copy | --save      screenshot to the clipboard only, or to a file
+#   --copy | --save      screenshot to the clipboard only, or saved as well
 #   --audio              record what the speakers play
 #
-# Without options, --pointer and --copy follow Settings (the capture overlay,
-# Print, remembers them). Screenshots are saved to ~/Pictures/Screenshots,
-# recordings to ~/Videos/Captures. "window" is the focused window, "selection"
+# Without options, --pointer and --copy/--save follow the capture overlay's
+# options (super + shift + s or Print; it remembers them). Screenshots always
+# go to the clipboard, and are also saved to ~/Pictures/Screenshots unless
+# "copy only" is chosen; recordings go to ~/Videos/Captures. "window" is the focused window, "selection"
 # lets you drag a rectangle or click a window. Uses maim, slop, xclip and
 # gpu-screen-recorder, which falls back to CPU encoding (e.g. in a VM).
 set -uo pipefail
@@ -77,7 +78,7 @@ recording() { [[ -f $RUN ]] && kill -0 "$(cut -d' ' -f1 "$RUN")" 2>/dev/null; }
 parse() {
 	target=screen geometry="" window="" monitor="" delay=0 audio=0
 	pointer=$(setting capture_pointer false)
-	[[ $(setting capture_clipboard false) == true ]] && copy=1 || copy=0
+	[[ $(setting capture_save true) == true ]] && copy=0 || copy=1
 	while (($#)); do
 		case $1 in
 			screen | window | selection | area) target=$1 ;;
@@ -123,6 +124,7 @@ shot() {
 	fi
 	[[ $pointer == true ]] || args+=(-u)
 
+	# Always to the clipboard; also kept in Pictures/Screenshots unless --copy.
 	if ((copy)); then
 		has xclip || die "xclip is not installed"
 		file=$RUNDIR/lumen-screenshot.png
@@ -134,11 +136,11 @@ shot() {
 	sleep 0.25 # let the capture overlay disappear
 	((delay > 0)) && sleep "$delay"
 	maim "${args[@]}" "$file" 2>/dev/null || die "screenshot failed"
+	has xclip && xclip -selection clipboard -t image/png -i "$file"
 	if ((copy)); then
-		xclip -selection clipboard -t image/png -i "$file"
 		notify-send -a lumen -i "$file" "Screenshot copied" "Paste it with ctrl + v" 2>/dev/null
 	else
-		notify-send -a lumen -i "$file" "Screenshot saved" "${file/#$HOME/\~}" 2>/dev/null
+		notify-send -a lumen -i "$file" "Screenshot saved and copied" "${file/#$HOME/\~}" 2>/dev/null
 		printf '%s\n' "$file"
 	fi
 }

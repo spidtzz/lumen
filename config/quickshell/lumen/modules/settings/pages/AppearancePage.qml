@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
 import qs.services
 import qs.components
 
@@ -252,6 +253,25 @@ Page {
             Toggle {
                 checked: Theme.conf.theme_btop === "true"
                 onToggled: c => Theme.setValue("theme_btop", c)
+            }
+        }
+        SettingRow {
+            label: "Telegram"
+            description: Theme.conf.theme_telegram === "true"
+                ? "Telegram only takes a theme you open in it: press Open, then Apply. Do it again after changing colours."
+                : "Telegram Desktop. Turning it off later: pick another theme in Telegram's chat settings."
+            RowLayout {
+                spacing: 8
+                Btn {
+                    visible: Theme.conf.theme_telegram === "true"
+                    text: "Open"
+                    variant: "ghost"
+                    onClicked: Quickshell.execDetached(["lumen-theme", "telegram-open"])
+                }
+                Toggle {
+                    checked: Theme.conf.theme_telegram === "true"
+                    onToggled: c => Theme.setValue("theme_telegram", c)
+                }
             }
         }
         SettingRow {

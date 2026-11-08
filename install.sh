@@ -199,21 +199,18 @@ place_tree() {
 	done
 }
 
-install_fonts() {
-	if ! compgen -G "$REPO/assets/fonts/*.ttf" >/dev/null; then
-		log "Fetching Space Grotesk (not in the Arch repos)..."
-		if ((DRY)); then
-			run "$REPO/tools/fetch-fonts.sh"
-		else
-			"$REPO/tools/fetch-fonts.sh" || warn "font download failed; the shell will use a fallback font"
-		fi
+# The fonts (IBM Plex Sans, JetBrains Mono) come from the Arch repositories.
+# Older lumen versions downloaded Space Grotesk into ~/.local/share/fonts/lumen
+# and set it in settings.conf: switch those over.
+migrate_fonts() {
+	if [[ -d $DATA_HOME/fonts/$NAME ]]; then
+		run rm -rf "$DATA_HOME/fonts/$NAME"
+		command -v fc-cache >/dev/null && run fc-cache -f "$DATA_HOME/fonts" >/dev/null || true
 	fi
-	local f
-	for f in "$REPO"/assets/fonts/*.ttf; do
-		[[ -e $f ]] || continue
-		place "$f" "$DATA_HOME/fonts/$NAME/${f##*/}"
-	done
-	command -v fc-cache >/dev/null && run fc-cache -f "$DATA_HOME/fonts" >/dev/null || true
+	local conf=$CONFIG_HOME/$NAME/settings.conf
+	if [[ -f $conf ]] && grep -qx 'font=Space Grotesk' "$conf"; then
+		run sed -i 's/^font=Space Grotesk$/font=IBM Plex Sans/' "$conf"
+	fi
 }
 
 install_files() {
@@ -226,7 +223,7 @@ install_files() {
 	place_tree "$REPO/share/applications" "$DATA_HOME/applications"   # Settings in the app launcher
 	place_tree "$REPO/share/icons" "$DATA_HOME/icons"                 # its icon
 	place "$REPO/home/xinitrc" "$HOME/.xinitrc"
-	install_fonts
+	migrate_fonts
 
 	# Default cursor for the X root window and apps that don't read XSETTINGS.
 	if [[ ! -e $HOME/.icons/default/index.theme ]]; then
@@ -240,7 +237,7 @@ install_files() {
 	if [[ ! -e $CONFIG_HOME/$NAME/settings.conf ]]; then
 		run mkdir -p "$CONFIG_HOME/$NAME"
 		if ((DRY)); then run write "$CONFIG_HOME/$NAME/settings.conf"; else
-			printf '# lumen settings — edited by lumen-theme and the Settings app.\nmode=dark\naccent=blue\nbar_position=top\nfont=Space Grotesk\nfont_size=10\nmono_font=JetBrains Mono\n' \
+			printf '# lumen settings — edited by lumen-theme and the Settings app.\nmode=dark\naccent=blue\nbar_position=top\nfont=IBM Plex Sans\nfont_size=10\nmono_font=JetBrains Mono\n' \
 				>"$CONFIG_HOME/$NAME/settings.conf"
 		fi
 	fi
@@ -290,16 +287,14 @@ setup_default_apps() {
 # of lumen-session are installed system-wide (always copied, even with --link).
 install_system() {
 	[[ $DM == sddm ]] || return 0
-	local theme=/usr/share/sddm/themes/$NAME f font=""
+	local theme=/usr/share/sddm/themes/$NAME f
 	log "Installing the login screen (SDDM)..."
-	run sudo install -d -m 755 "$theme" "$theme/fonts"
+	run sudo install -d -m 755 "$theme"
 	for f in Main.qml metadata.desktop theme.conf; do
 		run sudo install -m 644 "$REPO/system/sddm/$NAME/$f" "$theme/$f"
 	done
-	for f in "$REPO"/assets/fonts/*.ttf; do [[ -e $f ]] && font=$f && break; done
-	if [[ -n $font ]]; then
-		run sudo install -m 644 "$font" "$theme/fonts/SpaceGrotesk.ttf"
-	fi
+	# (older versions copied a font in here; IBM Plex Sans is installed system-wide)
+	[[ -d $theme/fonts ]] && run sudo rm -rf "$theme/fonts"
 	# Owned by you so lumen-theme can recolour the login screen without sudo.
 	if [[ ! -O $theme/theme.conf.user ]]; then
 		run sudo install -m 644 -o "$(id -un)" -g "$(id -gn)" /dev/null "$theme/theme.conf.user"

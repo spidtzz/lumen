@@ -91,7 +91,7 @@ FloatingWindow {
         }
         if (Capture.delay > 0) args.push("--delay", String(Capture.delay));
         args.push(Capture.pointer ? "--pointer" : "--no-pointer");
-        if (!video) args.push(Capture.clipboard ? "--copy" : "--save");
+        if (!video) args.push(Capture.save ? "--save" : "--copy");
         else if (Capture.audio) args.push("--audio");
         Capture.run(args);
     }
@@ -295,7 +295,7 @@ FloatingWindow {
         anchors.horizontalCenter: bar.horizontalCenter
         anchors.bottom: bar.top
         anchors.bottomMargin: 10
-        width: 380
+        width: 440
         height: optCol.implicitHeight + 28
         radius: Theme.radius
         color: Theme.panel
@@ -326,9 +326,14 @@ FloatingWindow {
             }
             SettingRow {
                 visible: !win.video
-                label: "Copy instead of saving"
-                description: Capture.clipboard ? "Screenshots go to the clipboard only." : "Screenshots are saved to Pictures/Screenshots."
-                Toggle { checked: Capture.clipboard; onToggled: c => Capture.set("clipboard", c) }
+                label: "Screenshots"
+                description: Capture.save ? "Copied, and saved to Pictures/Screenshots." : "Copied to the clipboard only."
+                Seg {
+                    implicitWidth: 200
+                    options: [{ label: "Copy", value: false }, { label: "Copy & save", value: true }]
+                    value: Capture.save
+                    onPicked: v => Capture.set("save", v)
+                }
             }
             SettingRow {
                 visible: win.video

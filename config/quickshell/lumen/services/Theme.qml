@@ -19,7 +19,7 @@ Singleton {
     property string mode: "dark"
     property string accentName: "blue"
     property string barPosition: "top"
-    property string fontFamily: "Space Grotesk"
+    property string fontFamily: "IBM Plex Sans"
     property string monoFamily: "JetBrains Mono"
     property int fontSize: 10
     readonly property real fontScale: fontSize / 10   // shell text follows the font size setting
@@ -143,7 +143,7 @@ Singleton {
             if (["top", "bottom", "left", "right"].includes(c.bar_position))
                 root.barPosition = c.bar_position;
             if (c.font)
-                root.fontFamily = c.font;
+                root.fontFamily = c.font === "Space Grotesk" ? "IBM Plex Sans" : c.font;   // no longer shipped
             if (c.mono_font)
                 root.monoFamily = c.mono_font;
             if (parseInt(c.font_size) > 0)

@@ -10,6 +10,7 @@
 #   lumen-theme cycle-accent           next accent colour
 #   lumen-theme get [key]              print current settings
 #   lumen-theme list                   print valid values
+#   lumen-theme telegram-open          open the Telegram theme in Telegram (to apply it)
 set -euo pipefail
 
 CONFIG_HOME=${XDG_CONFIG_HOME:-$HOME/.config}
@@ -22,7 +23,7 @@ MODES=(light dark black)   # black: dark on pure black (OLED), as in Pane
 ACCENTS=(blue violet teal green orange pink red amber lime cyan sky indigo fuchsia mono)
 POSITIONS=(top bottom left right)
 KEYS=(mode accent bar_position font font_size mono_font wallpaper wallpaper_mode window_buttons corners
-	theme_btop theme_discord theme_zathura theme_browser)
+	theme_btop theme_discord theme_zathura theme_browser theme_telegram)
 
 QUIET=0
 say() { ((QUIET)) || printf 'lumen-theme: %s\n' "$*"; }
@@ -33,7 +34,7 @@ contains() { local x=$1; shift; local y; for y; do [[ $x == "$y" ]] && return 0;
 # ---------------------------------------------------------------- settings
 load_settings() {
 	mode=dark accent=blue bar_position=top
-	font="Space Grotesk" font_size=10 mono_font="JetBrains Mono"
+	font="IBM Plex Sans" font_size=10 mono_font="JetBrains Mono"
 	wallpaper="" wallpaper_mode=fill window_buttons=false corners=rounded
 	if [[ -f $SETTINGS ]]; then
 		local k v
@@ -47,6 +48,7 @@ load_settings() {
 	contains "$accent" "${ACCENTS[@]}" || accent=blue
 	contains "$bar_position" "${POSITIONS[@]}" || bar_position=top
 	[[ $font_size =~ ^[0-9]+$ ]] || font_size=10
+	if [[ $font == "Space Grotesk" ]]; then font="IBM Plex Sans"; fi   # no longer shipped
 }
 
 # ------------------------------------------------- other apps (experimental)
@@ -339,11 +341,165 @@ write_browsers() {
 	done < <(browser_profiles)
 }
 
+# Telegram Desktop: a theme file, ~/.local/share/lumen/telegram/lumen.tdesktop-theme.
+# Telegram doesn't watch theme files, so it's applied by opening the file in
+# Telegram once (Settings has a button; `lumen-theme telegram-open`) and again
+# after the colours change.
+TELEGRAM_THEME=$DATA_HOME/lumen/telegram/lumen.tdesktop-theme
+write_telegram() {
+	if [[ ${theme_telegram:-false} != true ]]; then
+		rm -rf "${TELEGRAM_THEME%/*}"
+		return 0
+	fi
+	has python3 || return 0
+	mkdir -p "${TELEGRAM_THEME%/*}"
+	local args=() k
+	for k in "${!P[@]}"; do args+=("$k=${P[$k]}"); done
+	python3 - "$TELEGRAM_THEME" "$mode" "${args[@]}" <<'PY'
+import struct, sys, zipfile, zlib
+
+out, mode = sys.argv[1], sys.argv[2]
+P = dict(a.split("=", 1) for a in sys.argv[3:])
+dark = mode != "light"
+
+def rgb(c): c = c.lstrip("#"); return [int(c[i:i + 2], 16) for i in (0, 2, 4)]
+def hexc(v): return "#" + "".join("%02x" % max(0, min(255, round(x))) for x in v)
+def mix(a, b, t): return hexc([x + (y - x) * t for x, y in zip(rgb(a), rgb(b))])
+def alpha(c, a): return c + "%02x" % round(a * 255)
+
+bg, panel, field, deep = P["bg"], P["panel"], P["field"], P["deep"]
+ink, muted, line = P["ink"], P["muted"], P["line"]
+acc, on_acc = P["accent"], P["on_accent"]
+danger, ok = P["danger"], P["success"]
+over = mix(panel, ink, 0.06)
+ripple = mix(panel, ink, 0.12)
+acc_over = mix(acc, ink if dark else "#000000", 0.12)
+out_bg = mix(panel, acc, 0.28 if dark else 0.16)
+out_sel = mix(out_bg, acc, 0.2)
+in_sel = mix(panel, acc, 0.12)
+
+c = {
+    "windowBg": panel, "windowFg": ink, "windowBgOver": over, "windowBgRipple": ripple,
+    "windowFgOver": ink, "windowSubTextFg": muted, "windowSubTextFgOver": muted,
+    "windowBoldFg": ink, "windowBoldFgOver": ink, "windowBgActive": acc, "windowFgActive": on_acc,
+    "windowActiveTextFg": acc, "windowShadowFg": "#000000", "windowShadowFgFallback": deep,
+    "shadowFg": alpha("#000000", 0.2), "imageBg": "#000000",
+    "activeButtonBg": acc, "activeButtonBgOver": acc_over, "activeButtonBgRipple": mix(acc, ink, 0.25),
+    "activeButtonFg": on_acc, "activeButtonFgOver": on_acc, "activeButtonSecondaryFg": mix(on_acc, acc, 0.35),
+    "activeLineFg": acc, "activeLineFgError": danger,
+    "lightButtonBg": panel, "lightButtonBgOver": mix(panel, acc, 0.1), "lightButtonBgRipple": mix(panel, acc, 0.2),
+    "lightButtonFg": acc, "lightButtonFgOver": acc, "attentionButtonFg": danger,
+    "attentionButtonBgOver": mix(panel, danger, 0.1),
+    "menuBg": panel, "menuBgOver": over, "menuBgRipple": ripple, "menuIconFg": muted, "menuIconFgOver": ink,
+    "menuSubmenuArrowFg": muted, "menuFgDisabled": mix(muted, panel, 0.4), "menuSeparatorFg": line,
+    "scrollBarBg": alpha(muted, 0.5), "scrollBarBgOver": alpha(muted, 0.75), "scrollBg": alpha(line, 0.4),
+    "scrollBgOver": alpha(line, 0.6), "smallCloseIconFg": muted, "radialFg": acc, "radialBg": alpha("#000000", 0.35),
+    "placeholderFg": muted, "placeholderFgActive": mix(muted, panel, 0.3), "inputBorderFg": line,
+    "filterInputBorderFg": acc, "filterInputInactiveBg": field, "filterInputActiveBg": field,
+    "checkboxFg": muted, "sliderBgInactive": line, "sliderBgActive": acc,
+    "tooltipBg": field, "tooltipFg": ink, "tooltipBorderFg": line,
+    "titleBg": bg, "titleBgActive": bg, "titleButtonBg": bg, "titleButtonFg": muted,
+    "titleButtonBgOver": over, "titleButtonFgOver": ink, "titleFg": muted, "titleFgActive": ink,
+    "trayCounterBg": danger, "trayCounterFg": "#ffffff", "layerBg": alpha("#000000", 0.5),
+    "cancelIconFg": muted, "cancelIconFgOver": ink,
+    "boxBg": panel, "boxTextFg": ink, "boxTextFgGood": ok, "boxTextFgError": danger, "boxTitleFg": ink,
+    "boxSearchBg": field, "boxTitleAdditionalFg": muted, "boxTitleCloseFg": muted, "boxTitleCloseFgOver": ink,
+    "contactsBg": panel, "contactsBgOver": over, "contactsNameFg": ink, "contactsStatusFg": muted,
+    "contactsStatusFgOver": muted, "contactsStatusFgOnline": acc,
+    "dialogsMenuIconFg": muted, "dialogsMenuIconFgOver": ink, "dialogsBg": bg, "dialogsNameFg": ink,
+    "dialogsChatIconFg": ink, "dialogsDateFg": muted, "dialogsTextFg": muted, "dialogsTextFgService": acc,
+    "dialogsDraftFg": danger, "dialogsVerifiedIconBg": acc, "dialogsVerifiedIconFg": on_acc,
+    "dialogsSendingIconFg": muted, "dialogsSentIconFg": acc, "dialogsUnreadBg": acc,
+    "dialogsUnreadBgMuted": mix(muted, bg, 0.3), "dialogsUnreadFg": on_acc,
+    "dialogsBgOver": mix(bg, ink, 0.05), "dialogsNameFgOver": ink, "dialogsChatIconFgOver": ink,
+    "dialogsDateFgOver": muted, "dialogsTextFgOver": muted, "dialogsTextFgServiceOver": acc,
+    "dialogsDraftFgOver": danger, "dialogsSendingIconFgOver": muted, "dialogsSentIconFgOver": acc,
+    "dialogsUnreadBgOver": acc, "dialogsUnreadBgMutedOver": mix(muted, bg, 0.3), "dialogsUnreadFgOver": on_acc,
+    "dialogsBgActive": acc, "dialogsNameFgActive": on_acc, "dialogsChatIconFgActive": on_acc,
+    "dialogsDateFgActive": on_acc, "dialogsTextFgActive": on_acc, "dialogsTextFgServiceActive": on_acc,
+    "dialogsDraftFgActive": on_acc, "dialogsSendingIconFgActive": on_acc, "dialogsSentIconFgActive": on_acc,
+    "dialogsUnreadBgActive": on_acc, "dialogsUnreadBgMutedActive": mix(on_acc, acc, 0.4),
+    "dialogsUnreadFgActive": acc, "dialogsVerifiedIconBgActive": on_acc, "dialogsVerifiedIconFgActive": acc,
+    "dialogsRippleBg": ripple, "dialogsRippleBgActive": acc_over, "dialogsForwardBg": acc, "dialogsForwardFg": on_acc,
+    "searchedBarBg": field, "searchedBarFg": muted, "topBarBg": panel,
+    "emojiPanBg": panel, "emojiPanCategories": field, "emojiPanHeaderFg": muted, "emojiPanHeaderBg": panel,
+    "emojiIconFg": muted, "emojiIconFgActive": acc, "stickerPanDeleteBg": alpha("#000000", 0.6),
+    "historyTextInFg": ink, "historyTextOutFg": ink, "historyCaptionInFg": ink, "historyCaptionOutFg": ink,
+    "historyFileNameInFg": ink, "historyFileNameOutFg": ink,
+    "historyLinkInFg": acc, "historyLinkOutFg": acc, "historyOutIconFg": acc, "historyOutIconFgSelected": acc,
+    "historyIconFgInverted": acc, "historySendingOutIconFg": muted, "historySendingInIconFg": muted,
+    "msgInBg": panel, "msgInBgSelected": in_sel, "msgOutBg": out_bg, "msgOutBgSelected": out_sel,
+    "msgSelectOverlay": alpha(acc, 0.2), "msgStickerOverlay": alpha(acc, 0.4),
+    "msgInServiceFg": acc, "msgInServiceFgSelected": acc, "msgOutServiceFg": acc, "msgOutServiceFgSelected": acc,
+    "msgInShadow": alpha("#000000", 0.15), "msgOutShadow": alpha("#000000", 0.15),
+    "msgInShadowSelected": alpha("#000000", 0.15), "msgOutShadowSelected": alpha("#000000", 0.15),
+    "msgInMonoFg": ink, "msgOutMonoFg": ink, "msgInDateFg": muted, "msgOutDateFg": muted,
+    "msgInDateFgSelected": muted, "msgOutDateFgSelected": muted,
+    "msgInReplyBarColor": acc, "msgOutReplyBarColor": acc, "msgImgReplyBarColor": "#ffffff",
+    "msgServiceBg": alpha(deep, 0.55), "msgServiceBgSelected": alpha(deep, 0.7), "msgServiceFg": "#ffffff",
+    "msgFileInBg": acc, "msgFileOutBg": acc, "msgFileThumbLinkInFg": acc, "msgFileThumbLinkOutFg": acc,
+    "msgWaveformInActive": acc, "msgWaveformInInactive": line, "msgWaveformOutActive": acc,
+    "msgWaveformOutInactive": mix(out_bg, ink, 0.3),
+    "historyComposeAreaBg": panel, "historyComposeAreaFg": ink, "historyComposeAreaFgService": muted,
+    "historyComposeIconFg": muted, "historyComposeIconFgOver": ink, "historySendIconFg": acc,
+    "historySendIconFgOver": acc_over, "historyPinnedBg": panel, "historyReplyBg": panel,
+    "historyReplyIconFg": acc, "historyReplyCancelFg": muted, "historyReplyCancelFgOver": ink,
+    "historyComposeButtonBg": panel, "historyComposeButtonBgOver": over, "historyComposeButtonBgRipple": ripple,
+    "historyToDownBg": panel, "historyToDownBgOver": over, "historyToDownFg": muted, "historyToDownFgOver": ink,
+    "historyToDownShadow": alpha("#000000", 0.25), "historyUnreadBarBg": field, "historyUnreadBarBorder": line,
+    "historyUnreadBarFg": acc, "historyForwardChooseBg": alpha("#000000", 0.4), "historyForwardChooseFg": "#ffffff",
+    "historyPeer1NameFg": P.get("color1", acc), "historyPeer2NameFg": P.get("color2", acc),
+    "historyPeer3NameFg": P.get("color5", acc), "historyPeer4NameFg": P.get("color4", acc),
+    "historyPeer5NameFg": P.get("color3", acc), "historyPeer6NameFg": P.get("color5", acc),
+    "historyPeer7NameFg": P.get("color6", acc), "historyPeer8NameFg": P.get("color9", acc),
+    "sideBarBg": bg, "sideBarBgActive": mix(bg, acc, 0.2), "sideBarBgRipple": ripple, "sideBarTextFg": muted,
+    "sideBarTextFgActive": acc, "sideBarIconFg": muted, "sideBarIconFgActive": acc,
+    "sideBarBadgeBg": acc, "sideBarBadgeBgMuted": mix(muted, bg, 0.3), "sideBarBadgeFg": on_acc,
+    "mainMenuBg": panel, "mainMenuCoverBg": acc, "mainMenuCoverFg": on_acc, "mainMenuCloudBg": mix(acc, on_acc, 0.2),
+    "mainMenuCloudFg": on_acc, "introBg": panel, "introTitleFg": ink, "introDescriptionFg": muted,
+    "introErrorFg": danger, "introCoverTopBg": acc, "introCoverBottomBg": acc_over,
+    "notificationBg": panel, "callBg": deep, "callNameFg": "#ffffff", "callFingerprintBg": alpha("#000000", 0.4),
+    "callStatusFg": "#cccccc", "callIconFg": "#ffffff", "callAnswerBg": ok, "callHangupBg": danger,
+    "profileStatusFgOver": muted, "profileVerifiedCheckBg": acc, "profileVerifiedCheckFg": on_acc,
+    "overviewCheckBg": alpha("#000000", 0.25), "overviewCheckFgActive": on_acc, "overviewCheckBgActive": acc,
+    "overviewCheckBorder": "#ffffff", "mediaviewFileBg": panel,
+    "toastBg": alpha(deep, 0.9), "toastFg": "#ffffff",
+    "reportSpamBg": panel, "reportSpamFg": ink, "photoCropFadeBg": alpha("#000000", 0.5),
+    "botKbBg": field, "botKbDownBg": over,
+    "historyScheduledIconFg": acc, "historyScheduledIconFgSelected": acc,
+}
+colors = "".join("%s: %s;\n" % kv for kv in c.items())
+
+# A one-pixel tiled background in the window colour (no chat pattern).
+def png1(color):
+    raw = b"\x00" + bytes(rgb(color))
+    def chunk(t, d): return struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xffffffff)
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", 1, 1, 8, 2, 0, 0, 0))
+            + chunk(b"IDAT", zlib.compress(raw)) + chunk(b"IEND", b""))
+
+with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+    z.writestr("colors.tdesktop-theme", "// Generated by lumen-theme\n" + colors)
+    z.writestr("tiled.png", png1(bg))
+PY
+}
+
+telegram_open() {
+	[[ -f $TELEGRAM_THEME ]] || die "no Telegram theme yet: turn it on in Settings > Appearance > Other apps"
+	local b
+	for b in telegram-desktop Telegram telegram; do
+		has "$b" && { setsid -f "$b" -- "$TELEGRAM_THEME" >/dev/null 2>&1; return 0; }
+	done
+	has flatpak && flatpak info org.telegram.desktop >/dev/null 2>&1 &&
+		{ setsid -f flatpak run --file-forwarding org.telegram.desktop -- @@ "$TELEGRAM_THEME" @@ >/dev/null 2>&1; return 0; }
+	xdg-open "$TELEGRAM_THEME" >/dev/null 2>&1 || die "Telegram Desktop isn't installed"
+}
+
 write_other_apps() {
 	write_btop
 	write_discord
 	write_zathura
 	write_browsers
+	write_telegram
 }
 
 # ---------------------------------------------------------------- palette
@@ -738,6 +894,7 @@ case $cmd in
 	set) exec "$SETTINGS_BIN" set "$@" ;;
 	get) exec "$SETTINGS_BIN" get "$@" ;;
 	icon-theme) load_settings; icon_theme; echo ;;   # for QS_ICON_THEME
+	telegram-open) telegram_open ;;
 	toggle-mode)
 		load_settings
 		[[ $mode != light ]] && next=light || next=dark
@@ -756,6 +913,6 @@ case $cmd in
 		echo "accent: ${ACCENTS[*]}"
 		echo "bar_position: ${POSITIONS[*]}"
 		;;
-	-h | --help | help) sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//' ;;
+	-h | --help | help) sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//' ;;
 	*) die "unknown command: $cmd (try --help)" ;;
 esac

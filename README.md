@@ -3,16 +3,13 @@
 # lumen
 
 A lightweight desktop for **bspwm on X11**, built with [Quickshell](https://quickshell.outfoxxed.me).
-One theme — fourteen accent colours (the same as [Pane](https://github.com/spidtzz/pane)) in light, dark and black — applied to the shell, GTK 3, GTK 4/libadwaita, Qt and KDE apps, kitty and bspwm, and optionally to Firefox, LibreWolf, Discord, btop and zathura. The accent can follow your wallpaper.
+One theme — fourteen accent colours in light, dark and black, or picked from your
+wallpaper — across the shell, GTK, libadwaita, Qt and KDE apps, kitty, the login and
+lock screens, and optionally Firefox, LibreWolf, Discord, Telegram, btop and zathura.
 
-> **Status: stage 3 of 4.** Session, login and lock screens, installer, theme system, bar with
-> quick settings, notifications, app launcher and Settings app. Coming next: shortcut viewer.
-
-## Goals
-
-- **Arch and Arch-based only, official repositories only.** No AUR helper needed.
-- **Few dependencies.** Every package has a reason to be there (see [`packages/`](packages)).
-- **Nothing breaks your system.** Replaced files are backed up; a dry run shows the plan first.
+- Arch and Arch-based distributions, **official repositories only**
+- Few dependencies; every package is listed in [`packages/`](packages) with a reason
+- Replaced files are backed up, and a dry run shows the plan first
 
 ## Install
 
@@ -20,298 +17,161 @@ One theme — fourteen accent colours (the same as [Pane](https://github.com/spi
 git clone https://github.com/spidtzz/lumen.git
 cd lumen
 ./install.sh --dry-run     # see what will happen
-./install.sh               # install
+./install.sh
 ```
 
-Reboot to reach the SDDM login screen and pick the **bspwm** session (lumen's; the
-bspwm package's plain entry is hidden on lumen's login screen).
-Without SDDM (`--dm none`), log in on tty1 (the installer can start the desktop automatically) or run `startx`.
+Reboot and pick the **bspwm** session on the login screen. Without SDDM
+(`--dm none`), log in on tty1 or run `startx`.
 
 | Option | Meaning |
 | --- | --- |
-| `--profile core\|recommended\|full` | Package set. `recommended` is the default. |
-| `--fm dolphin\|nautilus\|none` | Also install a second file manager (Thunar is always installed). |
-| `--dm sddm\|none` | Login screen. `sddm` by default, `none` with the core profile. |
-| `--autostart` / `--no-autostart` | Without SDDM: start X automatically on tty1. |
-| `--link` | Symlink configs to the repo instead of copying (for development). |
-| `--no-packages` | Install config files only. |
-| `-y`, `--yes` | Don't ask questions. |
+| `--profile core\|recommended\|full` | Package set (default: `recommended`) |
+| `--fm dolphin\|nautilus\|none` | A second file manager next to Thunar |
+| `--dm sddm\|none` | Login screen (default: `sddm`) |
+| `--autostart` / `--no-autostart` | Without SDDM: start X on tty1 automatically |
+| `--link` | Symlink configs to the repo (for development) |
+| `--no-packages` | Config files only |
+| `-y`, `--yes` | Don't ask questions |
 
-Backups of anything replaced go to `~/.local/state/lumen/backups/<date>/`.
-
-Apps included: **Thunar** for files (with thumbnails; trash and USB drives via gvfs in
-the recommended profile), **Ristretto** for pictures and **mpv** for videos and music.
-The installer makes them the default apps for those file types, unless you've already
-chosen others in `~/.config/mimeapps.list`.
+Backups go to `~/.local/state/lumen/backups/<date>/`. Thunar, Ristretto and mpv are
+set as the default apps for files, pictures and media unless you've chosen others.
 
 ## Shortcuts
 
 | Keys | Action |
 | --- | --- |
-| `super + Return` | Terminal (kitty) |
+| `super + Return` | Terminal |
 | `super + space` | App launcher |
-| `super + v` | Clipboard history |
-| `super + /` | Keyboard shortcuts (read from your sxhkdrc) |
-| `Print` | Screenshot and recording overlay |
-| `super + shift + s` | Screenshot of a selection |
-| `super + shift + r` | Start / stop recording the screen |
-| `super + n` | Quick settings |
-| `super + c` | Calendar |
-| `super + shift + l` | Lock the screen |
-| `super + p` | Session menu: lock, log out, suspend, restart, shut down |
+| `super + e` | Files |
 | `super + i` | Settings |
-| `super + e` | File manager (Thunar) |
+| `super + n` / `super + c` | Quick settings / calendar |
+| `super + v` | Clipboard history |
+| `super + shift + s`, `Print` | Screenshot and recording tool |
+| `super + shift + r` | Start / stop recording the screen |
+| `super + shift + l` | Lock |
+| `super + p` | Lock, log out, suspend, restart, shut down |
+| `super + /` | All shortcuts |
 | `super + q` | Close window |
-| `super + 1…9, 0` / `super + shift + 1…9, 0` | Go to / send to desktop 1–10 |
-| `super + h j k l` | Focus window in a direction |
+| `super + 1…9, 0` / `+ shift` | Go to / move window to desktop |
 | `super + a` / `super + d` | Previous / next desktop |
 | `super + w` / `super + s` | Previous / next desktop with windows |
-| `super + Tab` | Last desktop you used |
-| `super + t` | Float the window, or tile it again |
-| `super + f` | Fullscreen, or back again |
-| `super + m` | Monocle layout |
-| Volume, mute, mic, brightness, play/pause, next/previous keys | Work as labelled; volume and brightness show their level on screen |
-| `super + Escape` | Reload shortcuts |
-| `super + alt + r` / `super + alt + q` | Restart bspwm / log out |
+| `super + Tab` | Last desktop |
+| `super + h j k l` | Focus a window in that direction |
+| `super + t` / `super + f` / `super + m` | Float, fullscreen, monocle |
+| Media and brightness keys | Work as labelled, with an on-screen level |
 
-The full list is in [`config/sxhkd/sxhkdrc`](config/sxhkd/sxhkdrc).
+`super + /` shows everything in your [`sxhkdrc`](config/sxhkd/sxhkdrc), grouped and
+searchable. The comment above a binding is its description; `# @group Name` starts a group.
 
 ## The bar
 
-`[launcher] app name ........ [workspaces] ........ [tray] [EN] [time] [quick settings]`
+Launcher and focused app · workspaces · tray, keyboard layout, clock, quick settings.
 
-- **App name** — the class of the focused window, next to the launcher.
-- **Launcher** — the lumen logo. Opens a Spotlight-style search: five apps at a time,
-  smooth scrolling with the mouse, one row per arrow key, Enter to open. Apps you open
-  often come first.
-- **Workspaces** — a page at a time (5 by default): go to 7 and the bar shows 6–10.
-- **Tray** — grouped like Windows (pinned icons on the bar, the rest behind an arrow) or
-  every icon on the bar like GNOME and Plasma (Settings › Bar). Right-click an icon for
-  **Pin to bar** and the app's own menu. Custom icons per app are in Settings › Bar.
-- **Keyboard layout** — shows the active layout (EN, FA, ...). Click for the next one,
-  right-click for the list. Hidden when only one layout is set up.
-- **Time** — click for a calendar. Month and day names follow your regional settings.
-- **Quick settings** — your picture, Settings, and a power menu (lock, log out, restart,
-  shut down); toggles for Wi-Fi, Bluetooth, dark style, Do Not Disturb, performance
-  mode and keep awake (no screen blanking or idle lock until you turn it off);
-  right-click a toggle for its settings; volume and screen brightness; media controls
-  for whatever is playing (MPRIS: music apps, browsers, mpv; can be turned off in
-  Settings › Bar); and your notifications. Visual effects are in Settings › Power.
+- **Launcher**: search apps; the ones you open often come first.
+- **Workspaces**: pills, boxes, dots or numbers; scroll to switch desktops.
+- **Tray**: grouped behind an arrow like Windows, or all on the bar. Right-click an
+  icon to pin it; custom icons per app in Settings › Bar.
+- **Quick settings**: Wi-Fi, Bluetooth, dark style, Do Not Disturb, performance mode,
+  keep awake, volume, brightness, media controls, notifications, and the battery on
+  laptops. Right-click a tile for its settings.
 
-The bar stays above windows (a small helper, `lumen-stack`, puts it back on top when
-bspwm restacks), except over a fullscreen window. Popups and notifications are drawn
-above all windows. Click elsewhere, or the same
-button again, to close them. Notifications can appear in any corner or edge centre
-(Settings › Notifications).
-Scrolling over the workspaces switches desktops.
-
-lumen is its own notification server, so no dunst or mako is needed.
+The bar can sit on any edge, floating or edge to edge, and hides over fullscreen apps.
+lumen is its own notification server.
 
 ## Screenshots and recording
 
-`Print` opens a capture overlay, like GNOME's screenshot tool or the Windows Snipping
-Tool: the screen holds still under a dimmed layer and a toolbar at the bottom picks
-**Area**, **Window** or **Screen** and **photo or video**. Drag to select an area (drag
-inside it to move, the corners to resize), click a window, or click anywhere for the
-whole screen; the round shutter button or `Enter` takes it, `Esc` or a right-click
-cancels. Keys: `1`/`2`/`3` (or `a`/`w`/`s`) for the target, `Tab` (or `v`) for photo or
-video, arrows nudge the area, `o` opens the options (delay, pointer, sound, clipboard).
-The overlay opens the way you left it: same mode, target, options and area.
+`super + shift + s` (or `Print`) opens the capture tool. Pick **Area**, **Window** or
+**Screen** and **photo or video** in the toolbar, then press the shutter or `Enter`.
+Drag to select an area, drag inside it to move it and the corners to resize it; click a
+window or the screen to take it. `Esc` cancels.
 
-Screenshots are saved to `~/Pictures/Screenshots`; turn on **Copy instead of saving** in
-the options to send them to the clipboard only. Recordings go to `~/Videos/Captures`; a
-red dot in the bar shows a recording in progress — click it (or press `Print` and the
-stop button) to stop. Direct shortcuts: `super + shift + s` (drag a selection),
-`ctrl + Print` (screen), `alt + Print` (window), `super + shift + r` (record the screen).
-Uses maim, slop, xclip and gpu-screen-recorder, which falls back to CPU encoding when
-there's no hardware encoder (for example in a VM).
+Screenshots always go to the clipboard. In the options choose **Copy** (clipboard only)
+or **Copy & save** (also saved to `~/Pictures/Screenshots`), plus a delay and the mouse
+pointer. Recordings go to `~/Videos/Captures`, with sound if you like; a red dot in the
+bar shows a recording and stops it. The tool opens the way you left it.
 
 ## Laptops
 
-On a laptop the bar shows the battery next to the status icons, and Quick Settings shows
-the charge with the time left (or until full); click it for **Settings › Power**. There
-you also choose what closing the lid does — on battery, plugged in, and with an external
-monitor — the way dwm-titus shows it, but changeable: lumen writes
-`/etc/systemd/logind.conf.d/lumen-lid.conf` after asking for your password, so it applies
-on the login screen too (`lumen-settings lid-status`, `lid-set`, `lid-reset`). Needs
-`upower` (in the recommended packages).
+The bar and quick settings show the battery charge and the time left. In
+**Settings › Power** you choose what closing the lid does — on battery, plugged in, or
+with an external monitor. lumen saves this as a system setting (after asking for your
+password), so it applies on the login screen too.
 
-## Keyboard shortcuts viewer
+## Settings
 
-`super + /` lists the shortcuts from your own `~/.config/sxhkd/sxhkdrc`, grouped and
-searchable, and updates when you save the file. A comment line directly above a binding
-is its description; `# @group Name` starts a group. Bindings without a comment show
-their command.
+| Page | What you can change |
+| --- | --- |
+| Network, Bluetooth | connections and devices |
+| Appearance | mode, accent (or from the wallpaper), corners, text size, window highlight, other apps |
+| Wallpaper | pictures from `~/Pictures/Wallpapers` and its subfolders, or a colour |
+| Bar | position, style, workspaces, clock, media controls, tray |
+| Displays | resolution, refresh rate, rotation, arrangement |
+| Sound | devices, volume, volume key step |
+| Keyboard & Mouse | layouts and switch keys, key repeat, pointer, touchpad |
+| Date & Time | time zone, network time, 24-hour clock |
+| Notifications | position, Do Not Disturb |
+| Power | battery, laptop lid, power mode, visual effects, usage |
+| Users | profile picture, password, lock after idle, clipboard history |
+| About | system details |
 
-## Clipboard history
-
-`super + v` opens your recent copies, text and images, with a full preview of the
-selected one. Enter copies it back, Delete removes it. The newest 60 are kept in
-`~/.cache/lumen/clipboard` (readable only by you); copies from password managers are
-never kept, and history can be turned off in Settings › Users. Uses `clipnotify` and
-`xclip` from the official repositories.
-
-## Lock screen
-
-Same design as the login screen, as a separate process from the bar. While it's up,
-a small helper (`lumen-lock-grab`, using python-xlib) takes the whole keyboard and mouse
-with an X grab: no shortcut, click or other window gets any input, and the bar and
-notifications are hidden. Type your password and press Enter (Ctrl+U or
-Ctrl+Backspace clears it; the layout switch keys work). If the lock screen ever stops
-without your password, or can't take the keyboard, `i3lock` locks the screen instead.
-It locks after the idle time set in Settings › Users and before suspend (via `xss-lock`).
+Everything is stored in `~/.config/lumen/settings.conf`. From a terminal:
 
 ```sh
-lumen-lock --test     # try it safely: Esc closes it
+lumen help                          # what the lumen command can open
+lumen-settings keys                 # every setting and its allowed values
+lumen-settings set accent teal
+lumen-settings set mode light       # light, dark, black
+lumen-settings set kb_layouts us,ir
+```
+
+## Theming other apps
+
+Settings › Appearance › Other apps (experimental) writes a lumen theme for each app you
+turn on, and removes it again when you turn it off:
+
+- **Firefox, LibreWolf**: toolbar, tabs, menus and the new tab page; restart the browser.
+- **Discord** through Vesktop, Vencord, Equicord or Equibop; updates live.
+- **Telegram Desktop**: press **Open**, then **Apply** in Telegram; repeat after
+  changing colours.
+- **btop**, **zathura**: reopen them to see changes.
+
+GTK, libadwaita, Qt and KDE apps, kitty and file pickers follow the theme on their own.
+
+## Lock and login screens
+
+The lock screen takes the whole keyboard and mouse while it's up, and falls back to
+`i3lock` if anything goes wrong. It locks after the idle time from Settings › Users and
+before suspend. Try it safely with `lumen-lock --test` (`Esc` closes it).
+
+The SDDM login screen has the same design and colours, a user switcher with
+**Other user…**, and session and power menus.
+
+```sh
+lumen-avatar set ~/Pictures/me.jpg   # profile picture for the bar and the login screen
 ```
 
 ## Keyboard layouts
 
-Switching works like Windows: press and release **Alt+Shift** (or Ctrl+Shift, or Caps
-Lock — your choice in Settings) without another key. Left or right keys, in any layout.
-Because a third key cancels the switch, AltGr shortcuts such as Persian's half-space
-(ZWNJ) and AltGr+Shift characters keep working. A small watcher (`lumen-settings
-kbswitch`, using `xinput`) handles this instead of XKB's `grp:` options, which break
-in layouts that use Right Alt for extra characters. The same watcher tells the shell
-about mouse clicks while a bar popup is open, so clicking elsewhere closes it.
+Switch layouts like on Windows: press and release **Alt+Shift** (or Ctrl+Shift, or Caps
+Lock). AltGr characters, such as the Persian half-space, keep working.
 
-## Settings
+## Fonts
 
-| Page | What you can change | Uses |
-| --- | --- | --- |
-| Network | wired and Wi-Fi, connect with password | NetworkManager (nmcli) |
-| Bluetooth | on/off, find, pair, connect, forget devices | BlueZ |
-| Appearance | light/dark/black, accent (or automatic from the wallpaper), other apps (Firefox, LibreWolf, Discord, btop, zathura; experimental), rounded or square corners, rounded screen corners, text size, focused window highlight, title-bar buttons | lumen-theme |
-| Wallpaper | pictures from `~/Pictures/Wallpapers` (optionally its subfolders), system wallpapers or anywhere, or the theme colour; fill, fit, centre, tile, stretch | hsetroot |
-| Bar | workspace style (pills, boxes, dots, numbers), floating or edge to edge (curved into rounded screen corners), black bar, edge, workspaces per page, clock, media controls, tray grouping, pinned and custom tray icons | |
-| Displays | resolution, refresh rate, rotation, primary, arrangement — undone after 15 s unless kept | xrandr |
-| Sound | output and input device, volume, mute, volume key step | PipeWire (built into Quickshell) |
-| Keyboard & Mouse | up to four layouts (e.g. English + Persian) in order, switch keys, key repeat, focus follows mouse, pointer speed, natural scrolling, tap to click | setxkbmap, xset, xinput, bspwm |
-| Date & Time | time zone, network time, 24-hour clock | timedatectl |
-| Notifications | pop-up position, Do Not Disturb, clear history, test notification | |
-| Power | battery, laptop lid, power mode, compositor, animations (shell and windows: open/close, switching desktops, moving/resizing), full speed for fullscreen apps, live processor and memory use | power-profiles-daemon, upower, picom |
-| Users | profile picture, password, lock after idle, test the lock screen, clipboard history | lumen-avatar, passwd, xss-lock |
-| About | system details, copy to clipboard | |
-
-Everything is stored in `~/.config/lumen/settings.conf` and applied again at login.
-Settings is also in the app launcher. From a terminal:
-
-```sh
-lumen settings                           # open Settings (lumen settings display: a page)
-lumen help                               # everything the lumen command can open
-lumen-settings keys                      # every setting and its allowed values
-lumen-settings set kb_layouts us,ir
-lumen-settings set kb_switch alt_shift
-qs -c lumen ipc call settings open display
-```
-
-System changes (time zone, login-screen picture) show a password prompt (polkit-gnome).
-
-## Login screen and profile picture
-
-The SDDM theme uses the same design and follows your theme: when you change the
-accent or mode, the login screen matches it the next time it appears.
-At the bottom: the session and user menus (with **Other user…** to type a user name
-that isn't listed) on the left, and a power menu (suspend, hibernate, restart, shut down)
-on the right. Caps Lock is shown under the password.
-
-```sh
-lumen-avatar set ~/Pictures/me.jpg   # desktop bar + login screen (asks for sudo once)
-lumen-avatar clear                   # back to your initial in an accent circle
-```
-
-The picture is stored as `~/.face`. SDDM can't read your home folder, so a copy goes to
-`/usr/share/sddm/faces/<user>.face.icon`.
-
-Preview the login screen without logging out:
-
-```sh
-sddm-greeter-qt6 --test-mode --theme /usr/share/sddm/themes/lumen
-```
-
-If another login manager is already enabled, the installer asks before replacing it.
-
-## Theming
-
-Your choices live in `~/.config/lumen/settings.conf`. Change them in Settings (Appearance, Bar) or:
-
-```sh
-lumen-theme set accent teal      # blue violet teal green orange pink red amber lime cyan sky indigo fuchsia mono
-lumen-theme set mode light       # light dark black
-lumen-settings set accent_auto true   # accent from the wallpaper (picked by the bar)
-lumen-theme set bar_position left
-lumen-theme set corners square   # rounded square
-```
-
-**Automatic accent** (Settings › Appearance › Auto): the bar splits the wallpaper into 16
-colours with Quickshell's `ColorQuantizer`, lets the colourful ones vote for their hue and
-picks the nearest of the fourteen accents (mono for greyscale pictures). It follows every
-wallpaper change; choosing an accent yourself turns it off. Each pick is logged in
-`~/.local/state/lumen/quickshell.log` ("automatic accent").
-
-**Other apps (experimental)**, in Settings › Appearance: Firefox and LibreWolf (a marked
-block in each profile's `chrome/userChrome.css` and `userContent.css`, and the pref that
-enables them in `user.js`; restart the browser), Discord through Vesktop, Vencord,
-Equicord or Equibop (a `lumen.css` theme, turned on in the mod's settings, live), btop
-(`~/.config/btop/themes/lumen.theme`) and zathura (`include lumen-colors`). Turning one off
-removes the theme and the setting again.
-
-**Square corners** apply to the shell, GTK 3/4 and libadwaita apps (through `gtk.css`),
-windows (picom) and the login screen. Qt apps use Qt's Fusion style, whose corners are
-already nearly square, and there's no global setting to change them further.
-
-The focused window is highlighted in the accent colour (Settings › Appearance › Windows):
-with square corners by bspwm's outline, with rounded corners by a soft glow from picom
-(bspwm's outline is a square frame picom can't round, so it would look cut at the
-corners). Turned off, windows you're not using are slightly dimmed instead. picom runs
-with `~/.local/state/lumen/picom.conf`, which includes your `~/.config/picom/picom.conf`
-and adds these window rules.
-
-File pickers (Open/Save dialogs) come from `xdg-desktop-portal-gtk` for every app
-(`GTK_USE_PORTAL=1`), so they follow light/dark even in Firefox and Thunderbird.
-
-`lumen-theme` writes:
-
-| Target | How | Live? |
-| --- | --- | --- |
-| Quickshell | reads settings + palette files | yes |
-| GTK 3 / plain GTK 4 | adw-gtk3 + named-colour overrides in `gtk.css` | yes, via xsettingsd |
-| libadwaita (GTK 4) | same colours as CSS variables; light/dark and accent via the settings portal | light/dark yes, colours on next launch |
-| Qt 6 | Qt's GTK3 theme (follows the GTK colours, reports light/dark to apps) | yes |
-| KDE apps (Dolphin…) | `kdeglobals` colour scheme | on next launch |
-| kitty | `theme.conf` | yes |
-| bspwm | border colours | yes |
-| SDDM | `theme.conf.user` in the theme folder (owned by you) | next time it appears |
-
-Files it generates are marked at the top; if one existed before, it's kept once as `<file>.pre-lumen`.
-
-Palettes are generated from the original oklch design values by `tools/gen-palettes.py`
-(development only — Python isn't needed to use lumen).
+**IBM Plex Sans** for the interface and **JetBrains Mono** for the terminal, both from the
+Arch repositories (`ttf-ibm-plex`, `ttf-jetbrains-mono`). Noto covers other scripts.
 
 ## Layout
 
 ```
-install.sh              installer
-packages/               package lists per profile
-bin/lumen               open Settings, the launcher, files... from a terminal
-bin/lumen-settings      settings storage, validation and appliers
-bin/lumen-theme         theme engine (bash)
-bin/lumen-lock          lock screen launcher with i3lock fallback
-bin/lumen-lock-grab     takes the keyboard and mouse while locked
-bin/lumen-stack         keeps the bar above windows (not over fullscreen ones)
-bin/lumen-clipboard     clipboard history
-bin/lumen-capture       screenshots and recordings
-bin/lumen-avatar        profile picture
-bin/lumen-session       session start-up (SDDM and startx)
-config/                 → ~/.config  (bspwm, sxhkd, picom, kitty, quickshell, portals)
-home/xinitrc            → ~/.xinitrc
-share/palettes/         → ~/.local/share/lumen/palettes
-share/applications/     → ~/.local/share/applications (Settings in the launcher)
-system/                 → system-wide: SDDM theme and config, session entry
-assets/fonts/           Space Grotesk (OFL), fetched by tools/fetch-fonts.sh
-tools/                  development helpers
+install.sh      installer
+packages/       package lists per profile
+bin/            lumen, lumen-settings, lumen-theme, lumen-capture, lumen-lock, ...
+config/         → ~/.config (bspwm, sxhkd, picom, kitty, quickshell)
+share/          → ~/.local/share (palettes, launcher entry, icon)
+system/         SDDM theme and session entry (installed system-wide)
+tools/          development helpers
 ```
 
 ## License
 
-MIT. Space Grotesk is under the SIL Open Font License (see `assets/fonts/OFL.txt`).
+MIT.

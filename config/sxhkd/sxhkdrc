@@ -49,13 +49,13 @@ super + c
 
 # @group Screenshots
 
-# Screenshot and recording overlay (area, window or screen)
-Print
+# Screenshot and recording tool (area, window or screen)
+super + shift + s
 	qs -c lumen ipc call capture toggle
 
-# Screenshot of a selection (drag, or click a window)
-super + shift + s
-	lumen-capture shot selection
+# Screenshot and recording tool (also on Print)
+Print
+	qs -c lumen ipc call capture toggle
 
 # Screenshot of the whole screen
 ctrl + Print

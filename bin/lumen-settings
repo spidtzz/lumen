@@ -12,7 +12,6 @@
 #   lumen-settings kbswitch             watch for the layout-switch keys (bspwmrc runs this)
 #   lumen-settings sysinfo              system details for the About page
 #   lumen-settings awake on|off|status  keep the screen on (Quick Settings)
-#   lumen-settings auto-accent          pick the accent from the wallpaper now
 #
 # Settings live in ~/.config/lumen/settings.conf (key=value). Unknown keys and
 # comments are kept, so it's safe to edit by hand.
@@ -197,19 +196,6 @@ layout_next() {
 	layout_set "${cur%%,*}"
 }
 
-# Automatic accent (Settings > Appearance): the accent nearest to the
-# wallpaper's main colour (lumen-accent-pick). Only stores it; the caller
-# applies the theme.
-auto_accent() {
-	load
-	[[ ${CONF[accent_auto]} == true ]] || return 0
-	local wp=${CONF[wallpaper]} pick
-	[[ -n $wp && -f $wp ]] || return 0
-	pick=$("$BIN_DIR/lumen-accent-pick" "$wp" 2>/dev/null) || return 0
-	[[ $pick =~ $(schema_field accent 2) ]] || return 0
-	[[ $pick == "${CONF[accent]}" ]] || store accent "$pick"
-}
-
 # Called by the watcher when a switch combination is released.
 layout_hotkey() {
 	load
@@ -314,10 +300,12 @@ picom_config() {
 	rules+=("{ match = \"fullscreen\"; corner-radius = 0; }")
 	# lumen's rounded screen corners: tiny pieces drawn above everything
 	rules+=("{ match = \"override_redirect && width <= 32 && height <= 32\"; shadow = false; corner-radius = 0; fade = false; }")
-	# GTK windows that draw their own shadow
-	rules+=("{ match = \"_GTK_FRAME_EXTENTS@\"; shadow = false; }")
+	# Menus, tooltips and dropdowns draw their own shadow and corners inside
+	# a transparent margin; picom's would sit around that margin, offset and
+	# square. (GTK windows draw no shadow of their own under lumen: gtk.css.)
+	rules+=("{ match = \"window_type = ${q}popup_menu${q} || window_type = ${q}dropdown_menu${q} || window_type = ${q}menu${q} || window_type = ${q}tooltip${q} || window_type = ${q}combo${q} || window_type = ${q}dnd${q}\"; shadow = false; corner-radius = 0; }")
 	case $(focus_style) in
-		glow) [[ -n $colour ]] && rules+=("{ match = \"focused && window_type = ${q}normal${q} && !override_redirect && !_GTK_FRAME_EXTENTS@\"; shadow-color = \"$colour\"; }") ;;
+		glow) [[ -n $colour ]] && rules+=("{ match = \"focused && window_type = ${q}normal${q} && !override_redirect\"; shadow-color = \"$colour\"; }") ;;
 		dim) rules+=("{ match = \"!focused && !override_redirect && (window_type = ${q}normal${q} || window_type = ${q}dialog${q})\"; dim = 0.08; }") ;;
 	esac
 	# Window animations (picom 12): open/close, switching desktops (bspwm
@@ -402,7 +390,7 @@ apply_compositor() {
 	fi
 	# A picom not started by the supervisor (older lumen, or by hand).
 	pkill -x picom 2>/dev/null || true
-	setsid -f "$BIN_DIR/lumen-settings" compositor-run >/dev/null 2>&1 </dev/null
+	setsid -f "$BIN_DIR/lumen-settings" compositor-run >/dev/null 2>&1 </dev/null 9>&-   # not holding the settings lock
 }
 
 # Runs picom and starts it again if it stops: picom's software renderer can
@@ -540,16 +528,30 @@ case $cmd in
 		;;
 	set)
 		[[ $# -eq 2 ]] || die "usage: lumen-settings set <key> <value>"
+		# One change at a time: quick clicks in Settings each start one of
+		# these, and they'd otherwise overwrite each other's settings file.
+		mkdir -p "$DIR"
+		exec 9>"$DIR/.settings.lock"
+		flock -w 10 9 || true
 		pattern=$(schema_field "$1" 2) || die "unknown key: $1 (see: lumen-settings keys)"
 		[[ $2 =~ $pattern ]] || die "invalid value for $1: '$2' (allowed: $pattern)"
 		store "$1" "$2"
-		# Choosing an accent yourself turns automatic accents off; a new
-		# wallpaper (or turning them on) picks one from the wallpaper.
+		# Choosing an accent yourself turns automatic accents off (the bar
+		# picks them from the wallpaper and sends them with accent-auto).
 		[[ $1 == accent ]] && store accent_auto false
-		[[ $1 == wallpaper || ($1 == accent_auto && $2 == true) ]] && auto_accent
 		apply_what "$(schema_field "$1" 3)"
 		;;
-	auto-accent) auto_accent; apply_what theme ;;
+	accent-auto)
+		# From the bar's automatic accent (services/AutoAccent.qml).
+		[[ $# -eq 1 && $1 =~ $(schema_field accent 2) ]] || die "usage: lumen-settings accent-auto <accent>"
+		mkdir -p "$DIR"
+		exec 9>"$DIR/.settings.lock"
+		flock -w 10 9 || true
+		load
+		[[ ${CONF[accent_auto]} == true && ${CONF[accent]} != "$1" ]] || exit 0
+		store accent "$1"
+		apply_what theme
+		;;
 	apply) apply_what "${1:-session}" ;;
 	keys)
 		for row in "${SCHEMA[@]}"; do

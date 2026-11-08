@@ -19,6 +19,8 @@ ShellRoot {
     // instead of re-anchoring them: an X11 panel window that changes edge
     // while open loses some of its buttons.
     property bool barsShown: true
+    // Starts the automatic accent (it follows the wallpaper from here).
+    readonly property bool autoAccent: AutoAccent.active
     Variants {
         model: root.barsShown && !Panels.locked ? Quickshell.screens : []
         Bar {}

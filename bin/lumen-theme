@@ -262,8 +262,17 @@ lumen_block() { # <file> <comment-start> <comment-end> [content]
 write_browsers() {
 	local prof on=${theme_browser:-false} chrome content pref
 	pref='user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", true);'
-	chrome=":root {
+	# Firefox sets many of these on the toolbars and the sidebar themselves,
+	# so they're set there too, and the main surfaces get their colours
+	# directly as well.
+	chrome=":root, #navigator-toolbox, #TabsToolbar, #nav-bar, #PersonalToolbar, #titlebar,
+#sidebar-box, #sidebar-main, sidebar-main, #vertical-tabs, #sidebar-header, #sidebar, #browser {
+  --toolbox-bgcolor: ${P[bg]} !important;
+  --toolbox-bgcolor-inactive: ${P[bg]} !important;
+  --toolbox-textcolor: ${P[ink]} !important;
+  --toolbox-textcolor-inactive: ${P[muted]} !important;
   --lwt-accent-color: ${P[bg]} !important;
+  --lwt-accent-color-inactive: ${P[bg]} !important;
   --lwt-text-color: ${P[ink]} !important;
   --toolbar-bgcolor: ${P[panel]} !important;
   --toolbar-color: ${P[ink]} !important;
@@ -274,9 +283,13 @@ write_browsers() {
   --toolbar-field-focus-color: ${P[ink]} !important;
   --toolbar-field-focus-border-color: ${P[accent]} !important;
   --toolbarbutton-icon-fill: ${P[ink]} !important;
+  --toolbarbutton-hover-background: $(hexa "${P[ink]}" 0.08) !important;
+  --toolbarbutton-active-background: $(hexa "${P[ink]}" 0.14) !important;
   --tab-selected-bgcolor: ${P[panel]} !important;
   --tab-selected-textcolor: ${P[ink]} !important;
+  --tab-hover-background-color: $(hexa "${P[ink]}" 0.06) !important;
   --lwt-selected-tab-background-color: ${P[panel]} !important;
+  --lwt-tab-text: ${P[ink]} !important;
   --tab-loading-fill: ${P[accent]} !important;
   --focus-outline-color: ${P[accent]} !important;
   --chrome-content-separator-color: ${P[line]} !important;
@@ -292,6 +305,14 @@ write_browsers() {
   --button-primary-bgcolor: ${P[accent]} !important;
   --button-primary-color: ${P[on_accent]} !important;
   --color-accent-primary: ${P[accent]} !important;
+}
+#navigator-toolbox, #TabsToolbar, #titlebar { background-color: ${P[bg]} !important; color: ${P[ink]} !important; }
+#nav-bar, #PersonalToolbar, #FindToolbar { background-color: ${P[panel]} !important; color: ${P[ink]} !important; }
+.tab-background:is([selected], [multiselected]) { background: ${P[panel]} !important; }
+.tabbrowser-tab { color: ${P[ink]} !important; }
+#sidebar-box, #sidebar-main, sidebar-main, #vertical-tabs, #sidebar-header, #sidebar, #sidebar-splitter,
+#bookmarksPanel, #history-panel, .sidebar-panel, #sidebar-search-container {
+  background-color: ${P[bg]} !important; color: ${P[ink]} !important; border-color: ${P[line]} !important;
 }"
 	content="@-moz-document url(\"about:newtab\"), url(\"about:home\"), url(\"about:blank\"), url(\"about:privatebrowsing\") {
   :root, body {
@@ -430,15 +451,26 @@ gtk_corners() {
 	printf 'radio, radio > check { border-radius: 9999px; }\n'
 }
 
+# bspwm draws no window frames, and picom draws the shadows (and the focus
+# glow). Windows that draw their own title bar (Nautilus, Firefox...) would
+# otherwise add their own shadow in a margin around the window: a dark band
+# inside the tile and a second, offset shadow. Menus keep theirs.
+gtk_no_csd_shadow() {
+	printf '\n/* no client-side window shadows under bspwm */\n'
+	printf '%s { box-shadow: none; margin: 0; }\n' "$1"
+}
+
 write_gtk() {
 	{
 		printf '/* %s */\n' "${MARK#\# }"
 		gtk_named_colors
+		gtk_no_csd_shadow 'window.csd:not(.popup) > decoration, window.csd:not(.popup) > decoration:backdrop'
 		gtk_corners '-gtk-outline-radius: 0; '
 	} | own "$CONFIG_HOME/gtk-3.0/gtk.css"
 	{
 		printf '/* %s */\n' "${MARK#\# }"
 		gtk_named_colors
+		gtk_no_csd_shadow 'window.csd:not(.popup), window.csd:not(.popup):backdrop'
 		gtk_corners ''
 		# libadwaita 1.6+ reads CSS variables; older releases use the names above.
 		cat <<-EOF

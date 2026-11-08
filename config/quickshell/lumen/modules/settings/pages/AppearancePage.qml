@@ -89,7 +89,11 @@ Page {
                     width: 34
                     height: 34
                     radius: Theme.r(17)
-                    gradient: Gradient {
+                    // On: the colour it picked. Off: a hint of several.
+                    color: Theme.accent
+                    gradient: autoTile.selected ? null : autoGradient
+                    Gradient {
+                        id: autoGradient
                         orientation: Gradient.Horizontal
                         GradientStop { position: 0.0; color: Theme.dark ? "#71a3ff" : "#2867e4" }
                         GradientStop { position: 0.5; color: Theme.dark ? "#f075aa" : "#c32777" }
@@ -100,7 +104,7 @@ Page {
                         name: autoTile.selected ? "check" : "image"
                         size: 17
                         stroke: autoTile.selected ? 2.6 : 2
-                        color: "#ffffff"
+                        color: autoTile.selected ? Theme.accentFg : "#ffffff"
                     }
                 }
                 Txt {
@@ -125,9 +129,10 @@ Page {
                 delegate: Rectangle {
                     id: tile
                     required property var modelData
-                    // With Auto on, the picked colour is outlined but not checked.
-                    readonly property bool current: Theme.accentName === modelData.id
-                    readonly property bool selected: current && Theme.conf.accent_auto !== "true"
+                    // With Auto on, only the Auto tile is marked (it shows the
+                    // colour it picked).
+                    readonly property bool selected: Theme.accentName === modelData.id && Theme.conf.accent_auto !== "true"
+                    readonly property bool current: selected
                     readonly property color swatch: Theme.dark ? modelData.dark : modelData.light
 
                     width: 92

@@ -220,15 +220,16 @@ Your choices live in `~/.config/lumen/settings.conf`. Change them in Settings (A
 ```sh
 lumen-theme set accent teal      # blue violet teal green orange pink red amber lime cyan sky indigo fuchsia mono
 lumen-theme set mode light       # light dark black
-lumen-settings set accent_auto true   # accent from the wallpaper (lumen-accent-pick)
+lumen-settings set accent_auto true   # accent from the wallpaper (picked by the bar)
 lumen-theme set bar_position left
 lumen-theme set corners square   # rounded square
 ```
 
-**Automatic accent** (Settings › Appearance › Auto): `lumen-accent-pick` shrinks the
-wallpaper with ffmpeg (installed with mpv), finds its most common vivid hue and picks the
-nearest of the fourteen accents (mono for greyscale pictures). It runs again whenever the
-wallpaper changes; choosing an accent yourself turns it off.
+**Automatic accent** (Settings › Appearance › Auto): the bar splits the wallpaper into 16
+colours with Quickshell's `ColorQuantizer`, lets the colourful ones vote for their hue and
+picks the nearest of the fourteen accents (mono for greyscale pictures). It follows every
+wallpaper change; choosing an accent yourself turns it off. Each pick is logged in
+`~/.local/state/lumen/quickshell.log` ("automatic accent").
 
 **Other apps (experimental)**, in Settings › Appearance: Firefox and LibreWolf (a marked
 block in each profile's `chrome/userChrome.css` and `userContent.css`, and the pref that
@@ -280,7 +281,6 @@ bin/lumen-theme         theme engine (bash)
 bin/lumen-lock          lock screen launcher with i3lock fallback
 bin/lumen-lock-grab     takes the keyboard and mouse while locked
 bin/lumen-stack         keeps the bar above windows (not over fullscreen ones)
-bin/lumen-accent-pick   the accent closest to a picture's main colour (ffmpeg + Python)
 bin/lumen-clipboard     clipboard history
 bin/lumen-capture       screenshots and recordings
 bin/lumen-avatar        profile picture

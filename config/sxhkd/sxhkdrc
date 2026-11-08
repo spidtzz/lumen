@@ -49,7 +49,7 @@ super + c
 
 # @group Screenshots
 
-# Screenshot and recording panel
+# Screenshot and recording overlay (area, window or screen)
 Print
 	qs -c lumen ipc call capture toggle
 

@@ -47,6 +47,41 @@ PopupCard {
         Layout.fillWidth: true
         spacing: 8
         Avatar { size: 40 }
+
+        // Laptops: charge and how long it lasts; click for power settings.
+        Rectangle {
+            visible: Battery.present
+            Layout.leftMargin: 4
+            implicitWidth: batRow.implicitWidth + 20
+            implicitHeight: 44
+            radius: Theme.r(12)
+            color: batHover.hovered ? Theme.field : "transparent"
+            Behavior on color { ColorAnimation { duration: Theme.animFast } }
+            RowLayout {
+                id: batRow
+                anchors.centerIn: parent
+                spacing: 10
+                BatteryIcon { size: 18 }
+                ColumnLayout {
+                    spacing: 0
+                    Txt {
+                        text: Battery.percent + "%"
+                        strong: true
+                        size: 14
+                        font.features: ({ "tnum": 1 })
+                    }
+                    Txt {
+                        text: Battery.estimate
+                        muted: true
+                        size: 12
+                        font.features: ({ "tnum": 1 })
+                    }
+                }
+            }
+            HoverHandler { id: batHover; cursorShape: Qt.PointingHandCursor }
+            TapHandler { onTapped: Panels.openSettings("performance") }
+        }
+
         Item { Layout.fillWidth: true }
         Btn { icon: "settings"; variant: "ghost"; onClicked: Panels.openSettings("appearance") }
         Btn {

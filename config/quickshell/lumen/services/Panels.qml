@@ -47,9 +47,7 @@ Singleton {
         launcherOpen = !launcherOpen;
     }
 
-    // ---- screenshot / recording panel, keyboard shortcuts ----
-    property bool captureOpen: false
-    function toggleCapture() { popup = ""; launcherOpen = false; clipboardOpen = false; captureOpen = !captureOpen; }
+    // ---- keyboard shortcuts (the capture overlay is services/Capture.qml) ----
     property bool shortcutsOpen: false
     function toggleShortcuts() { popup = ""; shortcutsOpen = !shortcutsOpen; }
 

@@ -3,7 +3,8 @@ import Quickshell.Services.Pipewire
 import qs.services
 import qs.components
 
-// Status icons (network, volume, notifications); opens Quick Settings.
+// Status icons (network, volume, notifications, and the battery on laptops);
+// opens Quick Settings.
 BarButton {
     id: btn
 
@@ -19,7 +20,7 @@ BarButton {
     PwObjectTracker { objects: btn.sink ? [btn.sink] : [] }
 
     Grid {
-        columns: btn.vertical ? 1 : 3
+        columns: btn.vertical ? 1 : (Battery.present ? 4 : 3)
         spacing: 9
 
         Icon {
@@ -49,6 +50,27 @@ BarButton {
                 color: btn.open ? Theme.barAccentFg : Theme.barAccent
                 border.width: 1
                 border.color: btn.open ? Theme.barAccent : Theme.barBg
+            }
+        }
+        // battery: icon and percentage (under the icon on a side bar)
+        Grid {
+            visible: Battery.present
+            columns: btn.vertical ? 1 : 2
+            spacing: btn.vertical ? 2 : 5
+            horizontalItemAlignment: Grid.AlignHCenter
+            verticalItemAlignment: Grid.AlignVCenter
+            BatteryIcon { size: 15; color: btn.fg }
+            Txt {
+                id: pct
+                // fixed width, so the bar doesn't shift as the number changes
+                width: btn.vertical ? implicitWidth : widest.width
+                horizontalAlignment: Text.AlignLeft
+                text: Battery.percent + (btn.vertical ? "" : "%")
+                size: btn.vertical ? 10 : 12
+                strong: true
+                color: btn.fg
+                font.features: ({ "tnum": 1 })
+                TextMetrics { id: widest; font: pct.font; text: "100%" }
             }
         }
     }

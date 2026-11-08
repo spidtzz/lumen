@@ -12,6 +12,9 @@
 #   lumen-settings kbswitch             watch for the layout-switch keys (bspwmrc runs this)
 #   lumen-settings sysinfo              system details for the About page
 #   lumen-settings awake on|off|status  keep the screen on (Quick Settings)
+#   lumen-settings lid-status           what closing the laptop lid does
+#   lumen-settings lid-set <battery> <plugged-in> <docked>   change it (asks for your password)
+#   lumen-settings lid-reset            back to the system's own setting
 #
 # Settings live in ~/.config/lumen/settings.conf (key=value). Unknown keys and
 # comments are kept, so it's safe to edit by hand.
@@ -71,6 +74,13 @@ SCHEMA=(
 	"theme_zathura~false~^(true|false)$~theme"
 	"theme_browser~false~^(true|false)$~theme"
 	"wallpaper_subfolders~true~^(true|false)$~-"
+	"capture_mode~shot~^(shot|record)$~-"
+	"capture_target~area~^(area|window|screen)$~-"
+	"capture_delay~0~^(0|3|5|10)$~-"
+	"capture_pointer~false~^(true|false)$~-"
+	"capture_audio~false~^(true|false)$~-"
+	"capture_clipboard~false~^(true|false)$~-"
+	"capture_area~~^([0-9]{1,5}x[0-9]{1,5}\+-?[0-9]{1,5}\+-?[0-9]{1,5})?$~-"
 )
 
 schema_field() { # schema_field key index
@@ -489,6 +499,73 @@ apply_what() {
 	esac
 }
 
+# ---------------------------------------------------------------- laptop lid
+# What closing the lid does is systemd-logind's job (so it works on the login
+# screen and when the shell isn't running). These read and change it with a
+# small drop-in file, /etc/systemd/logind.conf.d/lumen-lid.conf, after asking
+# for your password (polkit).
+LID_ACTIONS='^(suspend|hibernate|suspend-then-hibernate|lock|ignore|poweroff)$'
+LID_DROPIN=/etc/systemd/logind.conf.d/lumen-lid.conf
+
+logind_prop() { # logind_prop Name -> value (empty when unset)
+	busctl get-property org.freedesktop.login1 /org/freedesktop/login1 \
+		org.freedesktop.login1.Manager "$1" 2>/dev/null | sed -E 's/^[a-z] "?([^"]*)"?$/\1/' || true
+}
+
+# One line: present=<bool> closed=<bool> battery=<action> ac=<action>
+# docked=<action> hibernate=<yes|no> custom=<bool>
+lid_status() {
+	local present=false closed=false f
+	for f in /proc/acpi/button/lid/*/state; do
+		[[ -r $f ]] || continue
+		present=true
+		if grep -q closed "$f"; then closed=true; fi
+	done
+	if [[ $present == false ]] && has busctl; then
+		[[ $(busctl get-property org.freedesktop.UPower /org/freedesktop/UPower \
+			org.freedesktop.UPower LidIsPresent 2>/dev/null) == "b true" ]] && present=true
+	fi
+	local battery ac docked hib
+	battery=$(logind_prop HandleLidSwitch)
+	ac=$(logind_prop HandleLidSwitchExternalPower)
+	docked=$(logind_prop HandleLidSwitchDocked)
+	hib=$(busctl call org.freedesktop.login1 /org/freedesktop/login1 \
+		org.freedesktop.login1.Manager CanHibernate 2>/dev/null | sed -E 's/^s "(.*)"$/\1/' || true)
+	printf 'present=%s closed=%s battery=%s ac=%s docked=%s hibernate=%s custom=%s\n' \
+		"$present" "$closed" "${battery:-suspend}" "${ac:-${battery:-suspend}}" "${docked:-ignore}" \
+		"$([[ $hib == yes ]] && echo yes || echo no)" "$([[ -f $LID_DROPIN ]] && echo true || echo false)"
+}
+
+lid_set() { # lid_set <on battery> <plugged in> <external monitor>
+	[[ $# -eq 3 ]] || die "usage: lumen-settings lid-set <battery> <plugged-in> <docked>"
+	local a
+	for a in "$@"; do
+		[[ $a =~ $LID_ACTIONS ]] || die "unknown lid action: $a (suspend, hibernate, suspend-then-hibernate, lock, ignore, poweroff)"
+	done
+	has pkexec || die "pkexec (polkit) is needed to change the lid setting"
+	# logind re-reads its settings on SIGHUP (systemd 256 and newer); older
+	# versions would stop on it, so they pick the change up at the next boot.
+	local ver reload=0
+	ver=$(systemctl --version 2>/dev/null | awk 'NR==1 {print $2+0}')
+	((${ver:-0} >= 256)) && reload=1
+	pkexec /bin/sh -c '
+		mkdir -p /etc/systemd/logind.conf.d &&
+		printf "# Written by lumen Settings (Power > Laptop lid).\n[Login]\nHandleLidSwitch=%s\nHandleLidSwitchExternalPower=%s\nHandleLidSwitchDocked=%s\n" "$1" "$2" "$3" >'"$LID_DROPIN"' &&
+		if [ "$4" = 1 ]; then systemctl kill -s HUP systemd-logind; fi' sh "$1" "$2" "$3" "$reload" ||
+		die "the lid setting wasn't changed"
+	((reload)) || echo "lumen-settings: the new lid setting applies after a restart" >&2
+}
+
+lid_reset() {
+	[[ -f $LID_DROPIN ]] || return 0
+	has pkexec || die "pkexec (polkit) is needed to change the lid setting"
+	local ver reload=0
+	ver=$(systemctl --version 2>/dev/null | awk 'NR==1 {print $2+0}')
+	((${ver:-0} >= 256)) && reload=1
+	pkexec /bin/sh -c 'rm -f '"$LID_DROPIN"' && if [ "$1" = 1 ]; then systemctl kill -s HUP systemd-logind; fi' sh "$reload" ||
+		die "the lid setting wasn't changed"
+}
+
 # ---------------------------------------------------------------- sysinfo
 sysinfo() {
 	local os kernel cpu mem gpu disk up qsv
@@ -583,6 +660,9 @@ case $cmd in
 			*) die "usage: lumen-settings awake on|off|status" ;;
 		esac
 		;;
-	-h | --help | help | "") sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//' ;;
+	lid-status) lid_status ;;
+	lid-set) lid_set "$@" ;;
+	lid-reset) lid_reset ;;
+	-h | --help | help | "") sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//' ;;
 	*) die "unknown command: $cmd (try --help)" ;;
 esac

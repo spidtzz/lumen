@@ -52,7 +52,7 @@ chosen others in `~/.config/mimeapps.list`.
 | `super + space` | App launcher |
 | `super + v` | Clipboard history |
 | `super + /` | Keyboard shortcuts (read from your sxhkdrc) |
-| `Print` | Screenshot and recording panel |
+| `Print` | Screenshot and recording overlay |
 | `super + shift + s` | Screenshot of a selection |
 | `super + shift + r` | Start / stop recording the screen |
 | `super + n` | Quick settings |
@@ -96,7 +96,7 @@ The full list is in [`config/sxhkd/sxhkdrc`](config/sxhkd/sxhkdrc).
   mode and keep awake (no screen blanking or idle lock until you turn it off);
   right-click a toggle for its settings; volume and screen brightness; media controls
   for whatever is playing (MPRIS: music apps, browsers, mpv; can be turned off in
-  Settings › Bar); and your notifications. Visual effects are in Settings › Performance.
+  Settings › Bar); and your notifications. Visual effects are in Settings › Power.
 
 The bar stays above windows (a small helper, `lumen-stack`, puts it back on top when
 bspwm restacks), except over a fullscreen window. Popups and notifications are drawn
@@ -109,14 +109,32 @@ lumen is its own notification server, so no dunst or mako is needed.
 
 ## Screenshots and recording
 
-`Print` opens a small panel: screenshot or recording, of the whole screen, the focused
-window or a selection (drag, or click a window). Screenshots have an optional delay and
-are copied to the clipboard; recordings can include sound. Files go to
-`~/Pictures/Screenshots` and `~/Videos/Recordings`; a red dot in the bar shows a
-recording in progress — click it to stop. Direct shortcuts: `super + shift + s`
-(selection), `ctrl + Print` (screen), `alt + Print` (window), `super + shift + r`
-(record). Uses maim, slop and gpu-screen-recorder, which falls back to CPU encoding
-when there's no hardware encoder (for example in a VM).
+`Print` opens a capture overlay, like GNOME's screenshot tool or the Windows Snipping
+Tool: the screen holds still under a dimmed layer and a toolbar at the bottom picks
+**Area**, **Window** or **Screen** and **photo or video**. Drag to select an area (drag
+inside it to move, the corners to resize), click a window, or click anywhere for the
+whole screen; the round shutter button or `Enter` takes it, `Esc` or a right-click
+cancels. Keys: `1`/`2`/`3` (or `a`/`w`/`s`) for the target, `Tab` (or `v`) for photo or
+video, arrows nudge the area, `o` opens the options (delay, pointer, sound, clipboard).
+The overlay opens the way you left it: same mode, target, options and area.
+
+Screenshots are saved to `~/Pictures/Screenshots`; turn on **Copy instead of saving** in
+the options to send them to the clipboard only. Recordings go to `~/Videos/Captures`; a
+red dot in the bar shows a recording in progress — click it (or press `Print` and the
+stop button) to stop. Direct shortcuts: `super + shift + s` (drag a selection),
+`ctrl + Print` (screen), `alt + Print` (window), `super + shift + r` (record the screen).
+Uses maim, slop, xclip and gpu-screen-recorder, which falls back to CPU encoding when
+there's no hardware encoder (for example in a VM).
+
+## Laptops
+
+On a laptop the bar shows the battery next to the status icons, and Quick Settings shows
+the charge with the time left (or until full); click it for **Settings › Power**. There
+you also choose what closing the lid does — on battery, plugged in, and with an external
+monitor — the way dwm-titus shows it, but changeable: lumen writes
+`/etc/systemd/logind.conf.d/lumen-lid.conf` after asking for your password, so it applies
+on the login screen too (`lumen-settings lid-status`, `lid-set`, `lid-reset`). Needs
+`upower` (in the recommended packages).
 
 ## Keyboard shortcuts viewer
 
@@ -171,7 +189,7 @@ about mouse clicks while a bar popup is open, so clicking elsewhere closes it.
 | Keyboard & Mouse | up to four layouts (e.g. English + Persian) in order, switch keys, key repeat, focus follows mouse, pointer speed, natural scrolling, tap to click | setxkbmap, xset, xinput, bspwm |
 | Date & Time | time zone, network time, 24-hour clock | timedatectl |
 | Notifications | pop-up position, Do Not Disturb, clear history, test notification | |
-| Performance | power mode, compositor, animations (shell and windows: open/close, switching desktops, moving/resizing), full speed for fullscreen apps, live processor and memory use | power-profiles-daemon, picom |
+| Power | battery, laptop lid, power mode, compositor, animations (shell and windows: open/close, switching desktops, moving/resizing), full speed for fullscreen apps, live processor and memory use | power-profiles-daemon, upower, picom |
 | Users | profile picture, password, lock after idle, test the lock screen, clipboard history | lumen-avatar, passwd, xss-lock |
 | About | system details, copy to clipboard | |
 

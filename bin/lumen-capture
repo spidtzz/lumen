@@ -2,22 +2,36 @@
 # lumen-capture — screenshots and screen recordings.
 #
 # Usage:
-#   lumen-capture shot <screen|window|selection> [--delay N] [--no-copy]
-#   lumen-capture record <screen|window|selection> [--audio] [--no-cursor]
+#   lumen-capture shot   [screen|window|selection] [options]
+#   lumen-capture record [screen|window|selection] [options]
 #   lumen-capture stop             stop the recording
-#   lumen-capture toggle <target>  start recording, or stop if one is running
+#   lumen-capture toggle [target]  start recording, or stop if one is running
 #   lumen-capture status           "recording <start-epoch> <file>" or "idle"
+#   lumen-capture freeze           (for the capture overlay) picture of the
+#                                  screen now, the monitor and the windows, as JSON
 #
-# Screenshots go to ~/Pictures/Screenshots (and the clipboard); recordings to
-# ~/Videos/Recordings. "window" is the focused window, "selection" lets you
-# drag a rectangle or click a window. Uses maim, slop, xclip and
+# Options:
+#   --geometry WxH+X+Y   this part of the screen (instead of the target)
+#   --window ID          this window (X window id)
+#   --monitor NAME       this monitor
+#   --delay N            wait N seconds first
+#   --pointer | --no-pointer      include the mouse pointer
+#   --copy | --save      screenshot to the clipboard only, or to a file
+#   --audio              record what the speakers play
+#
+# Without options, --pointer and --copy follow Settings (the capture overlay,
+# Print, remembers them). Screenshots are saved to ~/Pictures/Screenshots,
+# recordings to ~/Videos/Captures. "window" is the focused window, "selection"
+# lets you drag a rectangle or click a window. Uses maim, slop, xclip and
 # gpu-screen-recorder, which falls back to CPU encoding (e.g. in a VM).
 set -uo pipefail
 
 PICS=$(xdg-user-dir PICTURES 2>/dev/null || echo "$HOME/Pictures")/Screenshots
-VIDS=$(xdg-user-dir VIDEOS 2>/dev/null || echo "$HOME/Videos")/Recordings
-RUN=${XDG_RUNTIME_DIR:-/tmp}/lumen-recording
+VIDS=$(xdg-user-dir VIDEOS 2>/dev/null || echo "$HOME/Videos")/Captures
+RUNDIR=${XDG_RUNTIME_DIR:-/tmp}
+RUN=$RUNDIR/lumen-recording
 LOG=${XDG_STATE_HOME:-$HOME/.local/state}/lumen/recording.log
+SETTINGS=${XDG_CONFIG_HOME:-$HOME/.config}/lumen/settings.conf
 
 die() { printf 'lumen-capture: %s\n' "$*" >&2; notify-send -a lumen -u low "Capture" "$*" 2>/dev/null; exit 1; }
 has() { command -v "$1" >/dev/null 2>&1; }
@@ -29,6 +43,11 @@ unique() {
 	printf '%s' "$f"
 }
 notify_shell() { has qs && { qs -c lumen ipc call capture changed >/dev/null 2>&1 & } || true; }
+setting() { # setting key default
+	local v
+	v=$(sed -n "s/^$1=//p" "$SETTINGS" 2>/dev/null | tail -n 1)
+	printf '%s' "${v:-$2}"
+}
 
 # Focused window id (bspwm node ids are X window ids), as decimal.
 focused_window() {
@@ -43,67 +62,121 @@ select_region() {
 	slop -f '%wx%h+%x+%y' -b 2 -l -c 0.45,0.64,1,0.18 2>/dev/null
 }
 
+# Geometry of a monitor by name (bspwm), as WxH+X+Y.
+monitor_geometry() {
+	bspc query -T -m "$1" 2>/dev/null | python3 -c '
+import json, sys
+r = json.load(sys.stdin)["rectangle"]
+print("%dx%d+%d+%d" % (r["width"], r["height"], r["x"], r["y"]))' 2>/dev/null
+}
+
 recording() { [[ -f $RUN ]] && kill -0 "$(cut -d' ' -f1 "$RUN")" 2>/dev/null; }
 
-shot() {
-	local target=${1:-screen} delay=0 copy=1 file args=()
-	shift || true
+# Shared option parsing: sets target, geometry, window, monitor, delay,
+# pointer, copy, audio.
+parse() {
+	target=screen geometry="" window="" monitor="" delay=0 audio=0
+	pointer=$(setting capture_pointer false)
+	[[ $(setting capture_clipboard false) == true ]] && copy=1 || copy=0
 	while (($#)); do
 		case $1 in
+			screen | window | selection | area) target=$1 ;;
+			--geometry) geometry=${2:-}; shift ;;
+			--window) window=${2:-}; shift ;;
+			--monitor) monitor=${2:-}; shift ;;
 			--delay) delay=${2:-0}; shift ;;
-			--no-copy) copy=0 ;;
+			--pointer | --cursor) pointer=true ;;
+			--no-pointer | --no-cursor) pointer=false ;;
+			--copy) copy=1 ;;
+			--save | --no-copy) copy=0 ;;
+			--audio) audio=1 ;;
+			*) die "unknown option: $1" ;;
 		esac
 		shift
 	done
+	[[ $target == area ]] && target=selection
 	[[ $delay =~ ^[0-9]+$ ]] || die "invalid delay"
+	[[ -z $geometry || $geometry =~ ^[0-9]+x[0-9]+\+-?[0-9]+\+-?[0-9]+$ ]] || die "invalid geometry: $geometry"
+	[[ -z $window || $window =~ ^(0x[0-9a-fA-F]+|[0-9]+)$ ]] || die "invalid window id: $window"
+	[[ -z $monitor || $monitor =~ ^[A-Za-z0-9._-]+$ ]] || die "invalid monitor: $monitor"
+	return 0
+}
+
+shot() {
+	local target geometry window monitor delay pointer copy audio file args=()
+	parse "$@"
 	has maim || die "maim is not installed"
-	mkdir -p "$PICS"
-	file=$(unique "$PICS/Screenshot_$(stamp)" png)
 
-	case $target in
-		screen) ;;
-		window) local w; w=$(focused_window) || die "no focused window"; args+=(-i "$w") ;;
-		selection) local r; r=$(select_region) || exit 0; [[ -n $r ]] || exit 0; args+=(-g "$r") ;;
-		*) die "unknown target: $target (screen, window, selection)" ;;
-	esac
+	if [[ -n $geometry ]]; then
+		args+=(-g "$geometry")
+	elif [[ -n $window ]]; then
+		args+=(-i "$window")
+	elif [[ -n $monitor ]]; then
+		local g; g=$(monitor_geometry "$monitor") || die "unknown monitor: $monitor"
+		args+=(-g "$g")
+	else
+		case $target in
+			screen) ;;
+			window) local w; w=$(focused_window) || die "no focused window"; args+=(-i "$w") ;;
+			selection) local r; r=$(select_region) || exit 0; [[ -n $r ]] || exit 0; args+=(-g "$r") ;;
+		esac
+	fi
+	[[ $pointer == true ]] || args+=(-u)
 
-	sleep "0.25" # let the capture panel disappear
+	if ((copy)); then
+		has xclip || die "xclip is not installed"
+		file=$RUNDIR/lumen-screenshot.png
+	else
+		mkdir -p "$PICS"
+		file=$(unique "$PICS/Screenshot_$(stamp)" png)
+	fi
+
+	sleep 0.25 # let the capture overlay disappear
 	((delay > 0)) && sleep "$delay"
-	maim -u "${args[@]}" "$file" 2>/dev/null || die "screenshot failed"
-	((copy)) && has xclip && xclip -selection clipboard -t image/png -i "$file"
-	notify-send -a lumen -i "$file" "Screenshot saved" "${file/#$HOME/\~}$( ((copy)) && echo ' · copied to the clipboard')" 2>/dev/null
-	printf '%s\n' "$file"
+	maim "${args[@]}" "$file" 2>/dev/null || die "screenshot failed"
+	if ((copy)); then
+		xclip -selection clipboard -t image/png -i "$file"
+		notify-send -a lumen -i "$file" "Screenshot copied" "Paste it with ctrl + v" 2>/dev/null
+	else
+		notify-send -a lumen -i "$file" "Screenshot saved" "${file/#$HOME/\~}" 2>/dev/null
+		printf '%s\n' "$file"
+	fi
 }
 
 record() {
-	local target=${1:-screen} audio=0 cursor=yes file wargs=()
-	shift || true
-	while (($#)); do
-		case $1 in
-			--audio) audio=1 ;;
-			--no-cursor) cursor=no ;;
-		esac
-		shift
-	done
+	local target geometry window monitor delay pointer copy audio file wargs=()
+	parse "$@"
 	recording && die "already recording (lumen-capture stop)"
 	has gpu-screen-recorder || die "gpu-screen-recorder is not installed"
 	mkdir -p "$VIDS" "$(dirname "$LOG")"
 	file=$(unique "$VIDS/Recording_$(stamp)" mp4)
 
-	case $target in
-		screen) wargs=(-w screen) ;;
-		window) wargs=(-w focused) ;;
-		selection)
-			local r; r=$(select_region) || exit 0; [[ -n $r ]] || exit 0
-			# Encoders need even sizes.
-			local w=${r%%x*} rest=${r#*x}; local h=${rest%%+*} pos=${rest#*+}
-			r="$((w / 2 * 2))x$((h / 2 * 2))+$pos"
-			wargs=(-w region -region "$r")
-			;;
-		*) die "unknown target: $target (screen, window, selection)" ;;
-	esac
+	even() { # WxH+X+Y with even width and height (encoders need them)
+		local w=${1%%x*} rest=${1#*x}
+		local h=${rest%%+*} pos=${rest#*+}
+		printf '%dx%d+%s' "$((w / 2 * 2))" "$((h / 2 * 2))" "$pos"
+	}
+	if [[ -n $geometry ]]; then
+		wargs=(-w region -region "$(even "$geometry")")
+	elif [[ -n $window ]]; then
+		wargs=(-w "$((window))")
+	elif [[ -n $monitor ]]; then
+		wargs=(-w "$monitor")
+	else
+		case $target in
+			screen) wargs=(-w screen) ;;
+			window) wargs=(-w focused) ;;
+			selection)
+				local r; r=$(select_region) || exit 0; [[ -n $r ]] || exit 0
+				wargs=(-w region -region "$(even "$r")")
+				;;
+		esac
+	fi
 
 	sleep 0.25
+	((delay > 0)) && sleep "$delay"
+	local cursor=no
+	[[ $pointer == true ]] && cursor=yes
 	local cmd=(gpu-screen-recorder "${wargs[@]}" -f 60 -cursor "$cursor" -fallback-cpu-encoding yes -o "$file")
 	((audio)) && cmd+=(-a default_output)
 	"${cmd[@]}" >"$LOG" 2>&1 &
@@ -126,11 +199,70 @@ stop() {
 	printf '%s\n' "$file"
 }
 
+# A still picture of the whole screen for the capture overlay to show (so
+# menus and tooltips stay as they were), plus the focused monitor and the
+# windows on it, topmost last.
+freeze() {
+	has maim || die "maim is not installed"
+	local dir=$RUNDIR/lumen-capture file
+	mkdir -p "$dir"
+	rm -f "$dir"/frozen-*.png
+	file=$dir/frozen-$(date +%s%N).png
+	maim -u -m 1 "$file" 2>/dev/null || die "could not take a picture of the screen"
+	python3 - "$file" <<'PY'
+import json, subprocess, sys
+from Xlib import X, display, error
+
+image = sys.argv[1]
+d = display.Display()
+root = d.screen().root
+rg = root.get_geometry()
+
+def bspc(*a):
+    try:
+        return subprocess.run(["bspc", *a], capture_output=True, text=True, timeout=2).stdout
+    except (OSError, subprocess.SubprocessError):
+        return ""
+
+monitor = {"name": "", "x": 0, "y": 0, "w": rg.width, "h": rg.height}
+try:
+    m = json.loads(bspc("query", "-T", "-m", "focused"))
+    r = m["rectangle"]
+    monitor = {"name": m["name"], "x": r["x"], "y": r["y"], "w": r["width"], "h": r["height"]}
+except (ValueError, KeyError):
+    pass
+
+focused = 0
+try:
+    focused = int(bspc("query", "-N", "-n", "focused.window").strip(), 16)
+except ValueError:
+    pass
+
+windows = []
+prop = root.get_full_property(d.intern_atom("_NET_CLIENT_LIST_STACKING"), X.AnyPropertyType)
+for wid in (prop.value if prop else []):
+    w = d.create_resource_object("window", wid)
+    try:
+        if w.get_attributes().map_state != X.IsViewable:
+            continue
+        g = w.get_geometry()
+        t = root.translate_coords(w, 0, 0)
+        cls = w.get_wm_class()
+    except error.XError:
+        continue
+    windows.append({"id": wid, "x": t.x, "y": t.y, "w": g.width, "h": g.height,
+                    "name": cls[1] if cls else ""})
+
+print(json.dumps({"image": image, "monitor": monitor, "windows": windows, "focused": focused}))
+PY
+}
+
 case ${1:-} in
 	shot) shift; shot "$@" ;;
 	record) shift; record "$@" ;;
 	stop) stop ;;
 	toggle) shift; if recording; then stop; else record "$@"; fi ;;
+	freeze) freeze ;;
 	status)
 		if recording; then
 			read -r _ start file <"$RUN"
@@ -140,5 +272,5 @@ case ${1:-} in
 			echo idle
 		fi
 		;;
-	*) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; [[ -z ${1:-} || $1 == -h || $1 == --help ]] ;;
+	*) sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'; [[ -z ${1:-} || $1 == -h || $1 == --help ]] ;;
 esac

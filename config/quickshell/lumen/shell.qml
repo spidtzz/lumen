@@ -110,7 +110,7 @@ ShellRoot {
 
     // Screenshot / recording panel (Print) and the keyboard shortcut viewer.
     LazyLoader {
-        active: Panels.captureOpen
+        active: Capture.open
         CaptureWindow {}
     }
     LazyLoader {
@@ -119,7 +119,8 @@ ShellRoot {
     }
     IpcHandler {
         target: "capture"
-        function toggle(): void { Panels.toggleCapture(); }
+        function toggle(): void { Capture.toggle(); }
+        function close(): void { Capture.close(); }
         function changed(): void { Recorder.refresh(); }
     }
     IpcHandler {
@@ -160,7 +161,7 @@ ShellRoot {
             Panels.closePopup();
             Panels.launcherOpen = false;
             Panels.clipboardOpen = false;
-            Panels.captureOpen = false;
+            Capture.close();
             Panels.shortcutsOpen = false;
             Panels.locked = on;
         }

@@ -8,8 +8,8 @@ import qs.components
 
 Page {
     id: page
-    title: "Performance"
-    description: "Power mode, visual effects, and how busy this computer is."
+    title: "Power & performance"
+    description: "Battery, the laptop lid, power mode, visual effects, and how busy this computer is."
 
     // ---- live usage, read from /proc every 1.5 s while this page is open ----
     property real cpu: -1          // 0-1
@@ -93,6 +93,137 @@ Page {
                 radius: parent.radius
                 color: meter.value > 0.9 ? Theme.danger : meter.value > 0.75 ? Theme.warning : Theme.accent
                 Behavior on width { NumberAnimation { duration: Theme.animNormal; easing.type: Easing.OutCubic } }
+            }
+        }
+    }
+
+    // ---- laptop lid: systemd-logind's setting, changed with a password ----
+    property var lid: ({ present: false })
+    property bool lidBusy: false
+    function parseLid(text) {
+        const o = {};
+        for (const kv of text.trim().split(/\s+/)) {
+            const i = kv.indexOf("=");
+            if (i > 0) o[kv.slice(0, i)] = kv.slice(i + 1);
+        }
+        o.present = o.present === "true";
+        page.lid = o;
+    }
+    function setLid(which, action) {
+        const next = { battery: page.lid.battery, ac: page.lid.ac, docked: page.lid.docked };
+        next[which] = action;
+        page.lidBusy = true;
+        lidWriter.command = ["lumen-settings", "lid-set", next.battery, next.ac, next.docked];
+        lidWriter.running = true;
+    }
+    readonly property var lidActions: [
+        { label: "Suspend", value: "suspend" },
+        { label: "Lock the screen", value: "lock" },
+        { label: "Do nothing", value: "ignore" },
+        { label: "Shut down", value: "poweroff" }
+    ].concat(page.lid.hibernate === "yes" ? [
+        { label: "Hibernate", value: "hibernate" },
+        { label: "Suspend, then hibernate", value: "suspend-then-hibernate" }
+    ] : [])
+    Process {
+        id: lidReader
+        command: ["lumen-settings", "lid-status"]
+        running: true
+        stdout: StdioCollector { onStreamFinished: page.parseLid(text) }
+    }
+    Process {
+        id: lidWriter
+        stderr: StdioCollector {
+            onStreamFinished: if (text.trim() !== "") page.lidError = text.replace(/^lumen-settings: /, "").trim()
+        }
+        onStarted: page.lidError = ""
+        onExited: {
+            page.lidBusy = false;
+            lidReader.running = true;
+        }
+    }
+    property string lidError: ""
+
+    // ---- battery (laptops) ----
+    Card {
+        visible: Battery.present
+        title: "Battery"
+        description: Battery.pluggedIn ? "Plugged in." : "On battery."
+
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 14
+            BatteryIcon { size: 26 }
+            ColumnLayout {
+                spacing: 0
+                Layout.fillWidth: true
+                Txt { text: Battery.percent + "%"; size: 20; strong: true; font.features: ({ "tnum": 1 }) }
+                Txt { text: Battery.estimate; muted: true; size: 13; font.features: ({ "tnum": 1 }) }
+            }
+        }
+        Txt {
+            visible: Battery.dev !== null && Battery.dev.healthSupported
+            text: Battery.dev && Battery.dev.healthSupported
+                ? "Battery health: " + Math.round(Battery.dev.healthPercentage > 1 ? Battery.dev.healthPercentage : Battery.dev.healthPercentage * 100) + "% of its original capacity"
+                : ""
+            muted: true
+            size: 13
+        }
+    }
+
+    Card {
+        visible: page.lid.present === true
+        title: "Laptop lid"
+        description: "What happens when you close the lid. Changing it asks for your password; it also applies on the login screen."
+
+        SettingRow {
+            label: "On battery"
+            Dropdown {
+                enabled: !page.lidBusy
+                options: page.lidActions
+                value: page.lid.battery
+                onPicked: v => page.setLid("battery", v)
+            }
+        }
+        SettingRow {
+            label: "Plugged in"
+            Dropdown {
+                enabled: !page.lidBusy
+                options: page.lidActions
+                value: page.lid.ac
+                onPicked: v => page.setLid("ac", v)
+            }
+        }
+        SettingRow {
+            label: "With an external monitor"
+            description: "Docked, or a second screen connected."
+            Dropdown {
+                enabled: !page.lidBusy
+                options: page.lidActions
+                value: page.lid.docked
+                onPicked: v => page.setLid("docked", v)
+            }
+        }
+        Txt {
+            visible: page.lidError !== ""
+            Layout.fillWidth: true
+            text: page.lidError
+            color: Theme.danger
+            size: 13
+        }
+        RowLayout {
+            visible: page.lid.custom === "true"
+            Layout.fillWidth: true
+            Txt { Layout.fillWidth: true; text: "Changed here. Reset goes back to the system's own setting."; muted: true; size: 13 }
+            Btn {
+                text: "Reset"
+                variant: "ghost"
+                enabled: !page.lidBusy
+                onClicked: {
+                    page.lidBusy = true;
+                    lidWriter.command = ["lumen-settings", "lid-reset"];
+                    lidWriter.running = true;
+                }
             }
         }
     }

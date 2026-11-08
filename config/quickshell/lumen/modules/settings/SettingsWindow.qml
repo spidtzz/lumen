@@ -25,7 +25,7 @@ FloatingWindow {
         { id: "sound", section: "Devices", label: "Sound", icon: "volume", file: "SoundPage.qml" },
         { id: "input", section: "Devices", label: "Keyboard & Mouse", icon: "keyboard", file: "InputPage.qml" },
         { id: "notifications", section: "System", label: "Notifications", icon: "bell", file: "NotificationsPage.qml" },
-        { id: "performance", section: "System", label: "Performance", icon: "cpu", file: "PerformancePage.qml" },
+        { id: "performance", section: "System", label: "Power", icon: "zap", file: "PerformancePage.qml" },
         { id: "datetime", section: "System", label: "Date & Time", icon: "clock", file: "DateTimePage.qml" },
         { id: "users", section: "System", label: "Users & Privacy", icon: "user", file: "UsersPage.qml" },
         { id: "about", section: "System", label: "About", icon: "info", file: "AboutPage.qml" }

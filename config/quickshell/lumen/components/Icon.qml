@@ -16,6 +16,11 @@ Item {
     implicitHeight: size
 
     readonly property var paths: ({
+        "video": "M23 7l-7 5 7 5V7z M3 5h11a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z",
+        "sliders": "M4 21v-7 M4 10V3 M12 21v-9 M12 8V3 M20 21v-5 M20 12V3 M1 14h6 M9 8h6 M17 16h6",
+        "zap": "M13 2L3 14h9l-1 8 10-12h-9l1-8z",
+        "plug": "M12 22v-5 M9 8V2 M15 8V2 M18 8v5a6 6 0 0 1-12 0V8z",
+        "laptop": "M4 5h16a1 1 0 0 1 1 1v10H3V6a1 1 0 0 1 1-1z M1 19h22",
         "crop": "M6.13 1L6 16a2 2 0 0 0 2 2h15 M1 6.13L16 6a2 2 0 0 1 2 2v15",
         "camera": "M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z M8 13a4 4 0 1 0 8 0a4 4 0 1 0-8 0",
         "record": "M2 12a10 10 0 1 0 20 0a10 10 0 1 0-20 0 M9 12a3 3 0 1 0 6 0a3 3 0 1 0-6 0",

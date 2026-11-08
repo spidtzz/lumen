@@ -64,7 +64,7 @@ bspc rule -a 'Polkit-gnome-authentication-agent-1' state=floating
 bspc rule -a '*:*:lumen Settings' state=floating center=on
 bspc rule -a '*:*:lumen Launcher' state=floating center=on sticky=on border=off layer=above focus=on
 bspc rule -a '*:*:lumen Clipboard' state=floating center=on sticky=on border=off layer=above focus=on
-bspc rule -a '*:*:lumen Capture' state=floating center=on sticky=on border=off layer=above focus=on
+bspc rule -a '*:*:lumen Capture' state=fullscreen sticky=on border=off layer=above focus=on
 bspc rule -a '*:*:lumen Shortcuts' state=floating center=on sticky=on border=off layer=above focus=on
 bspc rule -a '*:*:lumen Session' state=fullscreen sticky=on border=off layer=above focus=on
 

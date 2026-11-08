@@ -28,8 +28,22 @@ PopupCard {
     function close() { Panels.closePopup(); }
     function run(cmd) { close(); Quickshell.execDetached(cmd); }
 
+    // With the bar at the bottom or on a side, the card is turned upside
+    // down: notifications on top (newest at the bottom), then sliders and
+    // toggles, and you, Settings and power along the bottom.
+    readonly property bool flipped: Theme.barPosition !== "top"
+    Component.onCompleted: {
+        if (!flipped) return;
+        const col = header.parent;
+        for (const it of [notifHeader, notifEmpty, notifList, divider, media, volumeRow, brightnessRow, toggles, header]) {
+            it.parent = null;
+            it.parent = col;
+        }
+    }
+
     // ---- header: you on the left; Settings and the power menu on the right ----
     RowLayout {
+        id: header
         Layout.fillWidth: true
         spacing: 8
         Avatar { size: 40 }
@@ -45,6 +59,7 @@ PopupCard {
 
     // ---- toggles ----
     GridLayout {
+        id: toggles
         Layout.fillWidth: true
         columns: 2
         rowSpacing: 8
@@ -116,6 +131,7 @@ PopupCard {
 
     // ---- volume ----
     RowLayout {
+        id: volumeRow
         visible: qs.sink !== null && qs.sink.audio !== null
         Layout.fillWidth: true
         spacing: 10
@@ -142,6 +158,7 @@ PopupCard {
 
     // ---- brightness (built-in screens only) ----
     RowLayout {
+        id: brightnessRow
         visible: Brightness.available
         Layout.fillWidth: true
         spacing: 10
@@ -166,12 +183,13 @@ PopupCard {
     }
 
     // ---- media (Settings > Bar > Quick settings) ----
-    MediaCard {}
+    MediaCard { id: media }
 
-    Rectangle { Layout.fillWidth: true; implicitHeight: 1; color: Theme.line }
+    Rectangle { id: divider; Layout.fillWidth: true; implicitHeight: 1; color: Theme.line }
 
     // ---- notifications ----
     RowLayout {
+        id: notifHeader
         Layout.fillWidth: true
         Txt { Layout.fillWidth: true; text: "Notifications"; strong: true }
         Btn {
@@ -184,6 +202,7 @@ PopupCard {
     }
 
     Item {
+        id: notifEmpty
         visible: Notifs.list.length === 0
         Layout.fillWidth: true
         implicitHeight: emptyCol.implicitHeight + 16
@@ -197,6 +216,7 @@ PopupCard {
     }
 
     Flickable {
+        id: notifList
         visible: Notifs.list.length > 0
         Layout.fillWidth: true
         Layout.preferredHeight: Math.min(notifCol.implicitHeight, 320)
@@ -204,13 +224,16 @@ PopupCard {
         clip: true
         boundsBehavior: Flickable.StopAtBounds
         ScrollBar.vertical: ScrollBar { policy: ScrollBar.AsNeeded }
+        // Flipped: start scrolled to the newest (bottom).
+        onContentHeightChanged: if (qs.flipped) contentY = Math.max(0, contentHeight - height)
 
         ColumnLayout {
             id: notifCol
             width: parent.width
             spacing: 8
             Repeater {
-                model: Notifs.list
+                // Flipped: oldest on top, newest nearest the toggles.
+                model: qs.flipped ? Notifs.list.slice().reverse() : Notifs.list
                 delegate: NotificationCard {
                     required property var modelData
                     notification: modelData
@@ -229,7 +252,8 @@ PopupCard {
         width: 220
         height: powerCol.implicitHeight + 12
         x: qs.width - width - qs.padding
-        y: qs.padding + 46
+        // Under the power button, or above it when the card is flipped.
+        y: qs.flipped ? qs.padding + header.y - height - 6 : qs.padding + 46
         radius: Theme.r(12)
         color: Theme.panel
         border.width: 1

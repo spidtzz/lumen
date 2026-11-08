@@ -30,6 +30,10 @@ FloatingWindow {
     // The action waiting for "yes" (opened straight here from quick settings,
     // or chosen in the menu).
     property var asking: actions.find(a => a.id === Panels.sessionAction && a.ask) ?? null
+    // Opened straight at a question (from quick settings): Esc and Cancel
+    // close the whole thing instead of showing the menu.
+    readonly property bool direct: Panels.sessionAction !== ""
+    function back() { if (direct) close(); else asking = null; }
 
     function close() { Panels.sessionOpen = false; }
     function choose(i) {
@@ -73,7 +77,7 @@ FloatingWindow {
         focus: true
         Keys.onPressed: event => {
             const k = event.key;
-            if (k === Qt.Key_Escape) { win.asking ? (win.asking = null) : win.close(); }
+            if (k === Qt.Key_Escape) { win.asking ? win.back() : win.close(); }
             else if (win.asking) {
                 if (k === Qt.Key_Return || k === Qt.Key_Enter) win.run(win.asking);
             } else if (k === Qt.Key_Left || k === Qt.Key_Up || k === Qt.Key_Backtab) {
@@ -226,7 +230,7 @@ FloatingWindow {
                     Layout.fillWidth: true
                     text: "Cancel"
                     variant: "ghost"
-                    onClicked: win.asking = null
+                    onClicked: win.back()
                 }
                 Btn {
                     Layout.fillWidth: true
@@ -238,7 +242,7 @@ FloatingWindow {
             }
             Txt {
                 Layout.alignment: Qt.AlignHCenter
-                text: "Enter to confirm · Esc to go back"
+                text: win.direct ? "Enter to confirm · Esc to cancel" : "Enter to confirm · Esc to go back"
                 size: 11
                 muted: true
             }

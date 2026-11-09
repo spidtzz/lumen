@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+# lumen-doctor — check the parts lumen depends on and print what's wrong.
+# Paste its output into a bug report. Nothing is changed.
+set -u
+
+ok() { printf '  \e[32mok\e[0m    %s\n' "$*"; }
+bad() { printf '  \e[31mfail\e[0m  %s\n' "$*"; }
+note() { printf '  \e[33m--\e[0m    %s\n' "$*"; }
+has() { command -v "$1" >/dev/null 2>&1; }
+head_() { printf '\n%s\n' "$*"; }
+
+CONF=${XDG_CONFIG_HOME:-$HOME/.config}/lumen/settings.conf
+STATE=${XDG_STATE_HOME:-$HOME/.local/state}/lumen
+
+head_ "System"
+note "$(. /etc/os-release 2>/dev/null; echo "${PRETTY_NAME:-unknown}") · $(uname -r)"
+note "session: ${XDG_SESSION_TYPE:-?} · DISPLAY=${DISPLAY:-unset} · WM: $(pgrep -x bspwm >/dev/null && echo bspwm || echo 'bspwm not running')"
+has pacman && note "$(pacman -Q quickshell qt6-base picom 2>&1 | tr '\n' ' ')"
+
+head_ "Shell (Quickshell)"
+if ! has qs; then
+	bad "qs isn't installed"
+else
+	v=$(qs --version 2>&1)
+	if [[ $v == *"symbol lookup error"* ]]; then
+		bad "Quickshell doesn't match the installed Qt: $v"
+	else
+		ok "$v"
+	fi
+	if pgrep -f 'qs -c lumen|quickshell -c lumen' >/dev/null; then ok "the shell is running"; else bad "the shell isn't running (lumen reload)"; fi
+	if qs -c lumen ipc call panels close >/dev/null 2>&1; then ok "the shell answers commands"; else bad "the shell doesn't answer 'qs -c lumen ipc call'"; fi
+fi
+[[ -f $STATE/quickshell.log ]] && {
+	n=$(grep -ciE 'error|warn' "$STATE/quickshell.log")
+	note "$n warnings/errors in $STATE/quickshell.log; the last ones:"
+	grep -iE 'error|warn' "$STATE/quickshell.log" | tail -n 5 | sed 's/^/          /'
+}
+
+head_ "Input watcher (layout switch keys, closing popups by clicking elsewhere)"
+has xinput && ok "xinput installed" || bad "xinput isn't installed (xorg-xinput)"
+if pgrep -f 'lumen-settings [k]bswitch' >/dev/null; then
+	ok "watcher running (pid $(pgrep -f 'lumen-settings [k]bswitch' | head -n 1 | tr '\n' ' '))"
+	pgrep -af 'xinput test-xi2' >/dev/null && ok "its xinput is running" || bad "watcher is running but its xinput isn't"
+else
+	bad "watcher not running (bspwm or the shell starts it: lumen-settings kbswitch)"
+fi
+if has xinput && [[ -t 0 ]]; then
+	printf '        Click anywhere on the screen within 5 seconds...\n'
+	if timeout 5 stdbuf -oL xinput test-xi2 --root 2>/dev/null | grep -m 1 -q 'RawButtonPress'; then
+		ok "X reports mouse clicks"
+	else
+		bad "no click seen from X in 5 seconds"
+	fi
+fi
+flag=${XDG_RUNTIME_DIR:-/tmp}/lumen-popup-open
+[[ -e $flag ]] && note "popup flag exists ($flag): a bar popup is open, or the flag is stale" || note "no popup open"
+
+head_ "Compositor"
+if [[ $(sed -n 's/^compositor=//p' "$CONF" 2>/dev/null) == false ]]; then
+	note "turned off in Settings"
+elif pgrep -x picom >/dev/null; then
+	ok "picom running: $(tr '\0' ' ' </proc/"$(pgrep -x picom | head -n 1)"/cmdline)"
+else
+	bad "picom isn't running (see $STATE/picom.log)"
+fi
+
+head_ "Cursor"
+note "XCURSOR_THEME=${XCURSOR_THEME:-unset} XCURSOR_SIZE=${XCURSOR_SIZE:-unset}"
+for f in "$HOME/.icons/default/index.theme" "${XDG_DATA_HOME:-$HOME/.local/share}/icons/default/index.theme" /usr/share/icons/default/index.theme; do
+	[[ -f $f ]] && note "$f: $(grep -m 1 '^Inherits' "$f")"
+done
+has xrdb && note "X resources: $(xrdb -query 2>/dev/null | grep -i '^Xcursor' | tr '\n' ' ')"
+
+head_ "Login screen"
+dm=$(basename "$(readlink /etc/systemd/system/display-manager.service 2>/dev/null)" 2>/dev/null)
+[[ $dm == sddm.service ]] && ok "SDDM is the login manager" || bad "the login manager is '${dm:-none}', not SDDM"
+[[ -f /usr/share/sddm/themes/lumen/Main.qml ]] && ok "lumen theme installed" || bad "lumen SDDM theme missing (/usr/share/sddm/themes/lumen)"
+for f in /usr/lib/sddm/sddm.conf.d/*.conf /etc/sddm.conf.d/*.conf /etc/sddm.conf; do
+	[[ -f $f ]] || continue
+	c=$(grep -E '^[[:space:]]*Current=' "$f" | tail -n 1)
+	[[ -n $c ]] && note "$f: ${c// /}"
+done
+note "SDDM uses the last of these (/etc/sddm.conf wins over the folders)"
+
+head_ "Displays"
+has xrandr && note "$(xrandr --query 2>/dev/null | grep -c ' connected') connected screen(s)" || bad "xrandr isn't installed"
+echo

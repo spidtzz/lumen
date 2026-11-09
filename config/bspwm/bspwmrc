@@ -69,6 +69,9 @@ bspc rule -a '*:*:lumen Shortcuts' state=floating center=on sticky=on border=off
 bspc rule -a '*:*:lumen Session' state=fullscreen sticky=on border=off layer=above focus=on
 
 # ---- Session ----------------------------------------------------------------
+# The same pointer everywhere: apps that read X resources (Firefox,
+# Telegram, xterm...) get it from here, the rest from XCURSOR_THEME / XSETTINGS.
+command -v xrdb >/dev/null && printf 'Xcursor.theme: Adwaita\nXcursor.size: 24\n' | xrdb -merge
 xsetroot -cursor_name left_ptr
 
 # Saved display layout, keyboard and mouse, theme (borders, GTK/Qt files,

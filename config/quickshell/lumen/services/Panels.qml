@@ -83,7 +83,9 @@ Singleton {
     onPopupChanged: {
         if (popup !== "") openedAt = Date.now();
         Quickshell.execDetached(popup !== "" ? ["touch", flagFile] : ["rm", "-f", flagFile]);
-        if (popup === "") popupHovered = false;
+        // A popup that closes or is swapped for another can't report the
+        // pointer leaving it; the new one reports when it's entered.
+        popupHovered = false;
     }
 
     // A mouse click somewhere on screen (from the input watcher).

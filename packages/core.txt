@@ -10,6 +10,7 @@ hsetroot
 # Keyboard layouts, key repeat and mouse settings
 xorg-setxkbmap
 xorg-xset
+xorg-xrdb
 xorg-xinput
 
 # Password prompts for system settings

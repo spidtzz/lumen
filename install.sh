@@ -229,13 +229,19 @@ install_files() {
 	place "$REPO/home/xinitrc" "$HOME/.xinitrc"
 	migrate_fonts
 
-	# Default cursor for the X root window and apps that don't read XSETTINGS.
-	if [[ ! -e $HOME/.icons/default/index.theme ]]; then
-		run mkdir -p "$HOME/.icons/default"
-		if ((DRY)); then run write "$HOME/.icons/default/index.theme"; else
-			printf '[Icon Theme]\nInherits=Adwaita\n' >"$HOME/.icons/default/index.theme"
+	# Default cursor for the X root window and apps that don't read XSETTINGS
+	# (both places apps look). Without this, distributions that ship another
+	# default (CachyOS) show a different pointer over some windows.
+	local d
+	for d in "$HOME/.icons/default" "$DATA_HOME/icons/default"; do
+		if [[ $(cat "$d/index.theme" 2>/dev/null) != $'[Icon Theme]\nInherits=Adwaita' ]]; then
+			[[ -f $d/index.theme ]] && backup "$d/index.theme"
+			run mkdir -p "$d"
+			if ((DRY)); then run write "$d/index.theme"; else
+				printf '[Icon Theme]\nInherits=Adwaita\n' >"$d/index.theme"
+			fi
 		fi
-	fi
+	done
 
 	# User settings are created once and never overwritten.
 	if [[ ! -e $CONFIG_HOME/$NAME/settings.conf ]]; then
@@ -303,7 +309,22 @@ install_system() {
 	if [[ ! -O $theme/theme.conf.user ]]; then
 		run sudo install -m 644 -o "$(id -un)" -g "$(id -gn)" /dev/null "$theme/theme.conf.user"
 	fi
-	run sudo install -D -m 644 "$REPO/system/sddm/$NAME.conf" "/etc/sddm.conf.d/$NAME.conf"
+	# Named to sort last: SDDM reads /etc/sddm.conf.d/ in order, later files win.
+	[[ -f /etc/sddm.conf.d/$NAME.conf ]] && run sudo rm -f "/etc/sddm.conf.d/$NAME.conf"
+	run sudo install -D -m 644 "$REPO/system/sddm/$NAME.conf" "/etc/sddm.conf.d/zz-$NAME.conf"
+	# /etc/sddm.conf wins over that folder; some distributions (CachyOS) pick
+	# their own theme there.
+	if [[ -f /etc/sddm.conf ]] && grep -qE '^[[:space:]]*Current=' /etc/sddm.conf &&
+		! grep -qE "^[[:space:]]*Current=$NAME[[:space:]]*$" /etc/sddm.conf; then
+		local cur
+		cur=$(grep -E '^[[:space:]]*Current=' /etc/sddm.conf | tail -n 1 | tr -d ' ')
+		if ask "/etc/sddm.conf chooses another login theme ($cur). Use lumen's instead? (a copy is kept as /etc/sddm.conf.pre-lumen)" y; then
+			run sudo cp -n /etc/sddm.conf /etc/sddm.conf.pre-lumen
+			run sudo sed -i -E 's/^([[:space:]]*Current=.*)$/# \1   # replaced by lumen (zz-lumen.conf)/' /etc/sddm.conf
+		else
+			warn "kept it; the login screen stays $cur"
+		fi
+	fi
 	run sudo install -D -m 644 "$REPO/system/xsessions/$NAME.desktop" "/usr/share/xsessions/$NAME.desktop"
 	run sudo install -D -m 755 "$REPO/bin/lumen-session" /usr/local/bin/lumen-session
 	enable_dm

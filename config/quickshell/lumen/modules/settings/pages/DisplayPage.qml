@@ -10,19 +10,19 @@ Page {
 
     // Editable copy of Displays.outputs, with placement fields.
     property var draft: []
-    property string baseline: ""
+    property string savedDraft: ""
     property var revertArgs: []
     property bool confirming: false
     property int countdown: 15
 
-    readonly property bool dirty: JSON.stringify(draft) !== baseline
+    readonly property bool dirty: JSON.stringify(draft) !== savedDraft
     readonly property bool multi: draft.length > 1
 
     function reset() {
         const d = JSON.parse(JSON.stringify(Displays.outputs));
         for (const o of d) { o.relation = ""; o.relativeTo = ""; }
         draft = d;
-        baseline = JSON.stringify(d);
+        savedDraft = JSON.stringify(d);
     }
 
     function edit(name, changes) {

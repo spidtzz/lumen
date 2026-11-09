@@ -599,9 +599,7 @@ write_fastfetch() {
   "display": {
     "separator": "   ",
     "color": { "keys": "$muted", "title": "$acc", "output": "$ink", "separator": "$line" },
-    "key": { "width": 12 },
-    "percent": { "type": 3 },
-    "bar": { "charElapsed": "■", "charTotal": "·", "width": 12 }
+    "key": { "width": 12 }
   },
   "modules": [
     { "type": "title", "color": { "user": "$acc", "at": "$muted", "host": "$ink" } },
@@ -627,7 +625,7 @@ $(ff_section "hardware ───────────────────
     { "type": "disk", "key": "  disk", "folders": "/" },
     { "type": "battery", "key": "  battery" },
     "break",
-    { "type": "colors", "symbol": "circle", "paddingLeft": 2 }
+    { "type": "colors", "symbol": "circle" }
   ]
 }
 EOF

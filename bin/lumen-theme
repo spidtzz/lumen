@@ -631,6 +631,57 @@ $(ff_section "hardware ───────────────────
 EOF
 }
 
+# Heroic's custom themes folders (one per install found), set to
+# ~/.config/heroic/themes where none is set yet.
+heroic_theme_dirs() {
+	has python3 || return 0
+	local base
+	for base in "$CONFIG_HOME/heroic" "$HOME/.var/app/com.heroicgameslauncher.hgl/config/heroic"; do
+		[[ -d $base ]] || continue
+		python3 - "$base" <<'PY' || true
+import json, os, sys
+base = sys.argv[1]
+found = []
+
+def walk(node, files_node=None):
+    if isinstance(node, dict):
+        for k, v in node.items():
+            if k == "customThemesPath" and isinstance(v, str) and v:
+                found.append(v)
+            else:
+                walk(v)
+    elif isinstance(node, list):
+        for v in node:
+            walk(v)
+
+files = [os.path.join(base, "store", "config.json"), os.path.join(base, "config.json")]
+for f in files:
+    try:
+        with open(f) as fh:
+            walk(json.load(fh))
+    except (OSError, ValueError):
+        pass
+if not found:
+    # Not set: use Heroic's usual folder and set it where Heroic keeps it.
+    folder = os.path.join(base, "themes")
+    for f in files:
+        try:
+            with open(f) as fh:
+                data = json.load(fh)
+        except (OSError, ValueError):
+            continue
+        target = data.get("settings") if isinstance(data.get("settings"), dict) else data.get("defaultSettings")
+        if isinstance(target, dict):
+            target["customThemesPath"] = folder
+            with open(f, "w") as fh:
+                json.dump(data, fh, indent=2)
+    found.append(folder)
+for d in dict.fromkeys(found):
+    print(os.path.expanduser(d))
+PY
+	done
+}
+
 # Heroic Games Launcher: a custom theme (lumen.css) in a folder Heroic is
 # pointed to (Settings > Accessibility > Custom themes path). Pick "lumen"
 # there once; after a colour change, pick it again to reload it.
@@ -639,6 +690,10 @@ write_heroic() {
 	local conf c
 	if [[ ${theme_heroic:-false} != true ]]; then
 		rm -rf "$HEROIC_THEMES"
+		local d
+		while IFS= read -r d; do
+			[[ -n $d && -f $d/lumen.css ]] && grep -q 'lumen-theme' "$d/lumen.css" && rm -f "$d/lumen.css"
+		done <<<"$(heroic_theme_dirs)"
 		return 0
 	fi
 	mkdir -p "$HEROIC_THEMES"
@@ -704,23 +759,17 @@ body.lumen {
 }
 body.lumen select, body.lumen input { box-shadow: none; }
 EOF
-	# Point Heroic at the folder (native and Flatpak installs), unless it
-	# already points somewhere else.
-	has python3 || return 0
-	for conf in "$CONFIG_HOME/heroic/config.json" "$HOME/.var/app/com.heroicgameslauncher.hgl/config/heroic/config.json"; do
-		[[ -f $conf ]] || continue
-		python3 - "$conf" "$HEROIC_THEMES" <<'PY' || true
-import json, sys
-path, folder = sys.argv[1], sys.argv[2]
-with open(path) as f:
-    data = json.load(f)
-d = data.setdefault("defaultSettings", {})
-if d.get("customThemesPath") in (None, "", folder):
-    d["customThemesPath"] = folder
-    with open(path, "w") as f:
-        json.dump(data, f, indent=2)
-PY
-	done
+	# Heroic lists the .css files of its custom themes folder (Settings >
+	# Accessibility). Put lumen.css in the folder it already uses
+	# (store/config.json, native or Flatpak); with none set, use
+	# ~/.config/heroic/themes and set that.
+	local dirs
+	dirs=$(heroic_theme_dirs)
+	[[ -n $dirs ]] || return 0
+	while IFS= read -r d; do
+		[[ -n $d ]] || continue
+		mkdir -p "$d" && cp -f "$HEROIC_THEMES/lumen.css" "$d/lumen.css"
+	done <<<"$dirs"
 }
 
 write_other_apps() {

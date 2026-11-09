@@ -223,8 +223,9 @@ layout_hotkey() {
 kbswitch() {
 	# lumen-kbswitch (python-xlib) watches the keys; started again if it ever
 	# stops, until the X session ends.
+	mkdir -p "$STATE"
 	while xset q >/dev/null 2>&1; do
-		"$BIN_DIR/lumen-kbswitch" || true
+		"$BIN_DIR/lumen-kbswitch" 2>>"$STATE/kbswitch.log" 9>&- || true
 		sleep 1
 	done
 }

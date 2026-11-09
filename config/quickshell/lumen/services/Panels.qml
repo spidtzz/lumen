@@ -134,5 +134,4 @@ Singleton {
         return Quickshell.screens.find(s => m && s.name === m.name) ?? Quickshell.screens[0];
     }
 
-    Component.onCompleted: Quickshell.execDetached(["rm", "-f", flagFile])
 }

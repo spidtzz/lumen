@@ -117,10 +117,15 @@ def watch_record(sw):
 def watch_poll(sw, interval=0.02):
     """Fallback: ask X which keys are down, 50 times a second."""
     d = display.Display()
-    before = set()
+
+    def pressed():
+        return {i * 8 + b for i, byte in enumerate(d.query_keymap()) for b in range(8) if byte >> b & 1}
+
+    # Keys already down now (or stuck down, which some keyboards report)
+    # don't count as pressed until they're released once.
+    before = pressed()
     while True:
-        keymap = d.query_keymap()
-        now = {i * 8 + b for i, byte in enumerate(keymap) for b in range(8) if byte >> b & 1}
+        now = pressed()
         for k in sorted(now - before):
             sw.press(k)
         for k in sorted(before - now):
@@ -145,19 +150,26 @@ def main():
         return 0
     import threading
     threading.Thread(target=watch_record, args=(sw,), daemon=True).start()
-    # Check that RECORD really reports keys: if a key is down twice in a row
-    # and RECORD has been quiet for over a second, switch to polling.
+    # Check that RECORD really reports keys: a key that went down since the
+    # last look must have come with an event. Twice without one: poll instead.
+    # (Keys that stay down, like a stuck one, don't count.)
+    def keys():
+        return {i * 8 + b for i, byte in enumerate(probe.query_keymap()) for b in range(8) if byte >> b & 1}
+    before = keys()
     misses = 0
     while True:
         time.sleep(0.25)
-        down = any(probe.query_keymap())
-        if down and time.monotonic() - last_event > 1.0:
-            misses += 1
-            if misses >= 2:
-                os.execv(sys.executable, [sys.executable, os.path.realpath(__file__), "--poll"]
-                         + (["--test"] if test else []))
-        else:
-            misses = 0
+        now = keys()
+        if now - before:
+            if time.monotonic() - last_event > 0.5:
+                misses += 1
+                if misses >= 2:
+                    print("lumen-kbswitch: X RECORD sends no key events; checking keys instead", file=sys.stderr, flush=True)
+                    os.execv(sys.executable, [sys.executable, os.path.realpath(__file__), "--poll"]
+                             + (["--test"] if test else []))
+            else:
+                misses = 0
+        before = now
 
 
 if __name__ == "__main__":
@@ -165,3 +177,7 @@ if __name__ == "__main__":
         sys.exit(main())
     except (KeyboardInterrupt, BrokenPipeError):
         sys.exit(0)
+    except Exception as e:   # into ~/.local/state/lumen/kbswitch.log (lumen doctor shows it)
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)

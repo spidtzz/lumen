@@ -2,6 +2,7 @@ pragma Singleton
 
 import QtQuick
 import Quickshell
+import Quickshell.Io
 
 // Which shell windows and popups are open. shell.qml and Bar.qml create
 // them on demand.
@@ -78,11 +79,14 @@ Singleton {
     property bool popupHovered: false
     property bool barHovered: false
 
-    // lumen-settings kbswitch reports mouse clicks while this file exists.
-    readonly property string flagFile: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/lumen-popup-open"
+    // While a popup is open, lumen-clickwatch reports mouse clicks anywhere.
+    Process {
+        running: root.popup !== ""
+        command: ["lumen-clickwatch"]
+        stdout: SplitParser { onRead: data => root.click() }
+    }
     onPopupChanged: {
         if (popup !== "") openedAt = Date.now();
-        Quickshell.execDetached(popup !== "" ? ["touch", flagFile] : ["rm", "-f", flagFile]);
         // A popup that closes or is swapped for another can't report the
         // pointer leaving it; the new one reports when it's entered.
         popupHovered = false;

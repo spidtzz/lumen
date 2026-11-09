@@ -314,13 +314,13 @@ install_system() {
 	run sudo install -D -m 644 "$REPO/system/sddm/$NAME.conf" "/etc/sddm.conf.d/zz-$NAME.conf"
 	# /etc/sddm.conf wins over that folder; some distributions (CachyOS) pick
 	# their own theme there.
-	if [[ -f /etc/sddm.conf ]] && grep -qE '^[[:space:]]*Current=' /etc/sddm.conf &&
-		! grep -qE "^[[:space:]]*Current=$NAME[[:space:]]*$" /etc/sddm.conf; then
+	if [[ -f /etc/sddm.conf ]] && grep -qE '^[[:space:]]*Current[[:space:]]*=' /etc/sddm.conf &&
+		! grep -qE "^[[:space:]]*Current[[:space:]]*=[[:space:]]*$NAME[[:space:]]*$" /etc/sddm.conf; then
 		local cur
-		cur=$(grep -E '^[[:space:]]*Current=' /etc/sddm.conf | tail -n 1 | tr -d ' ')
+		cur=$(grep -E '^[[:space:]]*Current[[:space:]]*=' /etc/sddm.conf | tail -n 1 | tr -d ' ')
 		if ask "/etc/sddm.conf chooses another login theme ($cur). Use lumen's instead? (a copy is kept as /etc/sddm.conf.pre-lumen)" y; then
 			run sudo cp -n /etc/sddm.conf /etc/sddm.conf.pre-lumen
-			run sudo sed -i -E 's/^([[:space:]]*Current=.*)$/# \1   # replaced by lumen (zz-lumen.conf)/' /etc/sddm.conf
+			run sudo sed -i -E 's/^([[:space:]]*Current[[:space:]]*=.*)$/# \1   # replaced by lumen (zz-lumen.conf)/' /etc/sddm.conf
 		else
 			warn "kept it; the login screen stays $cur"
 		fi

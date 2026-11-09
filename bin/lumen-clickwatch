@@ -1,0 +1,41 @@
+#!/usr/bin/env python3
+"""lumen-clickwatch: print "click" each time a mouse button goes down, anywhere.
+
+The shell runs it while a bar popup is open, so a click elsewhere closes the
+popup. It asks X where the pointer is and which buttons are down 60 times a
+second (XQueryPointer) instead of listening for X input events, because on
+some systems (CachyOS) raw input events never arrive. It stops when the
+shell does.
+"""
+import os
+import sys
+import time
+
+from Xlib import X, display, error
+
+BUTTONS = X.Button1Mask | X.Button2Mask | X.Button3Mask
+
+
+def main():
+    d = display.Display()
+    root = d.screen().root
+    parent = os.getppid()
+    was = root.query_pointer().mask & BUTTONS   # the click that opened the popup
+    while os.getppid() == parent:
+        try:
+            down = root.query_pointer().mask & BUTTONS
+        except error.XError:
+            down = 0
+        if down & ~was:
+            sys.stdout.write("click\n")
+            sys.stdout.flush()
+        was = down
+        time.sleep(1 / 60)
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except (KeyboardInterrupt, BrokenPipeError, error.ConnectionClosedError):
+        sys.exit(0)

@@ -30,30 +30,29 @@ else
 	if pgrep -f 'qs -c lumen|quickshell -c lumen' >/dev/null; then ok "the shell is running"; else bad "the shell isn't running (lumen reload)"; fi
 	if qs -c lumen ipc call panels close >/dev/null 2>&1; then ok "the shell answers commands"; else bad "the shell doesn't answer 'qs -c lumen ipc call'"; fi
 fi
+if [[ -f $STATE/quickshell.log ]] && m=$(grep -m 1 'was built against Qt' "$STATE/quickshell.log"); then
+	bad "Quickshell needs rebuilding for the installed Qt (it may crash): ${m#*WARN: }"
+fi
 [[ -f $STATE/quickshell.log ]] && {
 	n=$(grep -ciE 'error|warn' "$STATE/quickshell.log")
 	note "$n warnings/errors in $STATE/quickshell.log; the last ones:"
 	grep -iE 'error|warn' "$STATE/quickshell.log" | tail -n 5 | sed 's/^/          /'
 }
 
-head_ "Input watcher (layout switch keys, closing popups by clicking elsewhere)"
+head_ "Input (layout switch keys; clicks that close bar popups)"
 has xinput && ok "xinput installed" || bad "xinput isn't installed (xorg-xinput)"
 if pgrep -f 'lumen-settings [k]bswitch' >/dev/null; then
-	ok "watcher running (pid $(pgrep -f 'lumen-settings [k]bswitch' | head -n 1 | tr '\n' ' '))"
-	pgrep -af 'xinput test-xi2' >/dev/null && ok "its xinput is running" || bad "watcher is running but its xinput isn't"
+	ok "layout switch watcher running"
 else
-	bad "watcher not running (bspwm or the shell starts it: lumen-settings kbswitch)"
+	bad "layout switch watcher not running (bspwm or the shell starts it: lumen-settings kbswitch)"
 fi
+python3 -c 'import Xlib' 2>/dev/null && ok "python-xlib installed (lumen-clickwatch, lock screen)" || bad "python-xlib isn't installed"
 if has xinput && [[ -t 0 ]]; then
-	printf '        Click anywhere on the screen within 5 seconds...\n'
-	if timeout 5 stdbuf -oL xinput test-xi2 --root 2>/dev/null | grep -m 1 -q 'RawButtonPress'; then
-		ok "X reports mouse clicks"
-	else
-		bad "no click seen from X in 5 seconds"
-	fi
+	printf '        Click anywhere, then press a key, within 6 seconds...\n'
+	events=$(timeout 6 stdbuf -oL xinput test-xi2 --root 2>/dev/null | grep -oE '\((RawButtonPress|RawKeyPress)\)' | sort -u | tr -d '()' | tr '\n' ' ')
+	[[ $events == *RawButtonPress* ]] && ok "X reports clicks (raw input events)" || note "X reported no raw clicks (lumen doesn't need them any more)"
+	[[ $events == *RawKeyPress* ]] && ok "X reports key presses (needed for Alt+Shift layout switching)" || bad "X reported no raw key presses: Alt+Shift layout switching won't work"
 fi
-flag=${XDG_RUNTIME_DIR:-/tmp}/lumen-popup-open
-[[ -e $flag ]] && note "popup flag exists ($flag): a bar popup is open, or the flag is stale" || note "no popup open"
 
 head_ "Compositor"
 if [[ $(sed -n 's/^compositor=//p' "$CONF" 2>/dev/null) == false ]]; then
@@ -69,7 +68,10 @@ note "XCURSOR_THEME=${XCURSOR_THEME:-unset} XCURSOR_SIZE=${XCURSOR_SIZE:-unset}"
 for f in "$HOME/.icons/default/index.theme" "${XDG_DATA_HOME:-$HOME/.local/share}/icons/default/index.theme" /usr/share/icons/default/index.theme; do
 	[[ -f $f ]] && note "$f: $(grep -m 1 '^Inherits' "$f")"
 done
-has xrdb && note "X resources: $(xrdb -query 2>/dev/null | grep -i '^Xcursor' | tr '\n' ' ')"
+if has xrdb; then
+	xt=$(xrdb -query 2>/dev/null | sed -n 's/^Xcursor.theme:[[:space:]]*//p')
+	[[ -z $xt || $xt == Adwaita ]] && ok "X resources cursor: ${xt:-not set}" || bad "X resources set the cursor theme to '$xt' (log out and in again; lumen sets Adwaita)"
+fi
 
 head_ "Login screen"
 dm=$(basename "$(readlink /etc/systemd/system/display-manager.service 2>/dev/null)" 2>/dev/null)

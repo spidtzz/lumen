@@ -231,12 +231,11 @@ kbswitch() {
 
 kbswitch_watch() {
 	# xinput reports every input event, mouse movement included; grep (fast)
-	# keeps only key presses/releases and clicks, so awk wakes up only for those.
+	# keeps only key presses and releases, so awk wakes up only for those.
 	stdbuf -oL xinput test-xi2 --root |
-		grep --line-buffered --no-group-separator -A2 -E '\((RawKeyPress|RawKeyRelease|RawButtonPress)\)' |
+		grep --line-buffered --no-group-separator -A2 -E '\((RawKeyPress|RawKeyRelease)\)' |
 		awk -v cmd="$0 layout-hotkey" \
-		-v flag="${XDG_RUNTIME_DIR:-/tmp}/lumen-popup-open" \
-		-v click="qs -c lumen ipc call panels click" '
+		'
 		function isalt(k) { return k == 64 || k == 108 }
 		function isshift(k) { return k == 50 || k == 62 }
 		function isctrl(k) { return k == 37 || k == 105 }
@@ -245,15 +244,6 @@ kbswitch_watch() {
 			for (k in down) { c++; if (isalt(k)) a++; else if (isshift(k)) s++; else if (isctrl(k)) x++ }
 			nalt = a; nshift = s; nctrl = x
 			return c
-		}
-		# Mouse clicks: tell the shell while a bar popup is open (the shell
-		# creates the flag file), so a click elsewhere closes it.
-		/RawButtonPress/ { t = 3; next }
-		/^[[:space:]]+detail:/ && t == 3 {
-			t = 0
-			b = $2 + 0
-			if (b >= 1 && b <= 3 && (getline line < flag) >= 0) { close(flag); system(click " >/dev/null 2>&1 &") }
-			next
 		}
 		/RawKeyPress/ { t = 1; next }
 		/RawKeyRelease/ { t = 2; next }

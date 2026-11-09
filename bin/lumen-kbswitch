@@ -29,6 +29,7 @@ CTRL = {37, 105}
 CAPS = 66
 
 last_event = 0.0   # when RECORD last sent anything
+record_failed = False
 
 HERE = os.path.dirname(os.path.realpath(__file__))
 SETTINGS = os.path.join(HERE, "lumen-settings")
@@ -79,11 +80,12 @@ class Switcher:
 
 def watch_record(sw):
     """Event driven: the RECORD extension copies every key event to us."""
-    ctl = display.Display()
+    # The context is made on the same connection that enables it: made on
+    # another one, the server may not know it yet (BadContext).
     data_dpy = display.Display()
-    if not ctl.has_extension("RECORD"):
+    if not data_dpy.has_extension("RECORD"):
         return False
-    ctx = ctl.record_create_context(0, [record.AllClients], [{
+    ctx = data_dpy.record_create_context(0, [record.AllClients], [{
         "core_requests": (0, 0), "core_replies": (0, 0),
         "ext_requests": (0, 0, 0, 0), "ext_replies": (0, 0, 0, 0),
         "delivered_events": (0, 0),
@@ -109,9 +111,22 @@ def watch_record(sw):
     try:
         data_dpy.record_enable_context(ctx, callback)   # runs until the X session ends
     finally:
-        ctl.record_free_context(ctx)
-        ctl.flush()
+        try:
+            data_dpy.record_free_context(ctx)
+            data_dpy.flush()
+        except Exception:
+            pass
     return True
+
+
+def record_thread(sw):
+    global record_failed
+    try:
+        watch_record(sw)
+    except Exception:
+        import traceback
+        traceback.print_exc()
+    record_failed = True
 
 
 def watch_poll(sw, interval=0.02):
@@ -149,7 +164,7 @@ def main():
         watch_poll(sw)
         return 0
     import threading
-    threading.Thread(target=watch_record, args=(sw,), daemon=True).start()
+    threading.Thread(target=record_thread, args=(sw,), daemon=True).start()
     # Check that RECORD really reports keys: a key that went down since the
     # last look must have come with an event. Twice without one: poll instead.
     # (Keys that stay down, like a stuck one, don't count.)
@@ -157,16 +172,21 @@ def main():
         return {i * 8 + b for i, byte in enumerate(probe.query_keymap()) for b in range(8) if byte >> b & 1}
     before = keys()
     misses = 0
+    def fallback(why):
+        print("lumen-kbswitch: " + why + "; checking keys instead", file=sys.stderr, flush=True)
+        os.execv(sys.executable, [sys.executable, os.path.realpath(__file__), "--poll"]
+                 + (["--test"] if test else []))
+
     while True:
-        time.sleep(0.25)
+        time.sleep(0.1)
+        if record_failed:
+            fallback("X RECORD stopped")
         now = keys()
         if now - before:
             if time.monotonic() - last_event > 0.5:
                 misses += 1
                 if misses >= 2:
-                    print("lumen-kbswitch: X RECORD sends no key events; checking keys instead", file=sys.stderr, flush=True)
-                    os.execv(sys.executable, [sys.executable, os.path.realpath(__file__), "--poll"]
-                             + (["--test"] if test else []))
+                    fallback("X RECORD sends no key events")
             else:
                 misses = 0
         before = now

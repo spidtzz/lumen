@@ -85,7 +85,7 @@ POLKIT_AGENT=/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
 pgrep -f "$POLKIT_AGENT" >/dev/null || { [ -x "$POLKIT_AGENT" ] && "$POLKIT_AGENT" & }
 
 # Keyboard layout switching (Settings > Keyboard & Mouse).
-pgrep -f 'lumen-settings kbswitch' >/dev/null || lumen-settings kbswitch >/dev/null 2>&1 &
+lumen-settings kbswitch-start
 
 # Clipboard history (super + v).
 pgrep -f 'lumen-clipboard daemon' >/dev/null || lumen-clipboard daemon >/dev/null 2>&1 &

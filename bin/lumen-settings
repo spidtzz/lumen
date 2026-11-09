@@ -220,6 +220,12 @@ layout_hotkey() {
 # released without any other key. Works with left or right keys in every
 # layout, and AltGr+Shift+key still types characters (the third key cancels).
 # Keycodes are the standard evdev ones.
+# Start the watcher unless it's running (the shell and bspwmrc call this).
+kbswitch_start() {
+	pgrep -f 'lumen-settings kbswitch$' >/dev/null && return 0
+	setsid -f "$BIN_DIR/lumen-settings" kbswitch >/dev/null 2>&1 </dev/null 9>&-
+}
+
 kbswitch() {
 	# lumen-kbswitch (python-xlib) watches the keys; started again if it ever
 	# stops, until the X session ends.
@@ -248,9 +254,12 @@ picom_flags() {
 #   glow     rounded corners: an accent shadow from picom, which follows the
 #            rounded shape (bspwm's border is a square frame that picom can't
 #            round, so it would stop short of each corner)
-#   dim      highlight off: other windows are slightly dimmed
+#   none     highlight off: nothing changes with focus. picom drops the
+#            open and desktop-switch animation of a window whose look
+#            changes as it gets focus (picom issue #1393), so this is the
+#            way to have every window animate.
 focus_style() {
-	if [[ ${CONF[window_border]} == false ]]; then echo dim
+	if [[ ${CONF[window_border]} == false ]]; then echo none
 	elif [[ ${CONF[compositor]} != true || ${CONF[corners]} == square ]]; then echo outline
 	else echo glow
 	fi
@@ -292,13 +301,6 @@ picom_config() {
 		# lumen's own windows animate themselves; the bar and fullscreen
 		# switches shouldn't move at all.
 		still='animations = ( { triggers = ["open", "show"]; preset = "appear"; scale = 1.0; duration = 0.01; }, { triggers = ["close", "hide"]; preset = "disappear"; scale = 1.0; duration = 0.01; }, { triggers = ["geometry"]; preset = "geometry-change"; duration = 0.01; } );'
-		# Switching desktops (lumen-desktop marks the windows first): a
-		# vertical slide like Hyprland's, up to a later desktop, down to an
-		# earlier one.
-		local d
-		for d in up down; do
-			rules+=("{ match = \"_LUMEN_SLIDE@ = ${q}$d${q}\"; animations = ( { triggers = [\"show\"]; preset = \"slide-in\"; direction = \"$d\"; duration = 0.3; }, { triggers = [\"hide\"]; preset = \"slide-out\"; direction = \"$d\"; duration = 0.3; } ); }")
-		done
 		# Popups, menus and tooltips: a quick fade in, so the frame X shows
 		# before the app has drawn (black) isn't seen; out at once (lumen's
 		# popups have already animated out by then).
@@ -623,6 +625,7 @@ case $cmd in
 	layout-hotkey) layout_hotkey "${1:-}" ;;
 	layout-current) load; cur=$(current_layouts); printf '%s\n' "${cur%%,*}" ;;
 	kbswitch) kbswitch ;;
+	kbswitch-start) kbswitch_start ;;
 	compositor-run) compositor_run ;;
 	sysinfo) sysinfo ;;
 	awake)

@@ -12,7 +12,6 @@ xorg-setxkbmap
 xorg-xset
 xorg-xrdb
 xorg-xinput
-xorg-xprop
 
 # Password prompts for system settings
 polkit-gnome

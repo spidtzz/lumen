@@ -46,7 +46,7 @@ ShellRoot {
         startInputWatcher();
     }
     function startInputWatcher() {
-        Quickshell.execDetached(["sh", "-c", "pgrep -f 'lumen-settings [k]bswitch' >/dev/null || exec setsid lumen-settings kbswitch >/dev/null 2>&1"]);
+        Quickshell.execDetached(["lumen-settings", "kbswitch-start"]);
     }
     // ...and again if it ever stops.
     Timer {

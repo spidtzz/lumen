@@ -292,6 +292,13 @@ picom_config() {
 		# lumen's own windows animate themselves; the bar and fullscreen
 		# switches shouldn't move at all.
 		still='animations = ( { triggers = ["open", "show"]; preset = "appear"; scale = 1.0; duration = 0.01; }, { triggers = ["close", "hide"]; preset = "disappear"; scale = 1.0; duration = 0.01; }, { triggers = ["geometry"]; preset = "geometry-change"; duration = 0.01; } );'
+		# Switching desktops (lumen-desktop marks the windows first): a
+		# vertical slide like Hyprland's, up to a later desktop, down to an
+		# earlier one.
+		local d
+		for d in up down; do
+			rules+=("{ match = \"_LUMEN_SLIDE@ = ${q}$d${q}\"; animations = ( { triggers = [\"show\"]; preset = \"slide-in\"; direction = \"$d\"; duration = 0.3; }, { triggers = [\"hide\"]; preset = \"slide-out\"; direction = \"$d\"; duration = 0.3; } ); }")
+		done
 		# Popups, menus and tooltips: a quick fade in, so the frame X shows
 		# before the app has drawn (black) isn't seen; out at once (lumen's
 		# popups have already animated out by then).

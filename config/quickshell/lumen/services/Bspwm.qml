@@ -28,11 +28,11 @@ Singleton {
     }
 
     function focusDesktop(name) {
-        Quickshell.execDetached(["bspc", "desktop", "-f", name]);
+        Quickshell.execDetached(["lumen-desktop", name]);
     }
 
     function cycleDesktop(forward) {
-        Quickshell.execDetached(["bspc", "desktop", "-f", forward ? "next.local" : "prev.local"]);
+        Quickshell.execDetached(["lumen-desktop", forward ? "next.local" : "prev.local"]);
     }
 
     // Report format: W<item>:<item>:... where M/m starts a monitor (focused/not),

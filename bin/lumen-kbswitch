@@ -13,6 +13,7 @@ send those raw events.)
 
     lumen-kbswitch          watch and switch
     lumen-kbswitch --test   print key presses for 6 seconds (lumen doctor)
+    lumen-kbswitch --record try X RECORD again even if it failed before
 """
 import os
 import subprocess
@@ -28,6 +29,8 @@ SHIFT = {50, 62}
 CTRL = {37, 105}
 CAPS = 66
 
+MODE_FILE = os.path.join(os.environ.get("XDG_STATE_HOME") or os.path.expanduser("~/.local/state"),
+                         "lumen", "kbswitch-mode")   # "poll" once RECORD has failed here
 last_event = 0.0   # when RECORD last sent anything
 record_failed = False
 
@@ -156,7 +159,13 @@ def main():
         # lumen doctor: show what X reports for a few seconds.
         import threading
         threading.Timer(6, lambda: os._exit(0)).start()
-    if "--poll" in sys.argv:
+    remembered = ""
+    try:
+        with open(MODE_FILE) as f:
+            remembered = f.read().strip()
+    except OSError:
+        pass
+    if "--poll" in sys.argv or (remembered == "poll" and "--record" not in sys.argv):
         watch_poll(sw)
         return 0
     probe = display.Display()
@@ -174,6 +183,12 @@ def main():
     misses = 0
     def fallback(why):
         print("lumen-kbswitch: " + why + "; checking keys instead", file=sys.stderr, flush=True)
+        try:   # remembered, so the next start polls straight away
+            os.makedirs(os.path.dirname(MODE_FILE), exist_ok=True)
+            with open(MODE_FILE, "w") as f:
+                f.write("poll\n")
+        except OSError:
+            pass
         os.execv(sys.executable, [sys.executable, os.path.realpath(__file__), "--poll"]
                  + (["--test"] if test else []))
 

@@ -171,7 +171,7 @@ super + ctrl + alt + space
 
 # Go to desktop 1-10
 super + {1-9,0}
-	bspc desktop -f '^{1-9,10}'
+	lumen-desktop '^{1-9,10}'
 
 # Send the window to desktop 1-10
 super + shift + {1-9,0}
@@ -179,20 +179,20 @@ super + shift + {1-9,0}
 
 # Go to the previous desktop
 super + a
-	bspc desktop -f prev.local
+	lumen-desktop prev.local
 
 # Go to the next desktop
 super + d
-	bspc desktop -f next.local
+	lumen-desktop next.local
 
 # Go to the previous desktop with windows
 super + w
-	bspc desktop -f prev.local.occupied
+	lumen-desktop prev.local.occupied
 
 # Go to the next desktop with windows
 super + s
-	bspc desktop -f next.local.occupied
+	lumen-desktop next.local.occupied
 
 # Go back to the last desktop you used
 super + Tab
-	bspc desktop -f last
+	lumen-desktop last

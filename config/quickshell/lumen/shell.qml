@@ -43,7 +43,17 @@ ShellRoot {
         // The input watcher (layout switch keys, and clicks that close bar
         // popups) normally starts with bspwm; start it here too, for a shell
         // started by hand.
+        startInputWatcher();
+    }
+    function startInputWatcher() {
         Quickshell.execDetached(["sh", "-c", "pgrep -f 'lumen-settings [k]bswitch' >/dev/null || exec setsid lumen-settings kbswitch >/dev/null 2>&1"]);
+    }
+    // ...and again if it ever stops.
+    Timer {
+        interval: 30000
+        repeat: true
+        running: true
+        onTriggered: root.startInputWatcher()
     }
 
     // App launcher, created when opened.

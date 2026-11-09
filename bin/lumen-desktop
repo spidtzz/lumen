@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# lumen-desktop — switch desktops with a vertical slide, like Hyprland.
+#
+#   lumen-desktop <desktop>      any bspc desktop selector: next.local,
+#                                prev.local.occupied, ^3, last, a name...
+#
+# Going to a later desktop, the windows slide up and the new ones come up
+# from below; going back, the other way. picom does the animation (its show
+# and hide animations, chosen by a _LUMEN_SLIDE property this sets on the
+# windows first); without picom it's a plain switch.
+set -u
+
+target=$(bspc query -D -d "$1" 2>/dev/null | head -n 1) || exit 1
+[[ -n $target ]] || exit 1
+current=$(bspc query -D -d focused)
+[[ $target == "$current" ]] && exit 0
+
+if command -v xprop >/dev/null && pgrep -x picom >/dev/null; then
+	# Order of the two desktops on their monitor(s).
+	index() { bspc query -D -m "$(bspc query -M -d "$1")" | grep -n -m 1 "$1" | cut -d: -f1; }
+	ci=$(index "$current") ti=$(index "$target")
+	if [[ -n $ci && -n $ti ]]; then
+		((ti > ci)) && dir=up || dir=down
+		for w in $(bspc query -N -d "$current" -n .window) $(bspc query -N -d "$target" -n .window); do
+			xprop -id "$w" -f _LUMEN_SLIDE 8s -set _LUMEN_SLIDE "$dir" 2>/dev/null &
+		done
+		wait
+	fi
+fi
+exec bspc desktop -f "$target"

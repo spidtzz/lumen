@@ -39,19 +39,18 @@ fi
 	grep -iE 'error|warn' "$STATE/quickshell.log" | tail -n 5 | sed 's/^/          /'
 }
 
-head_ "Input (layout switch keys; clicks that close bar popups)"
-has xinput && ok "xinput installed" || bad "xinput isn't installed (xorg-xinput)"
-if pgrep -f 'lumen-settings [k]bswitch' >/dev/null; then
-	ok "layout switch watcher running"
+head_ "Input (Alt+Shift layout switching; clicks that close bar popups)"
+python3 -c 'import Xlib' 2>/dev/null && ok "python-xlib installed" || bad "python-xlib isn't installed"
+if pgrep -f 'lumen-[k]bswitch' >/dev/null; then
+	mode=$(pgrep -af 'lumen-[k]bswitch' | grep -q -- '--poll' && echo "checking keys 50 times a second" || echo "X RECORD events")
+	ok "layout switch watcher running ($mode)"
 else
 	bad "layout switch watcher not running (bspwm or the shell starts it: lumen-settings kbswitch)"
 fi
-python3 -c 'import Xlib' 2>/dev/null && ok "python-xlib installed (lumen-clickwatch, lock screen)" || bad "python-xlib isn't installed"
-if has xinput && [[ -t 0 ]]; then
-	printf '        Click anywhere, then press a key, within 6 seconds...\n'
-	events=$(timeout 6 stdbuf -oL xinput test-xi2 --root 2>/dev/null | grep -oE '\((RawButtonPress|RawKeyPress)\)' | sort -u | tr -d '()' | tr '\n' ' ')
-	[[ $events == *RawButtonPress* ]] && ok "X reports clicks (raw input events)" || note "X reported no raw clicks (lumen doesn't need them any more)"
-	[[ $events == *RawKeyPress* ]] && ok "X reports key presses (needed for Alt+Shift layout switching)" || bad "X reported no raw key presses: Alt+Shift layout switching won't work"
+if [[ -t 0 ]] && command -v lumen-kbswitch >/dev/null; then
+	printf '        Press a few keys within 6 seconds...\n'
+	n=$(lumen-kbswitch --test 2>/dev/null </dev/null | grep -c '^key')
+	((n > 0)) && ok "key presses seen ($n)" || bad "no key presses seen: Alt+Shift switching won't work"
 fi
 
 head_ "Compositor"

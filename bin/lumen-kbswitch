@@ -1,0 +1,167 @@
+#!/usr/bin/env python3
+"""lumen-kbswitch: switch keyboard layouts like Windows.
+
+Press and release Alt+Shift (or Ctrl+Shift, or Caps Lock: Settings) without
+another key, and the next layout is chosen (lumen-settings layout-hotkey).
+A third key cancels it, so AltGr shortcuts and characters keep working.
+
+Started by `lumen-settings kbswitch` (bspwmrc). It watches the keyboard with
+the X RECORD extension. Where that's missing or sends nothing (a key is seen
+down without an event from RECORD), it checks which keys are down 50 times a
+second instead. (It used to read `xinput test-xi2`, but some X servers never
+send those raw events.)
+
+    lumen-kbswitch          watch and switch
+    lumen-kbswitch --test   print key presses for 6 seconds (lumen doctor)
+"""
+import os
+import subprocess
+import sys
+import time
+
+from Xlib import X, display
+from Xlib.ext import record
+from Xlib.protocol import rq
+
+ALT = {64, 108}
+SHIFT = {50, 62}
+CTRL = {37, 105}
+CAPS = 66
+
+last_event = 0.0   # when RECORD last sent anything
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+SETTINGS = os.path.join(HERE, "lumen-settings")
+
+
+class Switcher:
+    """The same rules as before: a lone Alt+Shift, Ctrl+Shift or Caps Lock,
+    released without another key in between, is a switch."""
+
+    def __init__(self, test=False):
+        self.down = set()
+        self.combo = ""
+        self.test = test
+
+    def counts(self):
+        return (sum(k in ALT for k in self.down), sum(k in SHIFT for k in self.down),
+                sum(k in CTRL for k in self.down), len(self.down))
+
+    def press(self, k):
+        if self.test:
+            print("key", k, flush=True)
+            return
+        if k in self.down:
+            return   # auto-repeat
+        self.down.add(k)
+        alt, shift, ctrl, n = self.counts()
+        if n == 2 and shift == 1 and alt == 1:
+            self.combo = "alt_shift"
+        elif n == 2 and shift == 1 and ctrl == 1:
+            self.combo = "ctrl_shift"
+        elif n == 1 and k == CAPS:
+            self.combo = "caps"
+        elif n == 1 and (k in ALT or k in SHIFT or k in CTRL):
+            self.combo = ""
+        else:
+            self.combo = "-"   # another key: a shortcut or a character
+
+    def release(self, k):
+        if self.test:
+            return
+        self.down.discard(k)
+        if self.combo not in ("", "-"):
+            subprocess.Popen([SETTINGS, "layout-hotkey", self.combo],
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if self.combo != "":
+            self.combo = "" if not self.down else "-"
+
+
+def watch_record(sw):
+    """Event driven: the RECORD extension copies every key event to us."""
+    ctl = display.Display()
+    data_dpy = display.Display()
+    if not ctl.has_extension("RECORD"):
+        return False
+    ctx = ctl.record_create_context(0, [record.AllClients], [{
+        "core_requests": (0, 0), "core_replies": (0, 0),
+        "ext_requests": (0, 0, 0, 0), "ext_replies": (0, 0, 0, 0),
+        "delivered_events": (0, 0),
+        "device_events": (X.KeyPress, X.KeyRelease),
+        "errors": (0, 0), "client_started": False, "client_died": False,
+    }])
+
+    def callback(reply):
+        global last_event
+        last_event = time.monotonic()
+        if reply.category != record.FromServer or reply.client_swapped or not reply.data:
+            return
+        if reply.data[0] < 2:
+            return
+        data = reply.data
+        while data:
+            event, data = rq.EventField(None).parse_binary_value(data, data_dpy.display, None, None)
+            if event.type == X.KeyPress:
+                sw.press(event.detail)
+            elif event.type == X.KeyRelease:
+                sw.release(event.detail)
+
+    try:
+        data_dpy.record_enable_context(ctx, callback)   # runs until the X session ends
+    finally:
+        ctl.record_free_context(ctx)
+        ctl.flush()
+    return True
+
+
+def watch_poll(sw, interval=0.02):
+    """Fallback: ask X which keys are down, 50 times a second."""
+    d = display.Display()
+    before = set()
+    while True:
+        keymap = d.query_keymap()
+        now = {i * 8 + b for i, byte in enumerate(keymap) for b in range(8) if byte >> b & 1}
+        for k in sorted(now - before):
+            sw.press(k)
+        for k in sorted(before - now):
+            sw.release(k)
+        before = now
+        time.sleep(interval)
+
+
+def main():
+    test = "--test" in sys.argv
+    sw = Switcher(test)
+    if test:
+        # lumen doctor: show what X reports for a few seconds.
+        import threading
+        threading.Timer(6, lambda: os._exit(0)).start()
+    if "--poll" in sys.argv:
+        watch_poll(sw)
+        return 0
+    probe = display.Display()
+    if not probe.has_extension("RECORD"):
+        watch_poll(sw)
+        return 0
+    import threading
+    threading.Thread(target=watch_record, args=(sw,), daemon=True).start()
+    # Check that RECORD really reports keys: if a key is down twice in a row
+    # and RECORD has been quiet for over a second, switch to polling.
+    misses = 0
+    while True:
+        time.sleep(0.25)
+        down = any(probe.query_keymap())
+        if down and time.monotonic() - last_event > 1.0:
+            misses += 1
+            if misses >= 2:
+                os.execv(sys.executable, [sys.executable, os.path.realpath(__file__), "--poll"]
+                         + (["--test"] if test else []))
+        else:
+            misses = 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except (KeyboardInterrupt, BrokenPipeError):
+        sys.exit(0)

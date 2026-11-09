@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Effects
+import Quickshell.Io
 import qs.services
 
 // Round profile picture from ~/.face, or the user's initial in an accent
@@ -21,9 +22,16 @@ Item {
         visible: false
         layer.enabled: true
 
+        // Only when there's a picture (no warning for a missing ~/.face).
         function refresh() {
             source = "";
-            source = "file://" + Theme.avatarPath;
+            faceCheck.running = false;
+            faceCheck.running = true;
+        }
+        Process {
+            id: faceCheck
+            command: ["test", "-s", Theme.avatarPath]
+            onExited: code => img.source = code === 0 ? "file://" + Theme.avatarPath : ""
         }
         Component.onCompleted: refresh()
         Connections {

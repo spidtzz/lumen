@@ -221,51 +221,12 @@ layout_hotkey() {
 # layout, and AltGr+Shift+key still types characters (the third key cancels).
 # Keycodes are the standard evdev ones.
 kbswitch() {
-	has xinput || die "xinput is needed for layout switching"
-	# Started again if xinput ever stops, until the X session ends.
+	# lumen-kbswitch (python-xlib) watches the keys; started again if it ever
+	# stops, until the X session ends.
 	while xset q >/dev/null 2>&1; do
-		kbswitch_watch || true
+		"$BIN_DIR/lumen-kbswitch" || true
 		sleep 1
 	done
-}
-
-kbswitch_watch() {
-	# xinput reports every input event, mouse movement included; grep (fast)
-	# keeps only key presses and releases, so awk wakes up only for those.
-	stdbuf -oL xinput test-xi2 --root |
-		grep --line-buffered --no-group-separator -A2 -E '\((RawKeyPress|RawKeyRelease)\)' |
-		awk -v cmd="$0 layout-hotkey" \
-		'
-		function isalt(k) { return k == 64 || k == 108 }
-		function isshift(k) { return k == 50 || k == 62 }
-		function isctrl(k) { return k == 37 || k == 105 }
-		function count(c,   k, a, s, x) {
-			a = s = x = c = 0
-			for (k in down) { c++; if (isalt(k)) a++; else if (isshift(k)) s++; else if (isctrl(k)) x++ }
-			nalt = a; nshift = s; nctrl = x
-			return c
-		}
-		/RawKeyPress/ { t = 1; next }
-		/RawKeyRelease/ { t = 2; next }
-		/^[[:space:]]+detail:/ && t {
-			k = $2 + 0
-			if (t == 1) {
-				if (!(k in down)) {
-					down[k] = 1
-					n = count()
-					if (n == 2 && nshift == 1 && nalt == 1) combo = "alt_shift"
-					else if (n == 2 && nshift == 1 && nctrl == 1) combo = "ctrl_shift"
-					else if (n == 1 && k == 66) combo = "caps"
-					else if (n == 1 && (isalt(k) || isshift(k) || isctrl(k))) combo = ""
-					else combo = "-"   # another key: a shortcut or a character
-				}
-			} else {
-				delete down[k]
-				if (combo != "" && combo != "-") { system(cmd " " combo " &"); fflush() }
-				if (combo != "") combo = (count() == 0) ? "" : "-"
-			}
-			t = 0
-		}'
 }
 
 # picom's options that follow settings: square corners, no fades without

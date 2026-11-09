@@ -160,6 +160,23 @@ Lock). AltGr characters, such as the Persian half-space, keep working.
 **IBM Plex Sans** for the interface and **JetBrains Mono** for the terminal, both from the
 Arch repositories (`ttf-ibm-plex`, `ttf-jetbrains-mono`). Noto covers other scripts.
 
+## Quickshell won't start
+
+`quickshell: symbol lookup error ... Qt_6_PRIVATE_API` means Quickshell was built for a
+different Qt version than the one installed. It uses Qt's private API, so it must be
+rebuilt for every Qt update. First update everything with `sudo pacman -Syu`. If it still
+fails, your repository hasn't rebuilt it yet (this happens on CachyOS); rebuild Arch's
+package yourself:
+
+```sh
+sudo pacman -S --needed base-devel git
+git clone https://gitlab.archlinux.org/archlinux/packaging/packages/quickshell.git
+cd quickshell && makepkg -si
+```
+
+If Quickshell came from the AUR (`quickshell-git`), rebuild that instead, e.g.
+`paru -S --rebuild quickshell-git`.
+
 ## Layout
 
 ```

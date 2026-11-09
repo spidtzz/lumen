@@ -369,6 +369,11 @@ setup_avatar
 setup_autostart
 apply_theme
 
+if ! ((DRY)) && command -v qs >/dev/null && qs --version 2>&1 | grep -q 'symbol lookup error'; then
+	warn "Quickshell was built for a different Qt version than the one installed, so the bar won't start."
+	warn "Run 'sudo pacman -Syu'; if it still fails, rebuild Quickshell (README: 'Quickshell won't start')."
+fi
+
 echo
 log "Done."
 if ((DRY)); then

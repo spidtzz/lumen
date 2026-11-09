@@ -215,9 +215,21 @@ PanelWindow {
         color: "transparent"
         visible: false
 
+        // Shown a frame after the content loads, once it has its final size:
+        // mapped any earlier, X shows the window at its old size, black.
         function sync() {
             const show = alive && content !== null;
-            if (visible !== show) visible = show;
+            if (!show) {
+                showLater.stop();
+                if (visible) visible = false;
+            } else if (!visible && !showLater.running) {
+                showLater.restart();
+            }
+        }
+        Timer {
+            id: showLater
+            interval: 16
+            onTriggered: if (popupHost.alive && popupHost.content !== null) popupHost.visible = true
         }
         onAliveChanged: sync()
         onContentChanged: sync()

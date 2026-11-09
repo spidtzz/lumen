@@ -14,7 +14,23 @@
 #   lumen debug             sizes of the bar's parts, for bug reports
 set -eu
 
-ipc() { exec qs -c lumen ipc call "$@"; }
+ipc() { qs_ok; exec qs -c lumen ipc call "$@"; }
+
+# Quickshell uses Qt's private API, so it has to be built against the exact Qt
+# version installed. After a Qt update it fails at once with "symbol lookup
+# error ... Qt_6_PRIVATE_API" until it's rebuilt; say what to do instead.
+qs_ok() {
+	local out
+	out=$(qs --version 2>&1) && return 0
+	case $out in
+		*"symbol lookup error"*Qt_6_PRIVATE_API*)
+			echo "lumen: Quickshell was built for a different Qt version than the one installed." >&2
+			echo "       Update everything (sudo pacman -Syu); if that doesn't help, Quickshell needs" >&2
+			echo "       a rebuild for this Qt (see 'Quickshell won't start' in the README)." >&2
+			exit 1 ;;
+	esac
+	return 0
+}
 
 case ${1:-help} in
 	settings) [ -n "${2:-}" ] && ipc settings open "$2" || ipc settings show ;;
@@ -27,6 +43,7 @@ case ${1:-help} in
 		;;
 	lock) exec lumen-lock ;;
 	reload)
+		qs_ok
 		qs -c lumen kill >/dev/null 2>&1 || qs kill -c lumen >/dev/null 2>&1 || true
 		sleep 0.3
 		state=${XDG_STATE_HOME:-$HOME/.local/state}/lumen

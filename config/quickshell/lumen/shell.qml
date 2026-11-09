@@ -37,7 +37,14 @@ ShellRoot {
     }
 
     // The notification server (popups are shown by each bar).
-    Component.onCompleted: { syncPadding(); Notifs.dnd; }
+    Component.onCompleted: {
+        syncPadding();
+        Notifs.dnd;
+        // The input watcher (layout switch keys, and clicks that close bar
+        // popups) normally starts with bspwm; start it here too, for a shell
+        // started by hand.
+        Quickshell.execDetached(["sh", "-c", "pgrep -f 'lumen-settings [k]bswitch' >/dev/null || exec setsid lumen-settings kbswitch >/dev/null 2>&1"]);
+    }
 
     // App launcher, created when opened.
     LazyLoader {

@@ -198,6 +198,34 @@ FloatingWindow {
                 clip: true
                 // A new page fades in while rising a little.
                 onLoaded: { pageIn.target = item; pageIn.restart(); }
+                // A page that fails to load says why instead of staying blank.
+                onStatusChanged: {
+                    if (status !== Loader.Error) { loadError.text = ""; return; }
+                    const c = Qt.createComponent(source);
+                    loadError.text = c.status === Component.Error ? c.errorString() : "It failed while starting.";
+                    console.warn("lumen: Settings page", win.currentPage.file, "failed:", loadError.text);
+                }
+                Column {
+                    visible: pageLoader.status === Loader.Error
+                    anchors.fill: parent
+                    anchors.margins: 32
+                    spacing: 8
+                    Txt { text: "This page couldn't open"; size: 22; strong: true }
+                    Txt {
+                        id: loadError
+                        width: parent.width
+                        wrapMode: Text.Wrap
+                        muted: true
+                        font.family: Theme.monoFamily
+                        size: 12
+                    }
+                    Txt {
+                        width: parent.width
+                        wrapMode: Text.Wrap
+                        text: "Please send this message (it's also in ~/.local/state/lumen/quickshell.log)."
+                        size: 13
+                    }
+                }
                 ParallelAnimation {
                     id: pageIn
                     property Item target

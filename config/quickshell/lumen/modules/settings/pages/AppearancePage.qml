@@ -209,11 +209,11 @@ Page {
             description: Theme.conf.compositor === "false"
                 ? "An accent outline. Always on while the compositor is off (Settings › Performance)."
                 : Theme.rounded
-                  ? "A soft accent glow around the window you're using (it follows the rounded corners). Turn off if the window you switch to or open doesn't animate (a picom limitation)."
+                  ? "A soft accent glow around the window you're using. While it's on, the window you open or switch to appears without its fade (a picom bug), so it's off by default."
                   : "An accent outline around the window you're using."
             Toggle {
                 enabled: Theme.conf.compositor !== "false"
-                checked: Theme.conf.window_border !== "false"
+                checked: Theme.conf.window_border === "true"
                 onToggled: c => Theme.setValue("window_border", c)
             }
         }

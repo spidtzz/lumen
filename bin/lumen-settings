@@ -51,7 +51,7 @@ SCHEMA=(
 	"animations~true~^(true|false)$~compositor"
 	"window_motion~true~^(true|false)$~compositor"
 	"fullscreen_direct~true~^(true|false)$~compositor"
-	"window_border~true~^(true|false)$~compositor"
+	"window_border~false~^(true|false)$~compositor"
 	"clipboard_history~true~^(true|false)$~-"
 	"notif_position~top-right~^(top|bottom)-(left|center|right)$~-"
 	"bar_workspaces~5~^([3-9]|10)$~-"

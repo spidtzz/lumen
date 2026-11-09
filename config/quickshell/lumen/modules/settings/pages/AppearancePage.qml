@@ -275,6 +275,32 @@ Page {
             }
         }
         SettingRow {
+            label: "Heroic Games Launcher"
+            description: Theme.conf.theme_heroic === "true"
+                ? "In Heroic: Settings › Accessibility › Theme › lumen (once; pick it again after changing colours). Close Heroic before turning this on, so it keeps the themes folder."
+                : "A lumen theme for Heroic's own theme picker."
+            Toggle {
+                checked: Theme.conf.theme_heroic === "true"
+                onToggled: c => Theme.setValue("theme_heroic", c)
+            }
+        }
+        SettingRow {
+            label: "fastfetch"
+            description: "Accent-coloured keys and logo. Replaces your fastfetch config while on (yours comes back when it's off)."
+            Toggle {
+                checked: Theme.conf.theme_fastfetch === "true"
+                onToggled: c => Theme.setValue("theme_fastfetch", c)
+            }
+        }
+        SettingRow {
+            label: "foot"
+            description: "foot runs on Wayland only, so this is for your other sessions. New foot windows get the colours."
+            Toggle {
+                checked: Theme.conf.theme_foot === "true"
+                onToggled: c => Theme.setValue("theme_foot", c)
+            }
+        }
+        SettingRow {
             label: "zathura"
             description: "The keyboard-driven PDF viewer. Reopen it to see changes."
             Toggle {

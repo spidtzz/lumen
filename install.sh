@@ -270,8 +270,23 @@ setup_default_apps() {
 		audio/mpeg audio/flac audio/ogg audio/x-wav audio/mp4 audio/opus; do
 		want[$mime]=mpv.desktop
 	done
+	# Only [Default Applications] counts ([Added Associations] just lists
+	# apps that can open a type).
+	defaults_has() {
+		[[ -f $f ]] && awk -F= -v m="$1" '/^\[/ { sect = $0 } sect == "[Default Applications]" && $1 == m { found = 1 } END { exit !found }' "$f"
+	}
+	# The file manager: you install lumen for Thunar, so offer to replace
+	# another default (KDE's Dolphin on CachyOS, say).
+	local fm
+	fm=$(awk -F= '/^\[/ { sect = $0 } sect == "[Default Applications]" && $1 == "inode/directory" { print $2; exit }' "$f" 2>/dev/null)
+	if [[ -n $fm && ${fm%%;*} != thunar.desktop ]] && ask "Your default file manager is ${fm%%;*}. Make Thunar the default?" y; then
+		if ((DRY)); then run edit "$f"; else
+			sed -i "s|^inode/directory=.*|inode/directory=thunar.desktop|" "$f"
+		fi
+		log "Thunar is now the default file manager."
+	fi
 	for mime in "${!want[@]}"; do
-		[[ -f $f ]] && awk -F= -v m="$mime" '$1 == m { found = 1 } END { exit !found }' "$f" && continue
+		defaults_has "$mime" && continue
 		add+=("$mime=${want[$mime]}")
 	done
 	((${#add[@]})) || return 0

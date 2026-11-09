@@ -286,18 +286,18 @@ Page {
         }
         SettingRow {
             label: "fastfetch"
-            description: "Accent-coloured keys and logo. Replaces your fastfetch config while on (yours comes back when it's off)."
+            description: "lumen's own fastfetch: its logo and grouped details in your colours. Replaces your fastfetch config while on (yours comes back when it's off)."
             Toggle {
                 checked: Theme.conf.theme_fastfetch === "true"
                 onToggled: c => Theme.setValue("theme_fastfetch", c)
             }
         }
         SettingRow {
-            label: "foot"
-            description: "foot runs on Wayland only, so this is for your other sessions. New foot windows get the colours."
+            label: "fish"
+            description: "Command-line colours (commands, options, suggestions, completions). New fish windows get them."
             Toggle {
-                checked: Theme.conf.theme_foot === "true"
-                onToggled: c => Theme.setValue("theme_foot", c)
+                checked: Theme.conf.theme_fish === "true"
+                onToggled: c => Theme.setValue("theme_fish", c)
             }
         }
         SettingRow {

@@ -5,7 +5,7 @@
 A lightweight desktop for **bspwm on X11**, built with [Quickshell](https://quickshell.outfoxxed.me).
 One theme — fourteen accent colours in light, dark and black, or picked from your
 wallpaper — across the shell, GTK, libadwaita, Qt and KDE apps, kitty, the login and
-lock screens, and optionally Firefox, LibreWolf, Discord, Telegram, Heroic, btop, fastfetch, foot and zathura.
+lock screens, and optionally Firefox, LibreWolf, Discord, Telegram, Heroic, btop, fastfetch, fish and zathura.
 
 - Arch and Arch-based distributions, **official repositories only**
 - Few dependencies; every package is listed in [`packages/`](packages) with a reason
@@ -134,7 +134,7 @@ turn on, and removes it again when you turn it off:
 - **Telegram Desktop**: press **Open**, then **Apply** in Telegram; repeat after
   changing colours.
 - **Heroic Games Launcher**: pick **lumen** in Heroic › Settings › Accessibility › Theme.
-- **btop**, **zathura**, **fastfetch**, **foot** (on Wayland): reopen them to see changes.
+- **fish**, **btop**, **zathura**, **fastfetch** (lumen's own layout and logo): reopen them to see changes.
 
 GTK, libadwaita, Qt and KDE apps, kitty and file pickers follow the theme on their own.
 

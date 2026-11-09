@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # lumen-doctor — check the parts lumen depends on and print what's wrong.
 # Paste its output into a bug report. Nothing is changed.
+#   lumen doctor            everything
+#   lumen doctor keyboard   layout switching, step by step (switches the
+#                           layout once and back, and asks you to press keys)
 set -u
 
 ok() { printf '  \e[32mok\e[0m    %s\n' "$*"; }
@@ -11,6 +14,50 @@ head_() { printf '\n%s\n' "$*"; }
 
 CONF=${XDG_CONFIG_HOME:-$HOME/.config}/lumen/settings.conf
 STATE=${XDG_STATE_HOME:-$HOME/.local/state}/lumen
+
+# lumen doctor keyboard: step-by-step check of layout switching.
+if [[ ${1:-} == keyboard ]]; then
+	setting() { sed -n "s/^$1=//p" "$CONF" 2>/dev/null | tail -n 1; }
+	layouts=$(setting kb_layouts) switch=$(setting kb_switch)
+	head_ "1. Settings"
+	note "layouts in Settings: ${layouts:-us (default)} · switch keys: ${switch:-alt_shift (default)}"
+	now=$(setxkbmap -query 2>/dev/null | sed -n 's/^layout:[[:space:]]*//p')
+	note "layouts X has now: ${now:-?}   (the first one is the active one)"
+	[[ $now == *,* ]] && ok "more than one layout, so there's something to switch to" ||
+		bad "only one layout: add another in Settings > Keyboard & Mouse"
+	note "XKB options: $(setxkbmap -query 2>/dev/null | sed -n 's/^options:[[:space:]]*//p')"
+
+	head_ "2. Switching by command (no keys involved)"
+	before=$now
+	lumen-settings layout-hotkey "${switch:-alt_shift}"
+	sleep 0.3
+	after=$(setxkbmap -query 2>/dev/null | sed -n 's/^layout:[[:space:]]*//p')
+	if [[ $after != "$before" ]]; then
+		ok "switched: $before -> $after"
+		lumen-settings layout-hotkey "${switch:-alt_shift}"   # and back
+		[[ $after == *,*,* ]] && note "(with three or more layouts it's now on the next one; that's fine)"
+	else
+		bad "the layout didn't change ($before)"
+	fi
+
+	head_ "3. The watcher"
+	pgrep -af 'lumen-settings kbswitch$' | sed 's/^/          /'
+	pgrep -af 'lumen-[k]bswitch' | sed 's/^/          /'
+	pgrep -f 'lumen-[k]bswitch' >/dev/null && ok "running" || bad "not running"
+	note "mode file: $(cat "$STATE/kbswitch-mode" 2>/dev/null || echo none)"
+	[[ -s $STATE/kbswitch.log ]] && { note "log:"; tail -n 8 "$STATE/kbswitch.log" | sed 's/^/          /'; }
+
+	head_ "4. Live (10 seconds)"
+	printf '        Press and release Alt+Shift two or three times, then type a few letters.\n'
+	printf '        Each "SWITCH" line should change the layout on the bar.\n\n'
+	# Stop the normal watcher meanwhile (two would switch twice), restart it after.
+	pkill -f 'lumen-settings kbswitch$' 2>/dev/null
+	pkill -f 'lumen-[k]bswitch' 2>/dev/null
+	timeout 10 lumen-kbswitch --debug 2>&1 | sed 's/^/          /'
+	lumen-settings kbswitch-start
+	echo
+	exit 0
+fi
 
 head_ "System"
 note "$(. /etc/os-release 2>/dev/null; echo "${PRETTY_NAME:-unknown}") · $(uname -r)"

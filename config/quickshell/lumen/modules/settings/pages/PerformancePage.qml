@@ -177,7 +177,8 @@ Page {
         description: "What happens when you close the lid. Changing it asks for your password; it also applies on the login screen."
 
         SettingRow {
-            label: "On battery"
+            icon: "zap"
+      label: "On battery"
             Dropdown {
                 enabled: !page.lidBusy
                 options: page.lidActions
@@ -186,7 +187,8 @@ Page {
             }
         }
         SettingRow {
-            label: "Plugged in"
+            icon: "plug"
+      label: "Plugged in"
             Dropdown {
                 enabled: !page.lidBusy
                 options: page.lidActions
@@ -195,7 +197,8 @@ Page {
             }
         }
         SettingRow {
-            label: "With an external monitor"
+            icon: "monitor"
+      label: "With an external monitor"
             description: "Docked, or a second screen connected."
             Dropdown {
                 enabled: !page.lidBusy
@@ -236,7 +239,8 @@ Page {
             : "This computer has no performance mode (common in virtual machines). Power saver still helps on battery."
 
         SettingRow {
-            label: "Mode"
+            icon: "gauge"
+      label: "Mode"
             Seg {
                 options: [{ label: "Power saver", value: "saver" }, { label: "Balanced", value: "balanced" }]
                     .concat(PowerProfiles.hasPerformanceProfile ? [{ label: "Performance", value: "performance" }] : [])
@@ -254,7 +258,8 @@ Page {
         description: "Turn these off on slow computers and virtual machines."
 
         SettingRow {
-            label: "Compositor"
+            icon: "sparkle"
+      label: "Compositor"
             description: "Window shadows, rounded window corners and fades (picom)."
             Toggle {
                 checked: Theme.conf.compositor !== "false"
@@ -262,7 +267,8 @@ Page {
             }
         }
         SettingRow {
-            label: "Animations"
+            icon: "sparkle"
+      label: "Animations"
             description: "Motion in the bar, popups and Settings, and windows opening, closing and switching desktops."
             Toggle {
                 checked: Theme.animations
@@ -270,7 +276,8 @@ Page {
             }
         }
         SettingRow {
-            label: "Full speed for fullscreen apps"
+            icon: "gamepad"
+      label: "Full speed for fullscreen apps"
             description: "Games and videos in fullscreen skip the compositor: smoother and with less delay. Rounded screen corners aren't drawn over them."
             Toggle {
                 enabled: Theme.conf.compositor !== "false"
@@ -279,7 +286,8 @@ Page {
             }
         }
         SettingRow {
-            label: "Animate moving and resizing"
+            icon: "window"
+      label: "Animate moving and resizing"
             description: "Windows glide into place when they tile, move or resize. Experimental in picom: turn off if windows flicker."
             Toggle {
                 enabled: Theme.animations && Theme.conf.compositor !== "false"

@@ -1,16 +1,59 @@
 import QtQuick
 import QtQuick.Layouts
+import qs.services
 
 // A label (and optional description) on the left, controls on the right.
-RowLayout {
+// With `icon`, a small icon tile leads the row. Rows that follow another row
+// in the same card get a thin line between them.
+Item {
     id: row
 
     property string label
     property string description
+    property string icon: ""
+    readonly property bool isSettingRow: true
     default property alias controls: slot.data
 
+    // The visible item before this one (skipping hidden ones) is a row too?
+    readonly property bool afterRow: {
+        if (!parent) return false;
+        const kids = parent.children;
+        let prev = null;
+        for (let i = 0; i < kids.length; i++) {
+            if (kids[i] === row) break;
+            if (kids[i].visible) prev = kids[i];
+        }
+        return prev !== null && prev.isSettingRow === true;
+    }
+
     Layout.fillWidth: true
-    spacing: 16
+    implicitWidth: layout.implicitWidth
+    implicitHeight: layout.implicitHeight
+
+    Rectangle {   // divider, halfway into the space above
+        visible: row.afterRow
+        x: 0
+        y: -8
+        width: row.width
+        height: 1
+        color: Theme.line
+        opacity: 0.6
+    }
+
+    RowLayout {
+    id: layout
+    anchors.fill: parent
+    spacing: 14
+
+    Rectangle {
+        visible: row.icon !== ""
+        Layout.alignment: Qt.AlignVCenter
+        implicitWidth: 34
+        implicitHeight: 34
+        radius: Theme.r(9)
+        color: Theme.field
+        Icon { anchors.centerIn: parent; name: row.icon; size: 17; color: Theme.accent }
+    }
 
     ColumnLayout {
         Layout.fillWidth: true
@@ -24,4 +67,5 @@ RowLayout {
         spacing: 8
         Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
     }
+}
 }

@@ -83,7 +83,8 @@ Page {
     Card {
         title: "Lock screen"
         SettingRow {
-            label: "Lock after"
+            icon: "lock"
+      label: "Lock after"
             description: "Locks when the computer has been idle this long, and always before suspend. Shortcut: super + shift + L."
             Dropdown {
                 implicitWidth: 180
@@ -97,7 +98,8 @@ Page {
             }
         }
         SettingRow {
-            label: "Try the lock screen"
+            icon: "lock"
+      label: "Try the lock screen"
             description: "Opens it in test mode: Esc closes it without a password."
             Btn { text: "Test"; icon: "lock"; onClicked: Quickshell.execDetached(["lumen-lock", "--test"]) }
         }
@@ -106,7 +108,8 @@ Page {
     Card {
         title: "Privacy"
         SettingRow {
-            label: "Clipboard history"
+            icon: "clipboard"
+      label: "Clipboard history"
             description: "Keep what you copy (text and images) for super + V. Copies from password managers are never kept."
             Toggle {
                 checked: Theme.conf.clipboard_history !== "false"
@@ -114,7 +117,8 @@ Page {
             }
         }
         SettingRow {
-            label: "Clear clipboard history"
+            icon: "trash"
+      label: "Clear clipboard history"
             Btn { text: "Clear"; variant: "ghost"; onClicked: Quickshell.execDetached(["lumen-clipboard", "clear"]) }
         }
     }
@@ -122,7 +126,8 @@ Page {
     Card {
         title: "Password"
         SettingRow {
-            label: "Change password"
+            icon: "lock"
+      label: "Change password"
             description: "Opens a terminal running passwd."
             Btn {
                 text: "Change…"

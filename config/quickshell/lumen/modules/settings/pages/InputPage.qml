@@ -108,7 +108,8 @@ Page {
         }
 
         SettingRow {
-            label: "Add a layout"
+            icon: "plus"
+      label: "Add a layout"
             description: page.layouts.length < 4 ? "" : "Four is the most X11 allows. Remove one to add another."
             Dropdown {
                 enabled: page.layouts.length < 4
@@ -128,7 +129,8 @@ Page {
         enabled: page.layouts.length > 1
 
         SettingRow {
-            label: "Switch with"
+            icon: "keyboard"
+      label: "Switch with"
             Seg {
                 options: [
                     { label: "Alt + Shift", value: "alt_shift" },
@@ -151,7 +153,8 @@ Page {
         description: "How a held key repeats."
 
         SettingRow {
-            label: "Delay"
+            icon: "clock"
+      label: "Delay"
             description: "Before repeating starts."
             LSlider {
                 id: delay
@@ -162,7 +165,8 @@ Page {
             Txt { text: Math.round(delay.value) + " ms"; muted: true; Layout.preferredWidth: 64 }
         }
         SettingRow {
-            label: "Speed"
+            icon: "repeat"
+      label: "Speed"
             description: "Repeats per second."
             LSlider {
                 id: rate
@@ -178,7 +182,8 @@ Page {
         title: "Mouse & touchpad"
 
         SettingRow {
-            label: "Focus follows mouse"
+            icon: "pointer"
+      label: "Focus follows mouse"
             description: "Windows get keyboard focus when the pointer moves onto them, without clicking."
             Toggle {
                 checked: Theme.conf.focus_follows_mouse !== "false"
@@ -187,7 +192,8 @@ Page {
         }
 
         SettingRow {
-            label: "Pointer speed"
+            icon: "mouse"
+      label: "Pointer speed"
             LSlider {
                 id: speed
                 from: -1; to: 1; stepSize: 0.05
@@ -201,7 +207,8 @@ Page {
             }
         }
         SettingRow {
-            label: "Natural scrolling"
+            icon: "mouse"
+      label: "Natural scrolling"
             description: "Content moves with your fingers, like on a phone."
             Toggle {
                 checked: Theme.conf.natural_scroll === "true"
@@ -209,7 +216,8 @@ Page {
             }
         }
         SettingRow {
-            label: "Tap to click"
+            icon: "pointer"
+      label: "Tap to click"
             description: "Touchpads only."
             Toggle {
                 checked: Theme.conf.tap_to_click !== "false"

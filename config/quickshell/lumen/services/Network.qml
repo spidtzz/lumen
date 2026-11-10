@@ -36,6 +36,7 @@ Singleton {
     }
     function connectDevice(dev) { run(["nmcli", "device", "connect", dev]); }
     function disconnectDevice(dev) { run(["nmcli", "device", "disconnect", dev]); }
+    function forget(ssid) { run(["nmcli", "connection", "delete", "id", ssid]); }
     function setWifi(on) { run(["nmcli", "radio", "wifi", on ? "on" : "off"]); }
 
     function run(cmd) {

@@ -82,6 +82,10 @@ Rectangle {
         padding: 6
         margins: 10
         focus: true
+        // Modal (without dimming) so a click in the list doesn't also reach
+        // whatever is under it on the page.
+        modal: true
+        dim: false
         closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
 
         background: Rectangle {
@@ -152,11 +156,13 @@ Rectangle {
                         color: Theme.accent
                         visible: item.modelData.value === dd.value
                     }
-                    HoverHandler {
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
                         cursorShape: Qt.PointingHandCursor
-                        onHoveredChanged: if (hovered) list.currentIndex = item.index
+                        onEntered: list.currentIndex = item.index
+                        onClicked: dd.choose(item.index)
                     }
-                    TapHandler { onTapped: dd.choose(item.index) }
                 }
             }
 

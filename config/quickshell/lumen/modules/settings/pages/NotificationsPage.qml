@@ -81,7 +81,8 @@ Page {
     Card {
         title: "Do Not Disturb"
         SettingRow {
-            label: "Do Not Disturb"
+            icon: "bell-off"
+      label: "Do Not Disturb"
             description: "Hide pop-ups (critical ones still show). Notifications still collect in Quick Settings."
             Toggle {
                 checked: Notifs.dnd
@@ -89,7 +90,8 @@ Page {
             }
         }
         SettingRow {
-            label: "History"
+            icon: "bell"
+      label: "History"
             description: Notifs.list.length === 0 ? "No notifications." : Notifs.list.length + (Notifs.list.length === 1 ? " notification" : " notifications") + " in Quick Settings."
             Btn {
                 text: "Clear all"

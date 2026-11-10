@@ -78,7 +78,8 @@ Page {
         title: "Time zone"
         description: "Changing it asks for your password."
         SettingRow {
-            label: "Time zone"
+            icon: "globe"
+      label: "Time zone"
             description: page.timezone
             Dropdown {
                 implicitWidth: 300
@@ -90,7 +91,8 @@ Page {
             }
         }
         SettingRow {
-            label: "Set time automatically"
+            icon: "refresh"
+      label: "Set time automatically"
             description: "Keep the clock in sync over the internet."
             Toggle {
                 checked: page.ntp
@@ -102,7 +104,8 @@ Page {
     Card {
         title: "Clock"
         SettingRow {
-            label: "24-hour clock"
+            icon: "clock"
+      label: "24-hour clock"
             Toggle {
                 checked: Theme.clock24h
                 onToggled: c => Theme.setValue("clock_24h", c)

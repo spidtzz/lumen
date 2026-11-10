@@ -26,10 +26,99 @@ Page {
         { id: "mono", label: "Mono", light: "#222222", dark: "#e4e4e4" }
     ]
 
+    // A small desktop in the current look: mode, accent, corners.
+    Card {
+        Rectangle {
+            id: mock
+            Layout.fillWidth: true
+            Layout.preferredHeight: 190
+            radius: Theme.radiusSmall
+            color: Theme.bg
+            border.width: 1
+            border.color: Theme.line
+            clip: true
+            readonly property real rr: Theme.rounded ? 10 : 0
+
+            // wallpaper hint
+            Rectangle {
+                anchors.fill: parent
+                anchors.margins: 1
+                radius: parent.radius
+                gradient: Gradient {
+                    GradientStop { position: 0; color: Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.22) }
+                    GradientStop { position: 1; color: Theme.bg }
+                }
+            }
+            // bar
+            Rectangle {
+                x: 10; y: 10
+                width: parent.width - 20; height: 22
+                radius: Theme.rounded ? 8 : 0
+                color: Theme.barBg
+                border.width: 1
+                border.color: Theme.line
+                Row {
+                    anchors.centerIn: parent
+                    spacing: 4
+                    Rectangle { width: 18; height: 6; radius: 3; color: Theme.accent }
+                    Repeater { model: 3; Rectangle { width: 6; height: 6; radius: 3; color: Theme.line } }
+                }
+                Rectangle { x: 8; anchors.verticalCenter: parent.verticalCenter; width: 40; height: 6; radius: 3; color: Theme.muted; opacity: 0.6 }
+                Rectangle { anchors.right: parent.right; anchors.rightMargin: 8; anchors.verticalCenter: parent.verticalCenter; width: 30; height: 12; radius: Theme.rounded ? 6 : 0; color: Theme.accent }
+            }
+            // a window
+            Rectangle {
+                x: 24; y: 46
+                width: parent.width * 0.55; height: parent.height - 62
+                radius: mock.rr
+                color: Theme.panel
+                border.width: 1
+                border.color: Theme.line
+                Column {
+                    x: 14; y: 14
+                    spacing: 8
+                    Rectangle { width: 120; height: 8; radius: 4; color: Theme.ink; opacity: 0.85 }
+                    Rectangle { width: 170; height: 6; radius: 3; color: Theme.muted; opacity: 0.6 }
+                    Rectangle { width: 150; height: 6; radius: 3; color: Theme.muted; opacity: 0.6 }
+                    Row {
+                        spacing: 8
+                        topPadding: 6
+                        Rectangle { width: 64; height: 22; radius: Theme.rounded ? 7 : 0; color: Theme.accent
+                            Rectangle { anchors.centerIn: parent; width: 36; height: 5; radius: 2.5; color: Theme.accentFg } }
+                        Rectangle { width: 64; height: 22; radius: Theme.rounded ? 7 : 0; color: Theme.field; border.width: 1; border.color: Theme.line
+                            Rectangle { anchors.centerIn: parent; width: 36; height: 5; radius: 2.5; color: Theme.ink; opacity: 0.7 } }
+                    }
+                }
+            }
+            // a second window, smaller
+            Rectangle {
+                x: parent.width * 0.55 + 36; y: 46
+                width: parent.width - x - 24; height: parent.height - 62
+                radius: mock.rr
+                color: Theme.panel
+                border.width: 1
+                border.color: Theme.line
+                Column {
+                    x: 12; y: 14
+                    spacing: 8
+                    Repeater {
+                        model: 4
+                        Row {
+                            spacing: 8
+                            Rectangle { width: 14; height: 14; radius: Theme.rounded ? 7 : 0; color: index === 0 ? Theme.accent : Theme.field; border.width: 1; border.color: Theme.line }
+                            Rectangle { anchors.verticalCenter: parent.verticalCenter; width: 70 - index * 8; height: 6; radius: 3; color: Theme.muted; opacity: 0.6 }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     Card {
         title: "Style"
         SettingRow {
             label: "Mode"
+            icon: "palette"
             description: "For the shell and every app. Black is dark on pure black (for OLED screens)."
             Seg {
                 options: [{ label: "Light", value: "light" }, { label: "Dark", value: "dark" }, { label: "Black", value: "black" }]
@@ -39,6 +128,7 @@ Page {
         }
         SettingRow {
             label: "Corners"
+            icon: "corner"
             description: "Rounded or square, for the shell, windows, GTK apps and the login screen. Qt apps keep their own small corners."
             Seg {
                 options: [{ label: "Rounded", value: "rounded" }, { label: "Square", value: "square" }]
@@ -48,6 +138,7 @@ Page {
         }
         SettingRow {
             label: "Rounded screen corners"
+            icon: "monitor"
             description: "Rounds the corners of the screen itself, like a phone or a MacBook."
             Toggle {
                 checked: Theme.screenCorners
@@ -181,6 +272,7 @@ Page {
         title: "Text"
         SettingRow {
             label: "Text size"
+            icon: "type"
             description: "For the shell and apps (" + Theme.fontFamily + ")."
             Btn {
                 icon: "minus"
@@ -206,8 +298,9 @@ Page {
         title: "Windows"
         SettingRow {
             label: "Highlight the focused window"
+            icon: "window"
             description: Theme.conf.compositor === "false"
-                ? "An accent outline. Always on while the compositor is off (Settings › Performance)."
+                ? "An accent outline. Always on while the compositor is off (Settings › Power)."
                 : Theme.rounded
                   ? "A soft accent glow around the window you're using. While it's on, the window you open or switch to appears without its fade (a picom bug), so it's off by default."
                   : "An accent outline around the window you're using."
@@ -219,6 +312,7 @@ Page {
         }
         SettingRow {
             label: "Title-bar buttons"
+            icon: "x"
             description: "Minimise, maximise and close buttons in apps that draw their own title bar. Off by default: close windows with super + Q. Open apps update after a restart."
             Toggle {
                 checked: Theme.conf.window_buttons === "true"
@@ -227,86 +321,65 @@ Page {
         }
     }
 
-    Card {
-        title: "Other apps (experimental)"
-        description: "Your colours in apps that have their own themes. Each writes a lumen theme into the app's theme folder and turns it on; switching it off removes it again. GTK, Qt and KDE apps and kitty follow the theme already."
+    // An app with its own theme: a tile with a switch.
+    component AppTile: Rectangle {
+        id: tile
+        property string name
+        property string hint      // one line, shown under the name
+        property string key       // settings key
+        property string note: ""  // shown while it's on (what to do in the app)
+        readonly property bool active: Theme.conf[key] === "true"
+        default property alias extra: extraRow.data
 
-        SettingRow {
-            label: "Discord"
-            description: "Through Vesktop, Vencord, Equicord or Equibop (installed and opened once). Updates live."
-            Toggle {
-                checked: Theme.conf.theme_discord === "true"
-                onToggled: c => Theme.setValue("theme_discord", c)
-            }
-        }
-        SettingRow {
-            label: "Firefox and LibreWolf"
-            description: "Toolbar, tabs, menus and the new tab page, in every profile. Restart the browser to see changes."
-            Toggle {
-                checked: Theme.conf.theme_browser === "true"
-                onToggled: c => Theme.setValue("theme_browser", c)
-            }
-        }
-        SettingRow {
-            label: "btop"
-            description: "The terminal system monitor. Reopen it to see changes."
-            Toggle {
-                checked: Theme.conf.theme_btop === "true"
-                onToggled: c => Theme.setValue("theme_btop", c)
-            }
-        }
-        SettingRow {
-            label: "Telegram"
-            description: Theme.conf.theme_telegram === "true"
-                ? "Telegram only takes a theme you open in it: press Open, then Apply. Do it again after changing colours."
-                : "Telegram Desktop. Turning it off later: pick another theme in Telegram's chat settings."
+        Layout.fillWidth: true
+        Layout.preferredWidth: 1
+        implicitHeight: tileCol.implicitHeight + 24
+        radius: Theme.radiusSmall
+        color: active ? Qt.rgba(Theme.accent.r, Theme.accent.g, Theme.accent.b, 0.08) : Theme.field
+        border.width: 1
+        border.color: active ? Theme.accent : Theme.line
+        Behavior on color { ColorAnimation { duration: Theme.animFast } }
+
+        ColumnLayout {
+            id: tileCol
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.top: parent.top
+            anchors.margins: 12
+            spacing: 6
             RowLayout {
+                Layout.fillWidth: true
                 spacing: 8
-                Btn {
-                    visible: Theme.conf.theme_telegram === "true"
-                    text: "Open"
-                    variant: "ghost"
-                    onClicked: Quickshell.execDetached(["lumen-theme", "telegram-open"])
-                }
-                Toggle {
-                    checked: Theme.conf.theme_telegram === "true"
-                    onToggled: c => Theme.setValue("theme_telegram", c)
-                }
+                Txt { text: tile.name; strong: true; Layout.fillWidth: true; elide: Text.ElideRight; wrapMode: Text.NoWrap }
+                Toggle { checked: tile.active; onToggled: c => Theme.setValue(tile.key, c) }
             }
+            Txt { text: tile.active && tile.note !== "" ? tile.note : tile.hint; muted: true; size: 12; Layout.fillWidth: true }
+            RowLayout { id: extraRow; visible: tile.active && children.length > 0; spacing: 8 }
         }
-        SettingRow {
-            label: "Heroic Games Launcher"
-            description: Theme.conf.theme_heroic === "true"
-                ? "In Heroic: Settings › Accessibility › Theme › lumen (once; pick it again after changing colours). Close Heroic before turning this on, so it keeps the themes folder."
-                : "A lumen theme for Heroic's own theme picker."
-            Toggle {
-                checked: Theme.conf.theme_heroic === "true"
-                onToggled: c => Theme.setValue("theme_heroic", c)
+    }
+
+    Card {
+        title: "Other apps"
+        description: "Your colours in apps with their own themes (experimental). Turning one off puts the app's own look back. GTK, Qt and KDE apps and kitty always follow the theme."
+
+        GridLayout {
+            Layout.fillWidth: true
+            columns: 2
+            rowSpacing: 10
+            columnSpacing: 10
+
+            AppTile { name: "Firefox and LibreWolf"; key: "theme_browser"; hint: "Toolbar, tabs, menus and the new tab page."; note: "Restart the browser to see changes." }
+            AppTile { name: "Discord"; key: "theme_discord"; hint: "Vesktop, Vencord, Equicord or Equibop."; note: "Updates live." }
+            AppTile {
+                name: "Telegram"; key: "theme_telegram"; hint: "Telegram Desktop."
+                note: "Press Open, then Apply in Telegram. Again after changing colours."
+                Btn { text: "Open in Telegram"; variant: "ghost"; onClicked: Quickshell.execDetached(["lumen-theme", "telegram-open"]) }
             }
-        }
-        SettingRow {
-            label: "fastfetch"
-            description: "lumen's own fastfetch: its logo and grouped details in your colours. Replaces your fastfetch config while on (yours comes back when it's off)."
-            Toggle {
-                checked: Theme.conf.theme_fastfetch === "true"
-                onToggled: c => Theme.setValue("theme_fastfetch", c)
-            }
-        }
-        SettingRow {
-            label: "fish"
-            description: "Command-line colours (commands, options, suggestions, completions). New fish windows get them."
-            Toggle {
-                checked: Theme.conf.theme_fish === "true"
-                onToggled: c => Theme.setValue("theme_fish", c)
-            }
-        }
-        SettingRow {
-            label: "zathura"
-            description: "The keyboard-driven PDF viewer. Reopen it to see changes."
-            Toggle {
-                checked: Theme.conf.theme_zathura === "true"
-                onToggled: c => Theme.setValue("theme_zathura", c)
-            }
+            AppTile { name: "Heroic Games Launcher"; key: "theme_heroic"; hint: "A theme in Heroic's theme picker."; note: "In Heroic: Settings › Accessibility › Theme › lumen. Pick it again after changing colours." }
+            AppTile { name: "fastfetch"; key: "theme_fastfetch"; hint: "lumen's logo and layout, in your colours."; note: "Your own config comes back when this is off." }
+            AppTile { name: "fish"; key: "theme_fish"; hint: "Command-line colours and completions."; note: "New fish windows get the colours." }
+            AppTile { name: "btop"; key: "theme_btop"; hint: "The terminal system monitor."; note: "Reopen btop to see changes." }
+            AppTile { name: "zathura"; key: "theme_zathura"; hint: "The keyboard-driven PDF viewer."; note: "Reopen zathura to see changes." }
         }
     }
 }

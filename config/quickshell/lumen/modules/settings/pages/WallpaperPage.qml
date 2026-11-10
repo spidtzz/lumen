@@ -7,9 +7,9 @@ import qs.services
 import qs.components
 
 // Wallpaper: the current picture on top, then your pictures grouped by
-// folder with their names, searchable. Thumbnails are made once (a small
-// JPEG per picture in ~/.cache/lumen/wallpaper-thumbs) so the page opens fast
-// the next time; a picture that changes gets a new one.
+// folder with their names, searchable. lumen-thumbs makes a small copy of
+// each picture once (~/.cache/lumen/wallpaper-thumbnails), so the page shows
+// those instead of decoding every full-size picture each time.
 Page {
     id: page
     title: "Wallpaper"
@@ -19,11 +19,12 @@ Page {
     readonly property string mode: Theme.conf.wallpaper_mode || "fill"
     readonly property string folder: Theme.home + "/Pictures/Wallpapers"
     readonly property bool subfolders: Theme.conf.wallpaper_subfolders !== "false"
-    readonly property string cacheDir: (Quickshell.env("XDG_CACHE_HOME") || Theme.home + "/.cache") + "/lumen/wallpaper-thumbs"
+    readonly property string cacheDir: (Quickshell.env("XDG_CACHE_HOME") || Theme.home + "/.cache") + "/lumen/wallpaper-thumbnails"
 
     property var found: []      // [{ path, mtime, name, group }] in your Wallpapers folder
     property var system: []     // shipped with the system
-    property var cached: ({})   // thumbnail names already made
+    property var thumbs: ({})   // path -> thumbnail file, "" when one couldn't be made
+    property int thumbsVersion: 0
     property bool scanning: true
     property string query: ""
 
@@ -35,13 +36,6 @@ Page {
     function prettyName(path) {
         const base = path.slice(path.lastIndexOf("/") + 1).replace(/\.[^.]+$/, "");
         return base.replace(/[_\-.]+/g, " ").replace(/\s+/g, " ").trim() || base;
-    }
-    function entry(line, root) {
-        const tab = line.lastIndexOf("\t");
-        const path = tab > 0 ? line.slice(0, tab) : line;
-        const rel = root !== "" && path.startsWith(root + "/") ? path.slice(root.length + 1) : "";
-        const slash = rel.lastIndexOf("/");
-        return { path: path, mtime: tab > 0 ? line.slice(tab + 1) : "", name: prettyName(path), group: slash > 0 ? rel.slice(0, slash) : "" };
     }
     function matches(e) {
         const q = query.trim().toLowerCase();
@@ -56,43 +50,43 @@ Page {
     }
     readonly property var currentEntry: found.concat(system).find(e => e.path === current) ?? null
 
-    // Pictures in ~/Pictures/Wallpapers (and its subfolders if chosen), then
-    // the system wallpaper folders, then the thumbnails made so far.
+    // The pictures, then thumbnails as they're made (lumen-thumbs).
+    property var pendingUser: []
+    property var pendingSystem: []
     Process {
         id: finder
         running: true
-        command: ["sh", "-c",
-            "d=\"$1\"; c=\"$3\"; mkdir -p \"$d\" \"$c\"; " +
-            "find -L \"$d\" $2 -type f \\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \\) " +
-            "-printf '%p\\t%T@\\n' 2>/dev/null | sort | head -n 500; echo ---; " +
-            "find /usr/share/backgrounds /usr/share/wallpapers -maxdepth 4 -type f " +
-            "\\( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' \\) -printf '%p\\t%T@\\n' 2>/dev/null | sort | head -n 80; " +
-            "echo ---; ls \"$c\"",
-            "sh", page.folder, page.subfolders ? "-mindepth 1" : "-maxdepth 1", page.cacheDir]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const parts = text.split("---\n");
-                const lines = t => (t || "").split("\n").filter(l => l !== "" && !l.includes("~"));
-                const c = {};
-                for (const n of lines(parts[2])) c[n.replace(/\.jpg$/, "")] = true;
-                page.cached = c;
-                page.found = lines(parts[0]).map(l => page.entry(l, page.folder));
-                page.system = lines(parts[1]).map(l => page.entry(l, ""));
-                page.scanning = false;
+        command: ["lumen-thumbs", page.cacheDir, page.folder].concat(page.subfolders ? ["--subfolders"] : [])
+        onStarted: { page.pendingUser = []; page.pendingSystem = []; }
+        stdout: SplitParser {
+            onRead: line => {
+                const f = line.split("\t");
+                if (f[0] === "f") {
+                    const e = { path: f[2], name: page.prettyName(f[2]), group: f[3] || "" };
+                    if (f[4]) page.thumbs[f[2]] = f[4];
+                    (f[1] === "user" ? page.pendingUser : page.pendingSystem).push(e);
+                } else if (line === "listed") {
+                    page.found = page.pendingUser;
+                    page.system = page.pendingSystem;
+                    page.scanning = false;
+                    page.thumbsVersion++;
+                } else if (f[0] === "t" || f[0] === "x") {
+                    page.thumbs[f[1]] = f[0] === "t" ? f[2] : "";
+                    bump.start();
+                }
             }
         }
     }
+    // New thumbnails are shown a few at a time, not one redraw each.
+    Timer { id: bump; interval: 150; onTriggered: page.thumbsVersion++ }
 
     // One picture: thumbnail, name, a check when it's the wallpaper.
     component Thumb: Item {
         id: thumb
         required property var modelData
         readonly property bool selected: modelData.path === page.current
-        readonly property string key: Qt.md5(modelData.path + "|" + modelData.mtime)
-        readonly property string thumbFile: page.cacheDir + "/" + key + ".jpg"
-        property bool fromCache: page.cached[key] === true
-        property bool saved: false
-
+        // undefined: being made; "": couldn't be made (show the picture itself)
+        readonly property var thumbFile: page.thumbsVersion >= 0 ? page.thumbs[modelData.path] : undefined
         property real tileWidth: 160
         width: tileWidth
         height: frame.height + 6 + label.implicitHeight
@@ -107,7 +101,7 @@ Page {
             border.color: thumb.selected || hover.hovered ? Theme.accent : Theme.line
             Behavior on border.color { ColorAnimation { duration: Theme.animFast } }
 
-            // Fades in on the wrapper, so the saved thumbnail is never half see-through.
+            // fades in once loaded
             Item {
                 anchors.fill: parent
                 anchors.margins: frame.border.width
@@ -121,18 +115,8 @@ Page {
                 cache: false
                 fillMode: Image.PreserveAspectCrop
                 sourceSize: Qt.size(384, 216)
-                source: "file://" + (thumb.fromCache ? thumb.thumbFile : thumb.modelData.path)
-                onStatusChanged: {
-                    if (status === Image.Error && thumb.fromCache) {
-                        thumb.fromCache = false;   // thumbnail gone: use the picture
-                    } else if (status === Image.Ready && !thumb.fromCache && !thumb.saved) {
-                        // Keep a small copy for next time.
-                        thumb.saved = true;
-                        Qt.callLater(() => img.grabToImage(r => {
-                            if (r.saveToFile(thumb.thumbFile)) page.cached[thumb.key] = true;
-                        }, Qt.size(384, 216)));
-                    }
-                }
+                source: thumb.thumbFile === undefined ? ""
+                      : "file://" + (thumb.thumbFile !== "" ? thumb.thumbFile : thumb.modelData.path)
             }
             }
             // check mark on the current wallpaper

@@ -25,3 +25,4 @@ bluez-utils
 power-profiles-daemon
 upower
 brightnessctl
+webp-pixbuf-loader

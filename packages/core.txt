@@ -31,6 +31,7 @@ xss-lock
 i3lock
 # The lock screen takes the keyboard and mouse with a small Python helper
 python-xlib
+gdk-pixbuf2
 
 # Window manager and hotkeys
 bspwm

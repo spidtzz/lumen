@@ -1,0 +1,99 @@
+#!/usr/bin/env python3
+"""lumen-thumbs: list wallpapers and make small thumbnails of them.
+
+    lumen-thumbs CACHE FOLDER [--subfolders]
+
+Prints one line per picture, in your Wallpapers FOLDER (with --subfolders,
+also the folders inside it) and in the system wallpaper folders:
+
+    f <TAB> user|system <TAB> path <TAB> group <TAB> thumbnail
+
+then "listed", then "t <TAB> thumbnail" as each missing thumbnail is made
+(at most 384 pixels wide, in CACHE, named after the path and modification
+time so a changed picture gets a new one) or "x <TAB> thumbnail" when one
+can't be made. Uses gdk-pixbuf-thumbnailer (part of GTK). The Settings
+Wallpaper page runs this.
+"""
+import hashlib
+import os
+import shutil
+import subprocess
+import sys
+from concurrent.futures import ThreadPoolExecutor
+
+EXTS = (".jpg", ".jpeg", ".png", ".webp")
+SYSTEM = ("/usr/share/backgrounds", "/usr/share/wallpapers")
+
+
+def pictures(root, deep, limit):
+    out = []
+    if not os.path.isdir(root):
+        return out
+    for dirpath, dirnames, files in os.walk(root, followlinks=True):
+        dirnames.sort()
+        if not deep and dirpath != root:
+            continue
+        for f in sorted(files):
+            if f.lower().endswith(EXTS) and "~" not in f:
+                out.append(os.path.join(dirpath, f))
+                if len(out) >= limit:
+                    return out
+        if not deep:
+            dirnames[:] = []
+    return out
+
+
+def main():
+    cache, folder = sys.argv[1], sys.argv[2]
+    deep = "--subfolders" in sys.argv
+    os.makedirs(folder, exist_ok=True)
+    os.makedirs(cache, exist_ok=True)
+    # The first version's thumbnails (some came out black).
+    shutil.rmtree(os.path.join(os.path.dirname(cache), "wallpaper-thumbs"), ignore_errors=True)
+    tool = shutil.which("gdk-pixbuf-thumbnailer")
+
+    todo = []
+    sets = [("user", folder, pictures(folder, deep, 500))]
+    sets += [("system", root, pictures(root, True, 80)) for root in SYSTEM]
+    for kind, root, files in sets:
+        for path in files:
+            try:
+                mtime = os.stat(path).st_mtime
+            except OSError:
+                continue
+            key = hashlib.md5(("%s|%s" % (path, mtime)).encode()).hexdigest()
+            thumb = os.path.join(cache, key + ".png")
+            rel = os.path.relpath(os.path.dirname(path), root) if kind == "user" else ""
+            group = "" if rel == "." else rel
+            print("f\t%s\t%s\t%s\t%s" % (kind, path, group, thumb if os.path.exists(thumb) else ""), flush=True)
+            if not os.path.exists(thumb):
+                todo.append((path, thumb))
+    print("listed", flush=True)
+
+    def make(job):
+        path, thumb = job
+        ok = False
+        if tool:
+            tmp = thumb + ".part"
+            try:
+                ok = subprocess.run([tool, "-s", "384", path, tmp], stdout=subprocess.DEVNULL,
+                                    stderr=subprocess.DEVNULL, timeout=20).returncode == 0
+                ok = ok and os.path.getsize(tmp) > 0
+                if ok:
+                    os.replace(tmp, thumb)
+            except (OSError, subprocess.SubprocessError):
+                ok = False
+            if not ok and os.path.exists(tmp):
+                os.remove(tmp)
+        return job, ok
+
+    with ThreadPoolExecutor(max_workers=max(2, min(6, os.cpu_count() or 2))) as pool:
+        for (path, thumb), ok in pool.map(make, todo):
+            print("%s\t%s\t%s" % ("t" if ok else "x", path, thumb), flush=True)
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except (KeyboardInterrupt, BrokenPipeError):
+        pass

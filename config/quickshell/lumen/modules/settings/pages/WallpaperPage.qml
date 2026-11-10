@@ -93,9 +93,9 @@ Page {
         property bool fromCache: page.cached[key] === true
         property bool saved: false
 
-        // four to a row, the same size however many there are
-        Layout.preferredWidth: parent ? (parent.width - 36) / 4 : 160
-        implicitHeight: frame.height + 6 + label.implicitHeight
+        property real tileWidth: 160
+        width: tileWidth
+        height: frame.height + 6 + label.implicitHeight
 
         Rectangle {
             id: frame
@@ -192,14 +192,15 @@ Page {
             Txt { text: group.name === "" ? "Wallpapers" : group.name; strong: true; size: 14 }
             Txt { text: String(group.files.length); muted: true; size: 13 }
         }
-        GridLayout {
+        // Four to a row, all the same size.
+        Flow {
+            id: flow
             Layout.fillWidth: true
-            columns: 4
-            rowSpacing: 14
-            columnSpacing: 12
+            spacing: 12
+            readonly property real tileWidth: Math.max(80, Math.floor((width - spacing * 3) / 4))
             Repeater {
                 model: group.files
-                delegate: Thumb {}
+                delegate: Thumb { tileWidth: flow.tileWidth }
             }
         }
     }

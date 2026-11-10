@@ -17,9 +17,10 @@ Wallpaper page runs this.
 import hashlib
 import os
 import shutil
+import signal
 import subprocess
 import sys
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 EXTS = (".jpg", ".jpeg", ".png", ".webp")
 SYSTEM = ("/usr/share/backgrounds", "/usr/share/wallpapers")
@@ -51,6 +52,8 @@ def main():
     # The first version's thumbnails (some came out black).
     shutil.rmtree(os.path.join(os.path.dirname(cache), "wallpaper-thumbs"), ignore_errors=True)
     tool = shutil.which("gdk-pixbuf-thumbnailer")
+    if not tool:
+        print("lumen-thumbs: gdk-pixbuf-thumbnailer not found (package gdk-pixbuf2)", file=sys.stderr, flush=True)
 
     todo = []
     sets = [("user", folder, pictures(folder, deep, 500))]
@@ -74,10 +77,13 @@ def main():
         path, thumb = job
         ok = False
         if tool:
-            tmp = thumb + ".part"
+            tmp = thumb[:-4] + ".part.png"
             try:
-                ok = subprocess.run([tool, "-s", "384", path, tmp], stdout=subprocess.DEVNULL,
-                                    stderr=subprocess.DEVNULL, timeout=20).returncode == 0
+                r = subprocess.run([tool, "-s", "384", path, tmp], stdout=subprocess.DEVNULL,
+                                   stderr=subprocess.PIPE, text=True, timeout=30)
+                ok = r.returncode == 0
+                if not ok:
+                    print("lumen-thumbs: %s: %s" % (path, r.stderr.strip()), file=sys.stderr, flush=True)
                 ok = ok and os.path.getsize(tmp) > 0
                 if ok:
                     os.replace(tmp, thumb)
@@ -87,9 +93,22 @@ def main():
                 os.remove(tmp)
         return job, ok
 
+    # Closing the Wallpaper page stops this program; let it finish the
+    # thumbnails anyway (quietly), so the next visit has them all.
+    signal.signal(signal.SIGTERM, signal.SIG_IGN)
+    signal.signal(signal.SIGHUP, signal.SIG_IGN)
+    quiet = False
+
+    # Reported as each one finishes (not in order), so one slow picture
+    # doesn't hold up the rest.
     with ThreadPoolExecutor(max_workers=max(2, min(6, os.cpu_count() or 2))) as pool:
-        for (path, thumb), ok in pool.map(make, todo):
-            print("%s\t%s\t%s" % ("t" if ok else "x", path, thumb), flush=True)
+        for fut in as_completed([pool.submit(make, job) for job in todo]):
+            (path, thumb), ok = fut.result()
+            if not quiet:
+                try:
+                    print("%s\t%s\t%s" % ("t" if ok else "x", path, thumb), flush=True)
+                except (BrokenPipeError, OSError):
+                    quiet = True
 
 
 if __name__ == "__main__":

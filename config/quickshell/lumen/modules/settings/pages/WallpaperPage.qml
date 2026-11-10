@@ -25,6 +25,7 @@ Page {
     property var system: []     // shipped with the system
     property var thumbs: ({})   // path -> thumbnail file, "" when one couldn't be made
     property int thumbsVersion: 0
+    property int thumbsMissing: 0   // still being made
     property bool scanning: true
     property string query: ""
 
@@ -57,13 +58,14 @@ Page {
         id: finder
         running: true
         command: ["lumen-thumbs", page.cacheDir, page.folder].concat(page.subfolders ? ["--subfolders"] : [])
-        onStarted: { page.pendingUser = []; page.pendingSystem = []; }
+        onStarted: { page.pendingUser = []; page.pendingSystem = []; page.thumbsMissing = 0; }
         stdout: SplitParser {
             onRead: line => {
                 const f = line.split("\t");
                 if (f[0] === "f") {
                     const e = { path: f[2], name: page.prettyName(f[2]), group: f[3] || "" };
                     if (f[4]) page.thumbs[f[2]] = f[4];
+                    else page.thumbsMissing++;
                     (f[1] === "user" ? page.pendingUser : page.pendingSystem).push(e);
                 } else if (line === "listed") {
                     page.found = page.pendingUser;
@@ -72,6 +74,7 @@ Page {
                     page.thumbsVersion++;
                 } else if (f[0] === "t" || f[0] === "x") {
                     page.thumbs[f[1]] = f[0] === "t" ? f[2] : "";
+                    page.thumbsMissing = Math.max(0, page.thumbsMissing - 1);
                     bump.start();
                 }
             }
@@ -285,6 +288,7 @@ Page {
         description: page.scanning ? "Looking in ~/Pictures/Wallpapers…"
             : page.found.length > 0
             ? page.found.length + (page.found.length === 1 ? " picture" : " pictures") + " in ~/Pictures/Wallpapers."
+              + (page.thumbsMissing > 0 ? "  Making previews: " + page.thumbsMissing + " to go (only the first time)." : "")
             : "Put pictures in ~/Pictures/Wallpapers and they show up here."
 
         RowLayout {

@@ -11,7 +11,8 @@ also the folders inside it) and in the system wallpaper folders:
 then "listed", then "t <TAB> thumbnail" as each missing thumbnail is made
 (at most 384 pixels wide, in CACHE, named after the path and modification
 time so a changed picture gets a new one) or "x <TAB> thumbnail" when one
-can't be made. Uses gdk-pixbuf-thumbnailer (part of GTK). The Settings
+can't be made. Uses gdk-pixbuf-thumbnailer (GTK), else ffmpeg, else
+ImageMagick; errors go to stderr. The Settings
 Wallpaper page runs this.
 """
 import hashlib
@@ -51,9 +52,6 @@ def main():
     os.makedirs(cache, exist_ok=True)
     # The first version's thumbnails (some came out black).
     shutil.rmtree(os.path.join(os.path.dirname(cache), "wallpaper-thumbs"), ignore_errors=True)
-    tool = shutil.which("gdk-pixbuf-thumbnailer")
-    if not tool:
-        print("lumen-thumbs: gdk-pixbuf-thumbnailer not found (package gdk-pixbuf2)", file=sys.stderr, flush=True)
 
     todo = []
     sets = [("user", folder, pictures(folder, deep, 500))]
@@ -73,25 +71,40 @@ def main():
                 todo.append((path, thumb))
     print("listed", flush=True)
 
+    # Thumbnail makers, first one that works: GTK's, ffmpeg (mpv brings it),
+    # ImageMagick.
+    makers = []
+    if shutil.which("gdk-pixbuf-thumbnailer"):
+        makers.append(lambda src, dst: ["gdk-pixbuf-thumbnailer", "-s", "384", src, dst])
+    if shutil.which("ffmpeg"):
+        makers.append(lambda src, dst: ["ffmpeg", "-v", "error", "-y", "-i", src, "-frames:v", "1",
+                                        "-vf", "scale=384:-2:flags=bilinear", dst])
+    if shutil.which("magick"):
+        makers.append(lambda src, dst: ["magick", src + "[0]", "-thumbnail", "384x", dst])
+    if not makers:
+        print("lumen-thumbs: no thumbnail maker found (gdk-pixbuf-thumbnailer, ffmpeg or magick)",
+              file=sys.stderr, flush=True)
+
     def make(job):
         path, thumb = job
-        ok = False
-        if tool:
-            tmp = thumb[:-4] + ".part.png"
+        tmp = thumb[:-4] + ".part.png"
+        for maker in makers:
             try:
-                r = subprocess.run([tool, "-s", "384", path, tmp], stdout=subprocess.DEVNULL,
-                                   stderr=subprocess.PIPE, text=True, timeout=30)
-                ok = r.returncode == 0
-                if not ok:
-                    print("lumen-thumbs: %s: %s" % (path, r.stderr.strip()), file=sys.stderr, flush=True)
-                ok = ok and os.path.getsize(tmp) > 0
-                if ok:
+                r = subprocess.run(maker(path, tmp), stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+                                   text=True, timeout=30)
+                if r.returncode == 0 and os.path.exists(tmp) and os.path.getsize(tmp) > 0:
                     os.replace(tmp, thumb)
-            except (OSError, subprocess.SubprocessError):
-                ok = False
-            if not ok and os.path.exists(tmp):
+                    return job, True
+                print("lumen-thumbs: %s: %s" % (path, (r.stderr or "failed").strip()[:200]),
+                      file=sys.stderr, flush=True)
+            except (OSError, subprocess.SubprocessError) as e:
+                try:
+                    print("lumen-thumbs: %s: %s" % (path, e), file=sys.stderr, flush=True)
+                except OSError:
+                    pass
+            if os.path.exists(tmp):
                 os.remove(tmp)
-        return job, ok
+        return job, False
 
     # Closing the Wallpaper page stops this program; let it finish the
     # thumbnails anyway (quietly), so the next visit has them all.

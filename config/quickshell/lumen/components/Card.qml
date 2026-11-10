@@ -24,7 +24,7 @@ Rectangle {
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.margins: 16
-        spacing: 14
+        spacing: 10
 
         ColumnLayout {
             visible: card.title !== "" || card.description !== ""

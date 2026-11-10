@@ -28,12 +28,13 @@ Item {
 
     Layout.fillWidth: true
     implicitWidth: layout.implicitWidth
-    implicitHeight: layout.implicitHeight
+    // a little air above and below, so rows separated by a line breathe
+    implicitHeight: layout.implicitHeight + (afterRow ? 4 : 0)
 
     Rectangle {   // divider, halfway into the space above
         visible: row.afterRow
         x: 0
-        y: -8
+        y: -3
         width: row.width
         height: 1
         color: Theme.line
@@ -42,7 +43,9 @@ Item {
 
     RowLayout {
     id: layout
-    anchors.fill: parent
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
     spacing: 14
 
     Rectangle {

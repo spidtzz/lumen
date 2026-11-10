@@ -332,6 +332,7 @@ Page {
         default property alias extra: extraRow.data
 
         Layout.fillWidth: true
+        Layout.fillHeight: true   // tiles in a row share its height
         Layout.preferredWidth: 1
         implicitHeight: tileCol.implicitHeight + 24
         radius: Theme.radiusSmall

@@ -22,7 +22,7 @@ Flickable {
         width: Math.min(page.width - 64, 760)
         x: Math.max(32, (page.width - width) / 2)
         y: 32
-        spacing: 16
+        spacing: 12
 
         ColumnLayout {
             spacing: 4

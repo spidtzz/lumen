@@ -49,6 +49,7 @@ Page {
         return Object.keys(by).sort((a, b) => a === "" ? -1 : b === "" ? 1 : a.localeCompare(b))
             .map(k => ({ name: k, files: by[k] }));
     }
+    readonly property var userGroups: groups(found)
     readonly property var currentEntry: found.concat(system).find(e => e.path === current) ?? null
 
     // The pictures, then thumbnails as they're made (lumen-thumbs).
@@ -86,10 +87,10 @@ Page {
     // One picture: thumbnail, name, a check when it's the wallpaper.
     component Thumb: Item {
         id: thumb
-        required property var modelData
-        readonly property bool selected: modelData.path === page.current
+        property var entry: ({ path: "", name: "" })
+        readonly property bool selected: entry.path === page.current
         // undefined: being made; "": couldn't be made (show the picture itself)
-        readonly property var thumbFile: page.thumbsVersion >= 0 ? page.thumbs[modelData.path] : undefined
+        readonly property var thumbFile: page.thumbsVersion >= 0 ? page.thumbs[entry.path] : undefined
         property real tileWidth: 160
         width: tileWidth
         height: frame.height + 6 + label.implicitHeight
@@ -119,7 +120,7 @@ Page {
                 fillMode: Image.PreserveAspectCrop
                 sourceSize: Qt.size(384, 216)
                 source: thumb.thumbFile === undefined ? ""
-                      : "file://" + (thumb.thumbFile !== "" ? thumb.thumbFile : thumb.modelData.path)
+                      : "file://" + (thumb.thumbFile !== "" ? thumb.thumbFile : thumb.entry.path)
             }
             }
             // check mark on the current wallpaper
@@ -134,19 +135,19 @@ Page {
                 Icon { anchors.centerIn: parent; name: "check"; size: 14; color: Theme.accentFg; stroke: 2.6 }
             }
             HoverHandler { id: hover; cursorShape: Qt.PointingHandCursor }
-            TapHandler { onTapped: page.choose(thumb.modelData.path) }
+            TapHandler { onTapped: page.choose(thumb.entry.path) }
         }
         Txt {
             id: label
             y: frame.height + 6
             width: parent.width
-            text: thumb.modelData.name
+            text: thumb.entry.name
             size: 12
             strong: thumb.selected
             color: thumb.selected ? Theme.accent : Theme.ink
             elide: Text.ElideRight
             wrapMode: Text.NoWrap
-            ToolTipLike { visible: hover.hovered && label.truncated; text: thumb.modelData.name }
+            ToolTipLike { visible: hover.hovered && label.truncated; text: thumb.entry.name }
         }
     }
 
@@ -187,7 +188,23 @@ Page {
             readonly property real tileWidth: Math.max(80, Math.floor((width - spacing * 3) / 4))
             Repeater {
                 model: group.files
-                delegate: Thumb { tileWidth: flow.tileWidth }
+                // Made a few at a time over the next frames, so the page
+                // opens at once even with hundreds of pictures.
+                delegate: Loader {
+                    id: slot
+                    required property var modelData
+                    width: flow.tileWidth
+                    height: flow.tileWidth * 9 / 16 + 6 + 18
+                    asynchronous: true
+                    sourceComponent: Component { Thumb { entry: slot.modelData; tileWidth: flow.tileWidth } }
+                    Rectangle {   // until it's made
+                        visible: slot.status !== Loader.Ready
+                        width: parent.width
+                        height: parent.width * 9 / 16
+                        radius: Theme.radiusSmall
+                        color: Theme.field
+                    }
+                }
             }
         }
     }
@@ -315,7 +332,7 @@ Page {
         }
 
         Repeater {
-            model: page.groups(page.found)
+            model: page.userGroups
             delegate: Group {
                 required property var modelData
                 name: modelData.name
@@ -325,7 +342,7 @@ Page {
         }
 
         Txt {
-            visible: !page.scanning && page.found.length > 0 && page.groups(page.found).length === 0
+            visible: !page.scanning && page.found.length > 0 && page.userGroups.length === 0
             text: "Nothing called “" + page.query + "”."
             muted: true
         }

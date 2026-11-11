@@ -378,7 +378,7 @@ Page {
                 Btn { text: "Open in Telegram"; variant: "ghost"; onClicked: Quickshell.execDetached(["lumen-theme", "telegram-open"]) }
             }
             AppTile { name: "Heroic Games Launcher"; key: "theme_heroic"; hint: "A theme in Heroic's theme picker."; note: "In Heroic: Settings › Accessibility › Theme › lumen. Pick it again after changing colours." }
-            AppTile { name: "fastfetch"; key: "theme_fastfetch"; defaultOn: true; hint: "A small lumen logo and the basics, in your colours."; note: "Your own config comes back when this is off." }
+            AppTile { name: "fastfetch"; key: "theme_fastfetch"; defaultOn: true; hint: "lumen's logo and layout, shown when a terminal opens."; note: "Your own config comes back when this is off." }
             AppTile { name: "fish"; key: "theme_fish"; defaultOn: true; hint: "lumen's prompt, colours and completions (kitty opens fish)."; note: "New terminal windows get it." }
             AppTile { name: "btop"; key: "theme_btop"; hint: "The terminal system monitor."; note: "Reopen btop to see changes." }
             AppTile { name: "zathura"; key: "theme_zathura"; hint: "The keyboard-driven PDF viewer."; note: "Reopen zathura to see changes." }

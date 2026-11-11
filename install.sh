@@ -106,6 +106,32 @@ read_list() { # read_list core -> package names, comments stripped
 	done <"$REPO/packages/$1.txt"
 }
 
+# A full update (pacman -Syu) is needed on the first install, when the last
+# one was more than a week ago, or when the package lists were refreshed
+# since (pacman -Sy, or another tool): installing from those without
+# updating would mix old and new packages. Sets UPGRADE_REASON.
+UPGRADE_REASON=""
+needs_full_upgrade() {
+	if [[ ! -f $STATE_HOME/$NAME/installed && ! -d $CONFIG_HOME/$NAME ]]; then
+		UPGRADE_REASON="first install"; return 0
+	fi
+	local last last_s now db
+	last=$(grep -a 'starting full system upgrade' /var/log/pacman.log 2>/dev/null | tail -n 1 | sed -n 's/^\[\([^]]*\)\].*/\1/p')
+	last_s=$(date -d "$last" +%s 2>/dev/null) || last_s=0
+	now=$(date +%s)
+	if ((last_s == 0)); then
+		UPGRADE_REASON="no record of the last update"; return 0
+	fi
+	if ((now - last_s > 7 * 86400)); then
+		UPGRADE_REASON="the last one was $(((now - last_s) / 86400)) days ago"; return 0
+	fi
+	db=$(stat -c %Y /var/lib/pacman/sync/*.db 2>/dev/null | sort -n | tail -n 1)
+	if ((${db:-0} > last_s + 300)); then
+		UPGRADE_REASON="the package lists were refreshed since the last update"; return 0
+	fi
+	return 1
+}
+
 # ---------------------------------------------------------------- packages
 install_packages() {
 	((PACKAGES)) || { log "Skipping packages (--no-packages)."; return 0; }
@@ -139,14 +165,25 @@ install_packages() {
 	log "Profile '$PROFILE': ${#pkgs[@]} packages, ${#missing[@]} to install."
 	if ((${#missing[@]})); then
 		printf '   %s\n' "${missing[*]}"
-		# -Syu, never -S alone: installing a newer package on a system that
-		# isn't up to date is a partial upgrade, and Quickshell (built against
-		# Qt's private API) then fails with "undefined symbol ... Qt_6_PRIVATE_API".
-		log "Updating the system first (pacman -Syu), so the new packages match it."
-		local flags=(-Syu --needed)
+		local flags=(--needed)
 		((YES)) && flags+=(--noconfirm)
-		run sudo pacman "${flags[@]}" "${missing[@]}"
+		if needs_full_upgrade; then
+			# Installing a newer package on a system that isn't up to date
+			# is a partial upgrade (Quickshell, built against Qt's private
+			# API, then fails with "undefined symbol ... Qt_6_PRIVATE_API").
+			log "Updating the system first (pacman -Syu): $UPGRADE_REASON."
+			run sudo pacman -Syu "${flags[@]}" "${missing[@]}"
+		else
+			# Versions from the package lists the system was last updated
+			# with, so they match it. If those are too old to download,
+			# update after all.
+			run sudo pacman -S "${flags[@]}" "${missing[@]}" || {
+				warn "couldn't install from the current package lists; updating the system first."
+				run sudo pacman -Syu "${flags[@]}" "${missing[@]}"
+			}
+		fi
 	fi
+	((DRY)) || { mkdir -p "$STATE_HOME/$NAME"; date +%s >"$STATE_HOME/$NAME/installed"; }
 
 	if [[ " ${pkgs[*]} " == *" spice-vdagent "* ]]; then
 		run sudo systemctl enable --now spice-vdagentd.socket ||

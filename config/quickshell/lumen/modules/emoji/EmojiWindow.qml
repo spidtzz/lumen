@@ -194,7 +194,7 @@ FloatingWindow {
                     Text {
                         anchors.centerIn: parent
                         text: cell.modelData.e
-                        font.family: "Noto Color Emoji"
+                        font.family: "emoji"   // fontconfig: your own emoji font (Apple, Twemoji, Noto...)
                         font.pixelSize: 26
                     }
                     HoverHandler {
@@ -219,7 +219,7 @@ FloatingWindow {
                 spacing: 10
                 Text {
                     text: win.current ? win.current.e : " "
-                    font.family: "Noto Color Emoji"
+                    font.family: "emoji"   // fontconfig: your own emoji font (Apple, Twemoji, Noto...)
                     font.pixelSize: 22
                 }
                 Txt {

@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import Quickshell.Io
 import qs.services
 import qs.components
 
@@ -14,6 +15,7 @@ Page {
         .map(k => ({ value: k, label: Keyboard.names[k] }))
         .sort((a, b) => a.label.localeCompare(b.label))
     readonly property string customKeys: Theme.conf.kb_switch_custom || ""
+    property string grabNote: ""
     function prettyChord(c) {
         return c.split("+").map(p => p.trim()).map(p => p === "super" ? "Super" : p === "ctrl" ? "Ctrl" : p === "alt" ? "Alt"
             : p === "shift" ? "Shift" : p === "space" ? "Space" : p.length === 1 ? p.toUpperCase() : p).join(" + ");
@@ -21,28 +23,6 @@ Page {
     readonly property string switchKeys: ({ alt_shift: "Alt + Shift", ctrl_shift: "Ctrl + Shift", caps: "Caps Lock",
         super_space: "Super + Space", custom: customKeys !== "" ? prettyChord(customKeys) : "your shortcut" })[Theme.conf.kb_switch || "alt_shift"]
 
-    // A key press as sxhkd writes it: "super + shift + k". "" for keys that
-    // can't be a shortcut on their own.
-    function chordOf(event) {
-        const k = event.key;
-        if ([Qt.Key_Shift, Qt.Key_Control, Qt.Key_Alt, Qt.Key_Meta, Qt.Key_Super_L, Qt.Key_Super_R, Qt.Key_AltGr].includes(k)) return "";
-        const names = { [Qt.Key_Space]: "space", [Qt.Key_Period]: "period", [Qt.Key_Comma]: "comma", [Qt.Key_Slash]: "slash",
-            [Qt.Key_Semicolon]: "semicolon", [Qt.Key_Minus]: "minus", [Qt.Key_Equal]: "equal", [Qt.Key_QuoteLeft]: "grave",
-            [Qt.Key_Apostrophe]: "apostrophe", [Qt.Key_BracketLeft]: "bracketleft", [Qt.Key_BracketRight]: "bracketright",
-            [Qt.Key_Backslash]: "backslash", [Qt.Key_Tab]: "Tab", [Qt.Key_Return]: "Return", [Qt.Key_Backspace]: "BackSpace" };
-        let key = names[k] ?? "";
-        if (!key && k >= Qt.Key_A && k <= Qt.Key_Z) key = String.fromCharCode(k).toLowerCase();
-        if (!key && k >= Qt.Key_0 && k <= Qt.Key_9) key = String.fromCharCode(k);
-        if (!key && k >= Qt.Key_F1 && k <= Qt.Key_F12) key = "F" + (k - Qt.Key_F1 + 1);
-        if (!key) return "";
-        const m = event.modifiers, parts = [];
-        if (m & Qt.MetaModifier) parts.push("super");
-        if (m & Qt.ControlModifier) parts.push("ctrl");
-        if (m & Qt.AltModifier) parts.push("alt");
-        if (m & Qt.ShiftModifier) parts.push("shift");
-        if (parts.length === 0 && !key.startsWith("F")) return "";   // needs a modifier
-        return parts.concat([key]).join(" + ");
-    }
 
     function setLayouts(list) { Theme.setValue("kb_layouts", list.join(",")); }
     function move(i, by) {
@@ -180,25 +160,33 @@ Page {
             visible: Theme.conf.kb_switch === "custom"
             icon: "keyboard"
             label: "Your shortcut"
-            description: recorder.activeFocus ? "Press the keys now, with Super, Ctrl or Alt. Esc stops."
-                : "Click the box, then press the keys. Shortcuts lumen already uses can't be picked."
-            // Records a key combination: a read-only text box that keeps the
-            // keys it gets instead of typing them.
-            Field {
-                id: recorder
-                implicitWidth: 220
-                readOnly: true
-                horizontalAlignment: TextInput.AlignHCenter
-                placeholderText: activeFocus ? "Press keys…" : "Click to set"
-                text: activeFocus ? "" : page.customKeys !== "" ? page.prettyChord(page.customKeys) : ""
-                Keys.priority: Keys.BeforeItem
-                Keys.onPressed: event => {
-                    event.accepted = true;
-                    if (event.key === Qt.Key_Escape) { recorder.focus = false; return; }
-                    const c = page.chordOf(event);
-                    if (c === "") return;   // a modifier alone: keep waiting
-                    Theme.setValue("kb_switch_custom", c);
-                    recorder.focus = false;
+            description: grabber.running ? "Press the keys now, with Super, Ctrl or Alt. Esc cancels."
+                : page.grabNote !== "" ? page.grabNote
+                : "Click Set, then press the keys."
+            Txt {
+                visible: page.customKeys !== "" && !grabber.running
+                text: page.prettyChord(page.customKeys)
+                strong: true
+                font.family: Theme.monoFamily
+            }
+            Btn {
+                text: grabber.running ? "Press keys…" : page.customKeys !== "" ? "Change" : "Set"
+                variant: grabber.running ? "primary" : "normal"
+                onClicked: { page.grabNote = ""; grabber.running = !grabber.running; }
+            }
+            // lumen-keygrab takes the keyboard for a moment and reports the
+            // combination ("key super + k"), or that it's already a shortcut.
+            Process {
+                id: grabber
+                command: ["lumen-keygrab"]
+                stdout: SplitParser {
+                    onRead: line => {
+                        if (line.startsWith("key ")) {
+                            Theme.setValue("kb_switch_custom", line.slice(4));
+                        } else if (line.startsWith("taken ")) {
+                            page.grabNote = page.prettyChord(line.slice(6)) + " is already a lumen shortcut. Pick another.";
+                        }
+                    }
                 }
             }
         }

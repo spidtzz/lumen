@@ -1,0 +1,80 @@
+#!/usr/bin/env python3
+"""lumen-keygrab: wait for a key combination and print it the way sxhkd
+writes it ("super + shift + k").
+
+Settings runs this to record a shortcut. It takes the whole keyboard for a
+moment (so even keys that are already shortcuts arrive here), and prints
+one line:
+
+    key <chord>      the combination
+    taken <chord>    the combination, but sxhkdrc already uses it
+    cancel           Esc, or nothing within 10 seconds
+"""
+import os
+import sys
+import time
+
+from Xlib import X, XK, display
+
+MODIFIERS = {"Shift_L", "Shift_R", "Control_L", "Control_R", "Alt_L", "Alt_R", "Super_L", "Super_R",
+             "Meta_L", "Meta_R", "ISO_Level3_Shift", "Hyper_L", "Hyper_R", "Caps_Lock", "Num_Lock"}
+
+
+def bound(chord):
+    """Is this chord a binding in sxhkdrc already?"""
+    rc = os.path.join(os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config"), "sxhkd", "sxhkdrc")
+    norm = lambda s: " + ".join(p.strip() for p in s.split("+"))
+    try:
+        with open(rc) as f:
+            return any(norm(l) == chord for l in f if l and not l[0].isspace() and not l.startswith("#"))
+    except OSError:
+        return False
+
+
+def main():
+    d = display.Display()
+    root = d.screen().root
+    deadline = time.time() + 2
+    while root.grab_keyboard(False, X.GrabModeAsync, X.GrabModeAsync, X.CurrentTime) != X.GrabSuccess:
+        if time.time() > deadline:
+            print("cancel", flush=True)
+            return 1
+        time.sleep(0.05)
+    try:
+        end = time.time() + 10
+        while time.time() < end:
+            if not d.pending_events():
+                time.sleep(0.02)
+                continue
+            e = d.next_event()
+            if e.type != X.KeyPress:
+                continue
+            name = XK.keysym_to_string(d.keycode_to_keysym(e.detail, 0)) or ""
+            if name in MODIFIERS or not name:
+                continue
+            if name == "Escape":
+                print("cancel", flush=True)
+                return 0
+            parts = []
+            if e.state & X.Mod4Mask:
+                parts.append("super")
+            if e.state & X.ControlMask:
+                parts.append("ctrl")
+            if e.state & X.Mod1Mask:
+                parts.append("alt")
+            if e.state & X.ShiftMask:
+                parts.append("shift")
+            if not parts and not (name.startswith("F") and name[1:].isdigit()):
+                continue   # a plain key isn't a shortcut; wait for one with a modifier
+            chord = " + ".join(parts + [name])
+            print(("taken " if bound(chord) else "key ") + chord, flush=True)
+            return 0
+        print("cancel", flush=True)
+        return 0
+    finally:
+        d.ungrab_keyboard(X.CurrentTime)
+        d.flush()
+
+
+if __name__ == "__main__":
+    sys.exit(main())

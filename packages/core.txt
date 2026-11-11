@@ -49,8 +49,11 @@ tumbler
 ristretto
 mpv
 
-# Terminal and fonts (Noto covers Persian/Arabic and other scripts)
+# Terminal (kitty runs fish), fastfetch, and fonts (Noto covers Persian/Arabic
+# and other scripts)
 kitty
+fish
+fastfetch
 ttf-jetbrains-mono
 ttf-ibm-plex
 noto-fonts

@@ -328,7 +328,8 @@ Page {
         property string hint      // one line, shown under the name
         property string key       // settings key
         property string note: ""  // shown while it's on (what to do in the app)
-        readonly property bool active: Theme.conf[key] === "true"
+        property bool defaultOn: false
+        readonly property bool active: Theme.conf[key] === "true" || (Theme.conf[key] === undefined && defaultOn)
         default property alias extra: extraRow.data
 
         Layout.fillWidth: true
@@ -377,8 +378,8 @@ Page {
                 Btn { text: "Open in Telegram"; variant: "ghost"; onClicked: Quickshell.execDetached(["lumen-theme", "telegram-open"]) }
             }
             AppTile { name: "Heroic Games Launcher"; key: "theme_heroic"; hint: "A theme in Heroic's theme picker."; note: "In Heroic: Settings › Accessibility › Theme › lumen. Pick it again after changing colours." }
-            AppTile { name: "fastfetch"; key: "theme_fastfetch"; hint: "lumen's logo and layout, in your colours."; note: "Your own config comes back when this is off." }
-            AppTile { name: "fish"; key: "theme_fish"; hint: "Command-line colours and completions."; note: "New fish windows get the colours." }
+            AppTile { name: "fastfetch"; key: "theme_fastfetch"; defaultOn: true; hint: "A small lumen logo and the basics, in your colours."; note: "Your own config comes back when this is off." }
+            AppTile { name: "fish"; key: "theme_fish"; defaultOn: true; hint: "lumen's prompt, colours and completions (kitty opens fish)."; note: "New terminal windows get it." }
             AppTile { name: "btop"; key: "theme_btop"; hint: "The terminal system monitor."; note: "Reopen btop to see changes." }
             AppTile { name: "zathura"; key: "theme_zathura"; hint: "The keyboard-driven PDF viewer."; note: "Reopen zathura to see changes." }
         }

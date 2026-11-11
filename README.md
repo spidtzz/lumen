@@ -134,7 +134,8 @@ turn on, and removes it again when you turn it off:
 - **Telegram Desktop**: press **Open**, then **Apply** in Telegram; repeat after
   changing colours.
 - **Heroic Games Launcher**: pick **lumen** in Heroic › Settings › Accessibility › Theme.
-- **fish**, **btop**, **zathura**, **fastfetch** (lumen's own layout and logo): reopen them to see changes.
+- **fish** (kitty opens it): lumen's prompt and colours. **fastfetch**: a small lumen logo and the basics. Both are on by default.
+- **btop**, **zathura**: reopen them to see changes.
 
 GTK, libadwaita, Qt and KDE apps, kitty and file pickers follow the theme on their own.
 

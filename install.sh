@@ -225,7 +225,6 @@ install_files() {
 	place_tree "$REPO/bin" "$HOME/.local/bin"
 	place_tree "$REPO/share/palettes" "$DATA_HOME/$NAME/palettes"
 	place_tree "$REPO/share/fastfetch" "$DATA_HOME/$NAME/fastfetch"   # fastfetch logo
-	place_tree "$REPO/share/emoji" "$DATA_HOME/$NAME/emoji"           # emoji picker data
 	place_tree "$REPO/share/applications" "$DATA_HOME/applications"   # Settings in the app launcher
 	place_tree "$REPO/share/icons" "$DATA_HOME/icons"                 # its icon
 	place "$REPO/home/xinitrc" "$HOME/.xinitrc"

@@ -17,7 +17,8 @@ FloatingWindow {
     implicitHeight: 470
     color: Theme.panel
 
-    readonly property string dataFile: (Quickshell.env("XDG_DATA_HOME") || Theme.home + "/.local/share") + "/lumen/emoji/emoji.tsv"
+    // The list ships with the shell's own files.
+    readonly property string dataFile: Quickshell.shellDir + "/data/emoji.tsv"
     readonly property var groupNames: ["Recent", "Smileys", "People", "Animals & nature", "Food & drink", "Activities", "Travel & places", "Objects", "Symbols"]
     readonly property var groupIcons: ({ "Recent": "clock", "Smileys": "smile", "People": "user", "Animals & nature": "leaf",
         "Food & drink": "coffee", "Activities": "gamepad", "Travel & places": "plane", "Objects": "lightbulb", "Symbols": "heart" })
@@ -209,7 +210,9 @@ FloatingWindow {
             Txt {
                 visible: win.shown.length === 0
                 Layout.alignment: Qt.AlignHCenter
-                text: win.query !== "" ? "No emoji called “" + input.text + "”." : "Emoji you use show up here."
+                text: win.all.length === 0 ? "Couldn't read the emoji list (" + win.dataFile + ")."
+                    : win.query !== "" ? "No emoji called “" + input.text + "”."
+                    : win.group === "Recent" ? "Emoji you use show up here." : ""
                 muted: true
             }
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Make share/emoji/emoji.tsv for the emoji picker: emoji <TAB> name <TAB> group.
+"""Make config/quickshell/lumen/data/emoji.tsv for the emoji picker: emoji <TAB> name <TAB> group.
 
 Single-code-point emoji from Python's Unicode database, grouped roughly by
 Unicode block (good enough for browsing; search goes by name).
@@ -53,7 +53,7 @@ for group, ranges in GROUPS:
             ch = chr(cp) + ("️" if cp in TEXT_DEFAULT else "")
             lines.append("%s\t%s\t%s" % (ch, name.lower(), group))
 
-out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "share", "emoji", "emoji.tsv")
+out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config", "quickshell", "lumen", "data", "emoji.tsv")
 with open(out, "w", encoding="utf-8") as f:
     f.write("\n".join(lines) + "\n")
 print(len(lines), "emoji")

@@ -201,8 +201,9 @@ PanelWindow {
         // kept: building it on every click took a few hundred milliseconds.
         // The other popups are small and load when opened.
         readonly property var content: shown === "qs" ? (qsLoader.status === Loader.Ready ? qsLoader.item : null) : popupLoader.item
-        // The popup stays loaded while it animates out.
-        property string shown: ""
+        // The popup stays loaded while it animates out. Back to quick
+        // settings once closed, so its window can wait mapped (below).
+        property string shown: "qs"
         readonly property bool alive: mine || fx.t > 0.001
         onMineChanged: if (mine) { shown = Panels.popup; qsOpened(); }
         onShownChanged: qsOpened()
@@ -215,17 +216,27 @@ PanelWindow {
         }
 
         anchor.window: win
-        anchor.rect: win.popupRect(implicitWidth, implicitHeight, Panels.popupAnchor)
+        // While closed and waiting (below): far off the screen.
+        anchor.rect: alive ? win.popupRect(implicitWidth, implicitHeight, Panels.popupAnchor)
+                           : Qt.rect(-20000, -20000, 1, 1)
+        anchor.adjustment: alive ? PopupAdjustment.Slide : PopupAdjustment.None
         implicitWidth: content ? content.implicitWidth : 1
         implicitHeight: content ? content.implicitHeight : 1
         grabFocus: false
         color: "transparent"
         visible: false
 
+        // Mapping a window stalls the whole shell for about half a second on
+        // some systems (the GPU sets it up again), so quick settings' window
+        // is mapped ahead of time and stays mapped while closed, moved off
+        // the screen; opening only moves it back. Not over a fullscreen app,
+        // so picom can still hand the screen to a game.
+        readonly property bool waiting: shown === "qs" && content !== null && !win.fullscreenApp
+
         // Shown a frame after the content loads, once it has its final size:
         // mapped any earlier, X shows the window at its old size, black.
         function sync() {
-            const show = alive && content !== null;
+            const show = (alive && content !== null) || waiting;
             if (!show) {
                 showLater.stop();
                 if (visible) visible = false;
@@ -236,10 +247,11 @@ PanelWindow {
         Timer {
             id: showLater
             interval: 16
-            onTriggered: if (popupHost.alive && popupHost.content !== null) popupHost.visible = true
+            onTriggered: if ((popupHost.alive && popupHost.content !== null) || popupHost.waiting) popupHost.visible = true
         }
-        onAliveChanged: sync()
+        onAliveChanged: { if (!alive) shown = "qs"; sync(); }
         onContentChanged: sync()
+        onWaitingChanged: sync()
         onVisibleChanged: if (!visible && mine) Panels.closePopup()
 
         // Opening: fades in and glides out of the bar while growing slightly;

@@ -40,7 +40,7 @@ super + v
 	qs -c lumen ipc call clipboard toggle
 
 # Lock the screen
-super + shift + l
+super + l
 	lumen-lock
 
 # Session menu: lock, log out, suspend, restart, shut down
@@ -130,10 +130,6 @@ super + q
 # Force-kill the window
 super + shift + q
 	bspc node -k
-
-# Focus the window in a direction
-super + {h,j,k,l}
-	bspc node -f {west,south,north,east}
 
 # Focus the window in a direction
 super + {Left,Down,Up,Right}

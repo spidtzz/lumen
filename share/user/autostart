@@ -1,0 +1,22 @@
+#!/bin/sh
+# Your autostart: programs to start when you log in.
+#
+# lumen runs this file once per login (not again when bspwm restarts with
+# super + alt + r). It's yours: lumen updates never change it. Output goes to
+# ~/.local/state/lumen/autostart.log.
+#
+# Put "&" after each program so the next one starts too. Remove the "#" in
+# front of a line to use it.
+
+# nextcloud --background &
+# telegram-desktop -startintray &
+# discord --start-minimized &
+# steam -silent &
+# syncthing serve --no-browser &
+# easyeffects --gapplication-service &
+
+# Something that needs to wait a moment for the desktop:
+# (sleep 3 && keepassxc) &
+
+# Never blank the screen (lumen's lock-after-idle is in Settings > Users):
+# xset s off -dpms

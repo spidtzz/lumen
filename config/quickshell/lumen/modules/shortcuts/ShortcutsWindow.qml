@@ -7,8 +7,9 @@ import qs.services
 import qs.components
 import "../../components/Sxhkd.js" as Sxhkd
 
-// Keyboard shortcuts (super + /), read live from your own
-// ~/.config/sxhkd/sxhkdrc: edit that file and this list follows.
+// Keyboard shortcuts (super + /), read live from ~/.config/sxhkd/sxhkdrc and
+// your own ~/.config/lumen/keys: edit either and this list follows. Your keys
+// come first and hide lumen's on the same keys (sxhkd uses yours).
 FloatingWindow {
     id: win
 
@@ -18,7 +19,13 @@ FloatingWindow {
     color: Theme.panel
 
     readonly property string file: Theme.configHome + "/sxhkd/sxhkdrc"
-    property var rows: []
+    property var lumenRows: []
+    property var userRows: []
+    readonly property var rows: {
+        const key = r => JSON.stringify(r.keys);
+        const mine = new Set(userRows.map(key));
+        return userRows.concat(lumenRows.filter(r => !mine.has(key(r))));
+    }
     readonly property var shown: {
         const q = search.text.trim().toLowerCase();
         if (q === "") return rows;
@@ -34,8 +41,15 @@ FloatingWindow {
         path: win.file
         watchChanges: true
         onFileChanged: reload()
-        onLoaded: win.rows = Sxhkd.parse(text())
-        onLoadFailed: win.rows = []
+        onLoaded: win.lumenRows = Sxhkd.parse(text())
+        onLoadFailed: win.lumenRows = []
+    }
+    FileView {
+        path: Theme.configHome + "/lumen/keys"
+        watchChanges: true
+        onFileChanged: reload()
+        onLoaded: win.userRows = Sxhkd.parse(text(), "Your shortcuts")
+        onLoadFailed: win.userRows = []
     }
 
     Rectangle {

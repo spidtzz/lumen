@@ -1,0 +1,32 @@
+# Your keyboard shortcuts.
+#
+# lumen reads this file before its own (~/.config/sxhkd/sxhkdrc), so a key
+# here replaces lumen's. It's yours: lumen updates never change it. Apply
+# changes with super + Escape. They show in super + / under "Your shortcuts".
+#
+# The keys on one line, the command on the next, indented with a tab. A
+# comment right above the keys is their description in super + /.
+# Key names: super, shift, ctrl, alt, Return, space, Tab, Escape, Print,
+# a-z, 0-9, F1-F12, Left/Right/Up/Down... (run `xev` to see a key's name).
+#
+# Remove the "#" in front of the lines to use an example.
+
+# # Firefox
+# super + b
+# 	firefox
+
+# # Calculator
+# super + shift + c
+# 	gnome-calculator
+
+# # A different terminal (replaces lumen's super + Return)
+# super + Return
+# 	alacritty
+
+# # Screenshot of the whole screen, clipboard only (replaces lumen's ctrl + Print)
+# ctrl + Print
+# 	lumen-capture shot screen --copy
+
+# # Volume up and down on super + F3 / F2
+# super + {F2,F3}
+# 	wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%{-,+}

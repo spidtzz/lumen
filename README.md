@@ -49,7 +49,7 @@ set as the default apps for files, pictures and media unless you've chosen other
 | `super + v` | Clipboard history |
 | `super + shift + s`, `Print` | Screenshot and recording tool |
 | `super + shift + r` | Start / stop recording the screen |
-| `super + shift + l` | Lock |
+| `super + l` | Lock |
 | `super + p` | Lock, log out, suspend, restart, shut down |
 | `super + /` | All shortcuts |
 | `super + q` | Close window |
@@ -57,12 +57,33 @@ set as the default apps for files, pictures and media unless you've chosen other
 | `super + a` / `super + d` | Previous / next desktop |
 | `super + w` / `super + s` | Previous / next desktop with windows |
 | `super + Tab` | Last desktop |
-| `super + h j k l` | Focus a window in that direction |
+| `super + ← ↓ ↑ →` | Focus a window in that direction |
 | `super + t` / `super + f` / `super + m` | Float, fullscreen, monocle |
 | Media and brightness keys | Work as labelled, with an on-screen level |
 
 `super + /` shows everything in your [`sxhkdrc`](config/sxhkd/sxhkdrc), grouped and
 searchable. The comment above a binding is its description; `# @group Name` starts a group.
+
+## Your own autostart, rules and shortcuts
+
+Three files in `~/.config/lumen/` are yours. They start out as commented examples,
+and lumen updates never change them:
+
+| File | What it's for | Apply with |
+| --- | --- | --- |
+| `autostart` | programs to start at login | log in again |
+| `rules` | which desktop an app opens on, tiled or floating, bspwm settings | `super + alt + r` |
+| `keys` | your own shortcuts; one on lumen's keys replaces lumen's | `super + Escape` |
+
+```sh
+# in rules
+bspc rule -a firefox desktop=^2 follow=on
+bspc rule -a mpv state=floating center=on
+
+# in keys
+super + b
+	firefox
+```
 
 ## The bar
 

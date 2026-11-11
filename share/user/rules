@@ -1,0 +1,40 @@
+#!/bin/sh
+# Your window rules: which desktop an app opens on, tiled or floating, and so on.
+#
+# lumen runs this file after its own rules every time bspwm starts, so yours
+# win. It's yours: lumen updates never change it. Apply changes with
+# super + alt + r (restarts bspwm; your windows stay).
+#
+# A rule:   bspc rule -a <class> <setting>=<value> ...
+# The class: run `xprop WM_CLASS` and click the window; use the second name
+# (in WM_CLASS = "navigator", "firefox" it's firefox).
+#
+# Settings:
+#   desktop=^3        open on desktop 3 (^ means "by number")
+#   follow=on         and go there with it
+#   state=tiled       or floating, fullscreen, pseudo_tiled
+#   center=on         floating windows: centred
+#   rectangle=1280x720+0+0   floating windows: this size (and position)
+#   sticky=on         on every desktop
+#   layer=above       above other windows (or below)
+#   focus=off         don't take focus when it opens
+#   manage=off        leave the window alone completely (widgets, docks)
+#
+# Remove the "#" in front of a line to use it.
+
+# bspc rule -a firefox desktop=^2 follow=on
+# bspc rule -a TelegramDesktop desktop=^3
+# bspc rule -a vesktop desktop=^3
+# bspc rule -a steam desktop=^5 state=floating
+# bspc rule -a mpv state=floating center=on rectangle=1280x720+0+0
+# bspc rule -a Gimp state=tiled
+# bspc rule -a gnome-calculator state=floating center=on
+# bspc rule -a Conky manage=off
+
+# A window by its title (class:instance:title, * for any):
+# bspc rule -a '*:*:Picture in picture' state=floating sticky=on
+
+# Other bspwm settings can go here too:
+# bspc config window_gap 16
+# bspc config split_ratio 0.55
+# bspc config pointer_follows_focus true

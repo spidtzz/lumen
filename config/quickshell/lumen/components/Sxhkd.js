@@ -9,10 +9,10 @@
 // Bindings without a description show their command instead.
 // Returns [{ group, keys: [[chip, ...], ...] (one list per chord), desc, command }]
 
-function parse(text) {
+function parse(text, defaultGroup) {
     const lines = text.split("\n");
     const rows = [];
-    let group = "General";
+    let group = defaultGroup || "General";
     let comment = "";
     let i = 0;
 

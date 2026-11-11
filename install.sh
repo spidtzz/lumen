@@ -269,6 +269,7 @@ install_files() {
 	place_tree "$REPO/bin" "$HOME/.local/bin"
 	place_tree "$REPO/share/palettes" "$DATA_HOME/$NAME/palettes"
 	place_tree "$REPO/share/fastfetch" "$DATA_HOME/$NAME/fastfetch"   # fastfetch logo
+	place_tree "$REPO/share/user" "$DATA_HOME/$NAME/user"             # examples for your own files
 	place_tree "$REPO/share/applications" "$DATA_HOME/applications"   # Settings in the app launcher
 	place_tree "$REPO/share/icons" "$DATA_HOME/icons"                 # its icon
 	place "$REPO/home/xinitrc" "$HOME/.xinitrc"
@@ -296,6 +297,15 @@ install_files() {
 				>"$CONFIG_HOME/$NAME/settings.conf"
 		fi
 	fi
+	# Your autostart, window rules and keys: copied from the examples once,
+	# never touched again (bspwmrc does the same if they go missing).
+	local f
+	for f in autostart rules keys; do
+		if [[ ! -e $CONFIG_HOME/$NAME/$f ]]; then
+			run mkdir -p "$CONFIG_HOME/$NAME"
+			run cp "$REPO/share/user/$f" "$CONFIG_HOME/$NAME/$f"
+		fi
+	done
 	# Settings > Wallpaper looks here.
 	[[ -d $HOME/Pictures/Wallpapers ]] || run mkdir -p "$HOME/Pictures/Wallpapers"
 	setup_default_apps

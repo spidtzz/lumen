@@ -17,10 +17,23 @@ if [ -z "$LUMEN_SESSION" ]; then
 	command -v spice-vdagent >/dev/null && spice-vdagent
 fi
 
-# sxhkdrc plus the custom layout switch shortcut (Settings), if any.
+# ---- Your files ---------------------------------------------------------------
+# ~/.config/lumen/autostart, rules and keys are yours: created once from the
+# examples, never changed by lumen after that.
+USER_DIR=${XDG_CONFIG_HOME:-$HOME/.config}/lumen
+mkdir -p "$USER_DIR"
+for f in autostart rules keys; do
+	[ -e "$USER_DIR/$f" ] ||
+		cp "${XDG_DATA_HOME:-$HOME/.local/share}/lumen/user/$f" "$USER_DIR/$f" 2>/dev/null ||
+		: >"$USER_DIR/$f"
+done
+
+# Your keys first (a key there replaces lumen's), then sxhkdrc, then the
+# custom layout switch shortcut (Settings), if any.
 lumen_keys=${XDG_STATE_HOME:-$HOME/.local/state}/lumen/sxhkd-custom
 mkdir -p "${lumen_keys%/*}"; [ -f "$lumen_keys" ] || : >"$lumen_keys"
-pgrep -x sxhkd >/dev/null || sxhkd -c "${XDG_CONFIG_HOME:-$HOME/.config}/sxhkd/sxhkdrc" "$lumen_keys" &
+pgrep -x sxhkd >/dev/null ||
+	sxhkd -c "$USER_DIR/keys" "${XDG_CONFIG_HOME:-$HOME/.config}/sxhkd/sxhkdrc" "$lumen_keys" &
 
 # ---- Desktops ---------------------------------------------------------------
 # One monitor gets desktops 1-10. With two, the first gets 1-5 and the second
@@ -108,5 +121,17 @@ pgrep -f 'quickshell -c lumen' >/dev/null ||
 # Keep the bar above windows (except fullscreen ones).
 pgrep -f 'lumen-stack' >/dev/null || lumen-stack >/dev/null 2>&1 &
 
-# Per-user additions that survive updates.
-[ -x "$HOME/.config/bspwm/autostart" ] && "$HOME/.config/bspwm/autostart" &
+# ---- Yours, last, so they win -------------------------------------------------
+# Window rules and bspwm settings: every time bspwm starts or restarts.
+# (Run with sh: a mistake in the file can't stop the rest of this one.)
+[ -s "$USER_DIR/rules" ] && sh "$USER_DIR/rules"
+
+# Autostart: once per login, not again when bspwm restarts (super + alt + r
+# keeps bspwm's process, $PPID here).
+started=${XDG_RUNTIME_DIR:-/tmp}/lumen-autostart
+if [ "$(cat "$started" 2>/dev/null)" != "$PPID" ]; then
+	echo "$PPID" >"$started"
+	[ -s "$USER_DIR/autostart" ] && sh "$USER_DIR/autostart" >"$LOGS/autostart.log" 2>&1 &
+	# the old place, still honoured
+	[ -x "$HOME/.config/bspwm/autostart" ] && "$HOME/.config/bspwm/autostart" &
+fi

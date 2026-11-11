@@ -196,47 +196,30 @@ PanelWindow {
     PopupWindow {
         id: popupHost
 
-        readonly property bool mine: Panels.popup !== "" && Panels.popupScreen === win.screen
-        // Quick settings is built once (ahead of time, without blocking) and
-        // kept: building it on every click took a few hundred milliseconds.
-        // The other popups are small and load when opened.
-        readonly property var content: shown === "qs" ? (qsLoader.status === Loader.Ready ? qsLoader.item : null) : popupLoader.item
-        // The popup stays loaded while it animates out. Back to quick
-        // settings once closed, so its window can wait mapped (below).
-        property string shown: "qs"
+        // Calendar, tray and menus. (Quick settings has its own window, below.)
+        readonly property bool mine: Panels.popup !== "" && Panels.popup !== "qs" && Panels.popupScreen === win.screen
+        readonly property var content: popupLoader.item
+        // The popup stays loaded while it animates out.
+        property string shown: ""
         readonly property bool alive: mine || fx.t > 0.001
-        onMineChanged: if (mine) { shown = Panels.popup; qsOpened(); }
-        onShownChanged: qsOpened()
-        function qsOpened() {
-            if (mine && shown === "qs" && qsLoader.item && qsLoader.item.opened) qsLoader.item.opened();
-        }
+        onMineChanged: if (mine) shown = Panels.popup
         Connections {
             target: Panels
             function onPopupChanged() { if (popupHost.mine) popupHost.shown = Panels.popup; }
         }
 
         anchor.window: win
-        // While closed and waiting (below): far off the screen.
-        anchor.rect: alive ? win.popupRect(implicitWidth, implicitHeight, Panels.popupAnchor)
-                           : Qt.rect(-20000, -20000, 1, 1)
-        anchor.adjustment: alive ? PopupAdjustment.Slide : PopupAdjustment.None
+        anchor.rect: win.popupRect(implicitWidth, implicitHeight, Panels.popupAnchor)
         implicitWidth: content ? content.implicitWidth : 1
         implicitHeight: content ? content.implicitHeight : 1
         grabFocus: false
         color: "transparent"
         visible: false
 
-        // Mapping a window stalls the whole shell for about half a second on
-        // some systems (the GPU sets it up again), so quick settings' window
-        // is mapped ahead of time and stays mapped while closed, moved off
-        // the screen; opening only moves it back. Not over a fullscreen app,
-        // so picom can still hand the screen to a game.
-        readonly property bool waiting: shown === "qs" && content !== null && !win.fullscreenApp
-
         // Shown a frame after the content loads, once it has its final size:
         // mapped any earlier, X shows the window at its old size, black.
         function sync() {
-            const show = (alive && content !== null) || waiting;
+            const show = alive && content !== null;
             if (!show) {
                 showLater.stop();
                 if (visible) visible = false;
@@ -247,61 +230,93 @@ PanelWindow {
         Timer {
             id: showLater
             interval: 16
-            onTriggered: if ((popupHost.alive && popupHost.content !== null) || popupHost.waiting) popupHost.visible = true
+            onTriggered: if (popupHost.alive && popupHost.content !== null) popupHost.visible = true
         }
-        onAliveChanged: { if (!alive) shown = "qs"; sync(); }
+        onAliveChanged: sync()
         onContentChanged: sync()
-        onWaitingChanged: sync()
-        onVisibleChanged: if (!visible && mine) Panels.closePopup()
 
-        // Opening: fades in and glides out of the bar while growing slightly;
-        // closing plays it back.
-        Item {
+        PopupFx {
             id: fx
-            property real t: popupHost.mine && popupHost.content !== null ? 1 : 0
-            Behavior on t { NumberAnimation { duration: fx.t < 0.5 ? Theme.animNormal : Theme.animFast; easing.type: fx.t < 0.5 ? Theme.easeOut : Theme.easeIn } }
-            readonly property real slide: (1 - t) * 10
-            width: popupHost.content ? popupHost.content.implicitWidth : 0
-            height: popupHost.content ? popupHost.content.implicitHeight : 0
-            opacity: t
-            transform: [
-                Translate {
-                    x: win.edge === "left" ? -fx.slide : win.edge === "right" ? fx.slide : 0
-                    y: win.edge === "top" ? -fx.slide : win.edge === "bottom" ? fx.slide : 0
-                },
-                Scale {
-                    origin.x: win.edge === "left" ? 0 : win.edge === "right" ? fx.width : fx.width / 2
-                    origin.y: win.edge === "top" ? 0 : win.edge === "bottom" ? fx.height : fx.height / 2
-                    xScale: 0.96 + 0.04 * fx.t
-                    yScale: 0.96 + 0.04 * fx.t
-                }
-            ]
-
-        Loader {
-            id: qsLoader
-            asynchronous: true
-            active: true
-            visible: popupHost.shown === "qs"
-            width: item ? item.implicitWidth : 0
-            height: item ? item.implicitHeight : 0
-            source: "../popups/QuickSettings.qml"
-        }
-        Loader {
-            id: popupLoader
-            active: popupHost.alive && popupHost.shown !== "qs"
-            visible: popupHost.shown !== "qs"
-            width: item ? item.implicitWidth : 0
-            height: item ? item.implicitHeight : 0
-            source: {
-                switch (popupHost.shown) {
-                case "calendar": return "../popups/CalendarPopup.qml";
-                case "tray": return "../popups/TrayPopup.qml";
-                case "traymenu": return "../popups/TrayMenu.qml";
-                case "keyboard": return "../popups/KeyboardMenu.qml";
-                default: return "";
+            bar: win
+            on: popupHost.mine && popupHost.content !== null
+            content: popupHost.content
+            Loader {
+                id: popupLoader
+                active: popupHost.alive
+                width: item ? item.implicitWidth : 0
+                height: item ? item.implicitHeight : 0
+                source: {
+                    switch (popupHost.shown) {
+                    case "calendar": return "../popups/CalendarPopup.qml";
+                    case "tray": return "../popups/TrayPopup.qml";
+                    case "traymenu": return "../popups/TrayMenu.qml";
+                    case "keyboard": return "../popups/KeyboardMenu.qml";
+                    default: return "";
+                    }
                 }
             }
         }
+    }
+
+    // Quick settings: built once, ahead of time, and its window mapped ahead
+    // of time too. Mapping a window stalls the shell for about half a second
+    // on some systems, so while closed it stays mapped, parked far off the
+    // screen and letting every click and hover through; opening only moves
+    // it into place. Over a fullscreen app it's unmapped instead, so picom
+    // can still hand the screen to a game.
+    PopupWindow {
+        id: qsHost
+
+        readonly property bool mine: Panels.popup === "qs" && Panels.popupScreen === win.screen
+        readonly property bool ready: qsLoader.status === Loader.Ready && qsLoader.item !== null
+        readonly property bool alive: mine || qfx.t > 0.001
+        readonly property bool park: ready && !win.fullscreenApp
+        onMineChanged: if (mine && ready && qsLoader.item.opened) qsLoader.item.opened()
+
+        anchor.window: win
+        anchor.rect: alive ? win.popupRect(implicitWidth, implicitHeight, Panels.popupAnchor)
+                           : Qt.rect(-20000, -20000, 1, 1)
+        anchor.adjustment: alive ? PopupAdjustment.Slide : PopupAdjustment.None
+        implicitWidth: ready ? qsLoader.item.implicitWidth : 1
+        implicitHeight: ready ? qsLoader.item.implicitHeight : 1
+        grabFocus: false
+        color: "transparent"
+        visible: false
+        // Closed: clicks and the pointer go straight through.
+        mask: alive ? null : passThrough
+        property Region passThrough: Region {}
+
+        function sync() {
+            const show = ready && (alive || park);
+            if (!show) {
+                qsShowLater.stop();
+                if (visible) visible = false;
+            } else if (!visible && !qsShowLater.running) {
+                qsShowLater.restart();
+            }
+        }
+        Timer {
+            id: qsShowLater
+            interval: 16
+            onTriggered: if (qsHost.ready && (qsHost.alive || qsHost.park)) qsHost.visible = true
+        }
+        onAliveChanged: sync()
+        onParkChanged: sync()
+        onReadyChanged: sync()
+
+        PopupFx {
+            id: qfx
+            bar: win
+            on: qsHost.mine && qsHost.ready
+            content: qsLoader.item
+            Loader {
+                id: qsLoader
+                asynchronous: true
+                active: true
+                width: item ? item.implicitWidth : 0
+                height: item ? item.implicitHeight : 0
+                source: "../popups/QuickSettings.qml"
+            }
         }
     }
 

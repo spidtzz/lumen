@@ -197,11 +197,18 @@ PanelWindow {
         id: popupHost
 
         readonly property bool mine: Panels.popup !== "" && Panels.popupScreen === win.screen
-        readonly property var content: popupLoader.item
+        // Quick settings is built once (ahead of time, without blocking) and
+        // kept: building it on every click took a few hundred milliseconds.
+        // The other popups are small and load when opened.
+        readonly property var content: shown === "qs" ? (qsLoader.status === Loader.Ready ? qsLoader.item : null) : popupLoader.item
         // The popup stays loaded while it animates out.
         property string shown: ""
         readonly property bool alive: mine || fx.t > 0.001
-        onMineChanged: if (mine) shown = Panels.popup
+        onMineChanged: if (mine) { shown = Panels.popup; qsOpened(); }
+        onShownChanged: qsOpened()
+        function qsOpened() {
+            if (mine && shown === "qs" && qsLoader.item && qsLoader.item.opened) qsLoader.item.opened();
+        }
         Connections {
             target: Panels
             function onPopupChanged() { if (popupHost.mine) popupHost.shown = Panels.popup; }
@@ -242,8 +249,8 @@ PanelWindow {
             property real t: popupHost.mine && popupHost.content !== null ? 1 : 0
             Behavior on t { NumberAnimation { duration: fx.t < 0.5 ? Theme.animNormal : Theme.animFast; easing.type: fx.t < 0.5 ? Theme.easeOut : Theme.easeIn } }
             readonly property real slide: (1 - t) * 10
-            width: popupLoader.width
-            height: popupLoader.height
+            width: popupHost.content ? popupHost.content.implicitWidth : 0
+            height: popupHost.content ? popupHost.content.implicitHeight : 0
             opacity: t
             transform: [
                 Translate {
@@ -259,14 +266,23 @@ PanelWindow {
             ]
 
         Loader {
+            id: qsLoader
+            asynchronous: true
+            active: true
+            visible: popupHost.shown === "qs"
+            width: item ? item.implicitWidth : 0
+            height: item ? item.implicitHeight : 0
+            source: "../popups/QuickSettings.qml"
+        }
+        Loader {
             id: popupLoader
-            active: popupHost.alive
+            active: popupHost.alive && popupHost.shown !== "qs"
+            visible: popupHost.shown !== "qs"
             width: item ? item.implicitWidth : 0
             height: item ? item.implicitHeight : 0
             source: {
                 switch (popupHost.shown) {
                 case "calendar": return "../popups/CalendarPopup.qml";
-                case "qs": return "../popups/QuickSettings.qml";
                 case "tray": return "../popups/TrayPopup.qml";
                 case "traymenu": return "../popups/TrayMenu.qml";
                 case "keyboard": return "../popups/KeyboardMenu.qml";

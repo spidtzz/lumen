@@ -31,6 +31,11 @@ PopupCard {
     // down: notifications on top (newest at the bottom), then sliders and
     // toggles, and you, Settings and power along the bottom.
     readonly property bool flipped: Theme.barPosition !== "top"
+    // Quick settings is built once and kept; this runs each time it opens.
+    function opened() {
+        confirm = "";
+        Brightness.refresh();
+    }
     Component.onCompleted: {
         Brightness.refresh();
         if (!flipped) return;

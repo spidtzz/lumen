@@ -26,5 +26,5 @@ power-profiles-daemon
 upower
 brightnessctl
 webp-pixbuf-loader
-noto-fonts-emoji
+noto-fonts-emoji    # only when no emoji font is installed yet
 ddcutil

@@ -118,6 +118,13 @@ install_packages() {
 		nautilus) pkgs+=(nautilus) ;;
 	esac
 	[[ $DM == sddm ]] && pkgs+=(sddm)
+	# Only a fallback: skip it when an emoji font is already installed
+	# (Apple Color Emoji, Twemoji, JoyPixels...).
+	if command -v fc-list >/dev/null && [[ -n $(fc-list ':charset=1f600' family 2>/dev/null) ]]; then
+		local p kept=()
+		for p in "${pkgs[@]}"; do [[ $p == noto-fonts-emoji ]] || kept+=("$p"); done
+		pkgs=("${kept[@]}")
+	fi
 	if command -v systemd-detect-virt >/dev/null && systemd-detect-virt -q; then
 		log "Virtual machine detected: adding spice-vdagent."
 		pkgs+=(spice-vdagent)

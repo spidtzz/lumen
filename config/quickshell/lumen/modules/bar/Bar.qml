@@ -354,7 +354,19 @@ PanelWindow {
                 anchors.leftMargin: 18
                 spacing: 14
                 Icon { anchors.verticalCenter: parent.verticalCenter; name: Osd.icon; size: 20 }
+                // a message (keyboard layout) instead of a level
+                Txt {
+                    visible: Osd.text !== ""
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: osdHost.w - 18 - 20 - 14 - 18
+                    text: Osd.text
+                    strong: true
+                    size: 14
+                    wrapMode: Text.NoWrap
+                    elide: Text.ElideRight
+                }
                 Rectangle {
+                    visible: Osd.text === ""
                     anchors.verticalCenter: parent.verticalCenter
                     width: osdHost.w - 18 - 20 - 14 - 14 - 52 - 18
                     height: 8
@@ -371,6 +383,7 @@ PanelWindow {
                     }
                 }
                 Txt {
+                    visible: Osd.text === ""
                     anchors.verticalCenter: parent.verticalCenter
                     width: 52
                     text: Osd.label

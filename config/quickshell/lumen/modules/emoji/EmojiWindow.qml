@@ -5,10 +5,11 @@ import Quickshell.Io
 import qs.services
 import qs.components
 
-// Emoji picker (super + .): type to search by name, arrows to move, Enter or
-// a click puts the emoji where you were typing (lumen-emoji-type: types it
-// with xdotool, and copies it too). Recently used ones come first.
-// A normal window so it gets the keyboard (bspwmrc rule "lumen Emoji").
+// Emoji picker (super + .): opens next to the pointer on the tab you used
+// last; type to search by name, arrows to move, Enter or a click copies the
+// emoji (paste with ctrl + v). Recently used ones come first.
+// A normal window so it gets the keyboard (bspwmrc rule "lumen Emoji";
+// lumen-emoji place puts it at the pointer).
 FloatingWindow {
     id: win
 
@@ -24,7 +25,14 @@ FloatingWindow {
         "Food & drink": "coffee", "Activities": "gamepad", "Travel & places": "plane", "Objects": "lightbulb", "Symbols": "heart" })
 
     property var all: []          // { e, name, group }
-    property string group: recent.length > 0 ? "Recent" : "Smileys"
+    // the tab you used last
+    property string group: groupNames.includes(Theme.conf.emoji_group) ? Theme.conf.emoji_group
+                         : recent.length > 0 ? "Recent" : "Smileys"
+    function setGroup(g) {
+        group = g;
+        grid.currentIndex = 0;
+        Theme.setValue("emoji_group", g);
+    }
 
     // Recent emoji, stored as code points ("1f600 2764-fe0f") in settings.
     readonly property var recent: {
@@ -50,7 +58,7 @@ FloatingWindow {
         const list = [codes(item.e)].concat((Theme.conf.emoji_recent || "").split(" ").filter(x => x !== "" && x !== codes(item.e))).slice(0, 32);
         Theme.setValue("emoji_recent", list.join(" "));
         close();
-        Quickshell.execDetached(["lumen-emoji-type", item.e]);
+        Quickshell.execDetached(["lumen-emoji", "copy", item.e]);
     }
     function move(dx, dy) {
         if (shown.length === 0) return;
@@ -126,8 +134,7 @@ FloatingWindow {
                         Keys.onEscapePressed: { if (text !== "") text = ""; else win.close(); }
                         Keys.onTabPressed: {
                             const i = win.groupNames.indexOf(win.group);
-                            win.group = win.groupNames[(i + 1) % win.groupNames.length];
-                            grid.currentIndex = 0;
+                            win.setGroup(win.groupNames[(i + 1) % win.groupNames.length]);
                         }
                         Txt {
                             anchors.verticalCenter: parent.verticalCenter
@@ -160,7 +167,7 @@ FloatingWindow {
                             color: parent.selected ? Theme.accentFg : Theme.muted
                         }
                         HoverHandler { id: tabHover; cursorShape: Qt.PointingHandCursor }
-                        TapHandler { onTapped: { win.group = parent.modelData; grid.currentIndex = 0; input.forceActiveFocus(); } }
+                        TapHandler { onTapped: { win.setGroup(parent.modelData); input.forceActiveFocus(); } }
                     }
                 }
             }
@@ -231,7 +238,7 @@ FloatingWindow {
                     elide: Text.ElideRight
                     wrapMode: Text.NoWrap
                 }
-                Txt { text: "Enter to insert · Tab: next group"; muted: true; size: 11 }
+                Txt { text: "Enter copies · Tab: next group"; muted: true; size: 11 }
             }
         }
     }

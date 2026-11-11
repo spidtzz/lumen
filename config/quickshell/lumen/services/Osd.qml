@@ -16,11 +16,19 @@ Singleton {
     property string icon: "volume"
     property real level: 0        // 0..1
     property string label: ""
+    property string text: ""      // a message instead of a level (keyboard layout)
 
     function flash(icon, level, label) {
         root.icon = icon;
         root.level = level;
         root.label = label;
+        root.text = "";
+        shown = true;
+        hide.restart();
+    }
+    function flashText(icon, text) {
+        root.icon = icon;
+        root.text = text;
         shown = true;
         hide.restart();
     }
@@ -58,11 +66,25 @@ Singleton {
               source.audio.muted ? "Off" : "On");
     }
 
-    // ---- screen brightness (built-in screens) ----
+    // ---- screen brightness (built-in screens, or monitors over DDC/CI) ----
     function brightness(step) {
-        if (!Brightness.available) return;
+        if (!Brightness.available) {
+            flashText("brightness", "This screen's brightness can't be changed here");
+            return;
+        }
         Brightness.set(Brightness.value + step);
         flash("brightness", Brightness.value, Math.round(Brightness.value * 100) + "%");
+    }
+
+    // ---- keyboard layout: its name when it changes ----
+    property bool layoutReady: false
+    Timer { interval: 3000; running: true; onTriggered: root.layoutReady = true }   // not at login
+    Connections {
+        target: Keyboard
+        function onCurrentChanged() {
+            if (root.layoutReady && Keyboard.layouts.length > 1)
+                root.flashText("keyboard", Keyboard.nameOf(Keyboard.current));
+        }
     }
 
     // ---- media players (the one playing, else the first) ----

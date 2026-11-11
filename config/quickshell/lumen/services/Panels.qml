@@ -55,10 +55,16 @@ Singleton {
     // ---- emoji picker (super + .) ----
     property bool emojiOpen: false
     function toggleEmoji() {
+        if (emojiOpen) { emojiOpen = false; return; }
         popup = "";
         launcherOpen = false;
         clipboardOpen = false;
-        emojiOpen = !emojiOpen;
+        emojiPlacer.running = true;   // next to the pointer, then open
+    }
+    Process {
+        id: emojiPlacer
+        command: ["lumen-emoji", "place"]
+        onExited: root.emojiOpen = true
     }
 
     // ---- clipboard history ----

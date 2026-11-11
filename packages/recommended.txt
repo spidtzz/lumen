@@ -27,3 +27,4 @@ upower
 brightnessctl
 webp-pixbuf-loader
 noto-fonts-emoji
+ddcutil

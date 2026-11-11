@@ -15,7 +15,7 @@ super + Return
 super + x
 	qs -c lumen ipc call launcher toggle
 
-# Emoji picker (types the emoji where you were typing)
+# Emoji picker (copies the emoji; paste with ctrl + v)
 super + period
 	qs -c lumen ipc call emoji toggle
 

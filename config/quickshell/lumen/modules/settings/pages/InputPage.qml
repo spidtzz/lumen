@@ -20,8 +20,6 @@ Page {
     }
     readonly property string switchKeys: ({ alt_shift: "Alt + Shift", ctrl_shift: "Ctrl + Shift", caps: "Caps Lock",
         super_space: "Super + Space", custom: customKeys !== "" ? prettyChord(customKeys) : "your shortcut" })[Theme.conf.kb_switch || "alt_shift"]
-    property bool recording: false
-    onRecordingChanged: if (recording) catcher.forceActiveFocus()
 
     // A key press as sxhkd writes it: "super + shift + k". "" for keys that
     // can't be a shortcut on their own.
@@ -174,7 +172,7 @@ Page {
                     { label: "Your own shortcut", value: "custom" }
                 ]
                 value: Theme.conf.kb_switch || "alt_shift"
-                onPicked: v => { Theme.setValue("kb_switch", v); if (v === "custom" && page.customKeys === "") page.recording = true; }
+                onPicked: v => Theme.setValue("kb_switch", v)
             }
         }
 
@@ -182,27 +180,25 @@ Page {
             visible: Theme.conf.kb_switch === "custom"
             icon: "keyboard"
             label: "Your shortcut"
-            description: page.recording ? "Press the keys now (with Super, Ctrl or Alt). Esc cancels."
-                : "Shortcuts lumen already uses can't be picked."
-            Btn {
+            description: recorder.activeFocus ? "Press the keys now, with Super, Ctrl or Alt. Esc stops."
+                : "Click the box, then press the keys. Shortcuts lumen already uses can't be picked."
+            // Records a key combination: a read-only text box that keeps the
+            // keys it gets instead of typing them.
+            Field {
                 id: recorder
-                text: page.recording ? "Press keys…" : page.customKeys !== "" ? page.prettyChord(page.customKeys) : "Set shortcut"
-                variant: page.recording ? "primary" : "normal"
-                onClicked: { page.recording = !page.recording; if (page.recording) catcher.forceActiveFocus(); }
-            }
-            Item {
-                id: catcher
-                width: 1; height: 1
-                focus: page.recording
-                onActiveFocusChanged: if (!activeFocus) page.recording = false
+                implicitWidth: 220
+                readOnly: true
+                horizontalAlignment: TextInput.AlignHCenter
+                placeholderText: activeFocus ? "Press keys…" : "Click to set"
+                text: activeFocus ? "" : page.customKeys !== "" ? page.prettyChord(page.customKeys) : ""
+                Keys.priority: Keys.BeforeItem
                 Keys.onPressed: event => {
-                    if (!page.recording) return;
                     event.accepted = true;
-                    if (event.key === Qt.Key_Escape) { page.recording = false; return; }
+                    if (event.key === Qt.Key_Escape) { recorder.focus = false; return; }
                     const c = page.chordOf(event);
-                    if (c === "") return;
+                    if (c === "") return;   // a modifier alone: keep waiting
                     Theme.setValue("kb_switch_custom", c);
-                    page.recording = false;
+                    recorder.focus = false;
                 }
             }
         }

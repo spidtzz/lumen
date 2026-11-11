@@ -80,6 +80,7 @@ SCHEMA=(
 	"theme_heroic~false~^(true|false)$~theme"
 	"wallpaper_subfolders~true~^(true|false)$~-"
 	"emoji_recent~~^[0-9a-f -]*$~-"
+	"emoji_group~~^[A-Za-z &]*$~-"
 	"capture_mode~shot~^(shot|record)$~-"
 	"capture_target~area~^(area|window|screen)$~-"
 	"capture_delay~0~^(0|3|5|10)$~-"

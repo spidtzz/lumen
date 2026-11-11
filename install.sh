@@ -311,7 +311,19 @@ setup_default_apps() {
 # ---------------------------------------------------------------- system
 # SDDM can't read your home folder, so its theme, the session entry and a copy
 # of lumen-session are installed system-wide (always copied, even with --link).
+# Monitor brightness over DDC/CI (ddcutil) needs the i2c-dev kernel module.
+setup_ddc() {
+	command -v ddcutil >/dev/null || return 0
+	[[ -f /etc/modules-load.d/i2c-dev.conf || -f /etc/modules-load.d/lumen-i2c-dev.conf ]] && return 0
+	log "Loading i2c-dev at boot, for monitor brightness (ddcutil)."
+	if ((DRY)); then run sudo tee /etc/modules-load.d/lumen-i2c-dev.conf; else
+		echo i2c-dev | sudo tee /etc/modules-load.d/lumen-i2c-dev.conf >/dev/null
+	fi
+	run sudo modprobe i2c-dev || true
+}
+
 install_system() {
+	setup_ddc
 	[[ $DM == sddm ]] || return 0
 	local theme=/usr/share/sddm/themes/$NAME f
 	log "Installing the login screen (SDDM)..."

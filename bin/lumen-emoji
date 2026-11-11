@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# lumen-emoji — helpers for the emoji picker (super + .).
+#
+#   lumen-emoji place      put the picker next to the mouse pointer when it
+#                          opens (a one-time bspwm rule), kept on the screen
+#   lumen-emoji copy EMOJI copy it to the clipboard
+set -u
+W=452 H=470
+
+case ${1:-} in
+	place)
+		command -v xdotool >/dev/null || exit 0
+		eval "$(xdotool getmouselocation --shell 2>/dev/null)" || exit 0
+		# The monitor under the pointer: x y w h
+		read -r mx my mw mh < <(bspc query -T -m pointed 2>/dev/null | python3 -c '
+import json, sys
+r = json.load(sys.stdin)["rectangle"]
+print(r["x"], r["y"], r["width"], r["height"])' 2>/dev/null) || exit 0
+		x=$((X - W / 2)) y=$((Y + 16))
+		((y + H > my + mh - 8)) && y=$((Y - H - 16))   # no room below: above
+		((x < mx + 8)) && x=$((mx + 8))
+		((x + W > mx + mw - 8)) && x=$((mx + mw - W - 8))
+		((y < my + 8)) && y=$((my + 8))
+		bspc rule -a '*:*:lumen Emoji' -o state=floating rectangle="${W}x${H}+${x}+${y}" focus=on
+		;;
+	copy)
+		e=${2:-}
+		[[ -n $e ]] || exit 1
+		printf '%s' "$e" | xclip -selection clipboard
+		notify-send -a lumen -t 1500 "$e  copied" "Paste it with ctrl + v" 2>/dev/null
+		;;
+	*) sed -n '2,7p' "$0" | sed 's/^# \{0,1\}//' ;;
+esac

@@ -6,6 +6,7 @@ import qs.modules.bar
 import qs.modules.settings
 import qs.modules.launcher
 import qs.modules.clipboard
+import qs.modules.emoji
 import qs.modules.capture
 import qs.modules.shortcuts
 import qs.modules.session
@@ -118,6 +119,16 @@ ShellRoot {
         ClipboardWindow {}
     }
 
+    // Emoji picker, created when opened (super + .).
+    LazyLoader {
+        active: Panels.emojiOpen
+        EmojiWindow {}
+    }
+    IpcHandler {
+        target: "emoji"
+        function toggle(): void { Panels.toggleEmoji(); }
+    }
+
     // super + v; lumen-clipboard calls "changed" after recording a copy.
     IpcHandler {
         target: "clipboard"
@@ -156,7 +167,7 @@ ShellRoot {
         function open(action: string): void { Panels.openSession(action); }
     }
 
-    // super + space
+    // super + x
     IpcHandler {
         target: "launcher"
         function toggle(): void { Panels.toggleLauncher(); }

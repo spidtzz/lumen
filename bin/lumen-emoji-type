@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# lumen-emoji-type EMOJI — put an emoji where you were typing.
+#
+# The emoji picker runs this after it closes: once focus is back in the app,
+# xdotool types the emoji there. It's also copied to the clipboard, so you
+# can paste it again (or paste it yourself where typing doesn't reach).
+set -u
+e=${1:-}
+[[ -n $e ]] || exit 1
+command -v xclip >/dev/null && printf '%s' "$e" | xclip -selection clipboard
+sleep 0.15   # let the picker go and the app get focus back
+if command -v xdotool >/dev/null; then
+	xdotool type --clearmodifiers --delay 0 -- "$e"
+else
+	notify-send -a lumen "Emoji copied" "Paste it with ctrl + v (install xdotool to type it directly)" 2>/dev/null
+fi

@@ -41,7 +41,8 @@ set as the default apps for files, pictures and media unless you've chosen other
 | Keys | Action |
 | --- | --- |
 | `super + Return` | Terminal |
-| `super + space` | App launcher |
+| `super + x` | App launcher |
+| `super + .` | Emoji picker |
 | `super + e` | Files |
 | `super + i` | Settings |
 | `super + n` / `super + c` | Quick settings / calendar |
@@ -155,7 +156,7 @@ lumen-avatar set ~/Pictures/me.jpg   # profile picture for the bar and the login
 ## Keyboard layouts
 
 Switch layouts like on Windows: press and release **Alt+Shift** (or Ctrl+Shift, or Caps
-Lock). AltGr characters, such as the Persian half-space, keep working.
+Lock), or use **Super+Space** or a shortcut of your own (Settings › Keyboard & Mouse). AltGr characters, such as the Persian half-space, keep working.
 
 ## Fonts
 

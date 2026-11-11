@@ -938,20 +938,24 @@ gtk_corners() {
 	printf 'radio, radio > check { border-radius: 9999px; }\n'
 }
 
-# bspwm draws no window frames, and picom draws the shadows (and the focus
-# glow). Windows that draw their own title bar (Nautilus, Firefox...) would
-# otherwise add their own shadow in a margin around the window: a dark band
-# inside the tile and a second, offset shadow. Menus keep theirs.
+# bspwm draws no window frames, and picom draws the shadows and rounds the
+# corners. Windows that draw their own title bar (Nautilus, Firefox, Tauri
+# apps like Cinny...) would otherwise add their own shadow in a margin around
+# the window (a dark band and a second, offset shadow) and a thin light
+# outline with rounded top corners. Menus keep theirs.
 gtk_no_csd_shadow() {
-	printf '\n/* no client-side window shadows under bspwm */\n'
-	printf '%s { box-shadow: none; margin: 0; }\n' "$1"
+	printf '\n/* no client-side window shadows or frames under bspwm */\n'
+	printf '%s { box-shadow: none; margin: 0; border: none; outline: none; border-radius: 0; }\n' "$1"
+	# The title bar's own rounded top corners and light top edge would show
+	# as a thin frame inside the (already rounded by picom) window.
+	printf 'window.csd:not(.popup) headerbar, window.csd:not(.popup) .titlebar { border-radius: 0; box-shadow: none; }\n'
 }
 
 write_gtk() {
 	{
 		printf '/* %s */\n' "${MARK#\# }"
 		gtk_named_colors
-		gtk_no_csd_shadow 'window.csd:not(.popup) > decoration, window.csd:not(.popup) > decoration:backdrop'
+		gtk_no_csd_shadow 'window.csd:not(.popup), window.csd:not(.popup) > decoration, window.csd:not(.popup) > decoration:backdrop'
 		gtk_corners '-gtk-outline-radius: 0; '
 	} | own "$CONFIG_HOME/gtk-3.0/gtk.css"
 	{

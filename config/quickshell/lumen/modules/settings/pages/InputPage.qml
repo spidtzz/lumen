@@ -13,7 +13,38 @@ Page {
     readonly property var known: Object.keys(Keyboard.names)
         .map(k => ({ value: k, label: Keyboard.names[k] }))
         .sort((a, b) => a.label.localeCompare(b.label))
-    readonly property string switchKeys: ({ alt_shift: "Alt + Shift", ctrl_shift: "Ctrl + Shift", caps: "Caps Lock" })[Theme.conf.kb_switch || "alt_shift"]
+    readonly property string customKeys: Theme.conf.kb_switch_custom || ""
+    function prettyChord(c) {
+        return c.split("+").map(p => p.trim()).map(p => p === "super" ? "Super" : p === "ctrl" ? "Ctrl" : p === "alt" ? "Alt"
+            : p === "shift" ? "Shift" : p === "space" ? "Space" : p.length === 1 ? p.toUpperCase() : p).join(" + ");
+    }
+    readonly property string switchKeys: ({ alt_shift: "Alt + Shift", ctrl_shift: "Ctrl + Shift", caps: "Caps Lock",
+        super_space: "Super + Space", custom: customKeys !== "" ? prettyChord(customKeys) : "your shortcut" })[Theme.conf.kb_switch || "alt_shift"]
+    property bool recording: false
+    onRecordingChanged: if (recording) catcher.forceActiveFocus()
+
+    // A key press as sxhkd writes it: "super + shift + k". "" for keys that
+    // can't be a shortcut on their own.
+    function chordOf(event) {
+        const k = event.key;
+        if ([Qt.Key_Shift, Qt.Key_Control, Qt.Key_Alt, Qt.Key_Meta, Qt.Key_Super_L, Qt.Key_Super_R, Qt.Key_AltGr].includes(k)) return "";
+        const names = { [Qt.Key_Space]: "space", [Qt.Key_Period]: "period", [Qt.Key_Comma]: "comma", [Qt.Key_Slash]: "slash",
+            [Qt.Key_Semicolon]: "semicolon", [Qt.Key_Minus]: "minus", [Qt.Key_Equal]: "equal", [Qt.Key_QuoteLeft]: "grave",
+            [Qt.Key_Apostrophe]: "apostrophe", [Qt.Key_BracketLeft]: "bracketleft", [Qt.Key_BracketRight]: "bracketright",
+            [Qt.Key_Backslash]: "backslash", [Qt.Key_Tab]: "Tab", [Qt.Key_Return]: "Return", [Qt.Key_Backspace]: "BackSpace" };
+        let key = names[k] ?? "";
+        if (!key && k >= Qt.Key_A && k <= Qt.Key_Z) key = String.fromCharCode(k).toLowerCase();
+        if (!key && k >= Qt.Key_0 && k <= Qt.Key_9) key = String.fromCharCode(k);
+        if (!key && k >= Qt.Key_F1 && k <= Qt.Key_F12) key = "F" + (k - Qt.Key_F1 + 1);
+        if (!key) return "";
+        const m = event.modifiers, parts = [];
+        if (m & Qt.MetaModifier) parts.push("super");
+        if (m & Qt.ControlModifier) parts.push("ctrl");
+        if (m & Qt.AltModifier) parts.push("alt");
+        if (m & Qt.ShiftModifier) parts.push("shift");
+        if (parts.length === 0 && !key.startsWith("F")) return "";   // needs a modifier
+        return parts.concat([key]).join(" + ");
+    }
 
     function setLayouts(list) { Theme.setValue("kb_layouts", list.join(",")); }
     function move(i, by) {
@@ -124,21 +155,55 @@ Page {
 
     Card {
         title: "Switching layouts"
-        description: "Press and release the keys together, without another key. Left or right keys both work, and AltGr shortcuts aren't affected."
+        description: "Alt + Shift, Ctrl + Shift and Caps Lock work on their own (left or right keys, AltGr shortcuts aren't affected), or pick a shortcut."
         opacity: page.layouts.length > 1 ? 1 : 0.5
         enabled: page.layouts.length > 1
 
         SettingRow {
             icon: "keyboard"
-      label: "Switch with"
-            Seg {
+            label: "Switch with"
+            description: (Theme.conf.kb_switch || "alt_shift") === "super_space" || Theme.conf.kb_switch === "custom"
+                ? "A shortcut: each press goes to the next layout." : "Press and release together, without another key."
+            Dropdown {
+                implicitWidth: 220
                 options: [
                     { label: "Alt + Shift", value: "alt_shift" },
                     { label: "Ctrl + Shift", value: "ctrl_shift" },
-                    { label: "Caps Lock", value: "caps" }
+                    { label: "Caps Lock", value: "caps" },
+                    { label: "Super + Space", value: "super_space" },
+                    { label: "Your own shortcut", value: "custom" }
                 ]
                 value: Theme.conf.kb_switch || "alt_shift"
-                onPicked: v => Theme.setValue("kb_switch", v)
+                onPicked: v => { Theme.setValue("kb_switch", v); if (v === "custom" && page.customKeys === "") page.recording = true; }
+            }
+        }
+
+        SettingRow {
+            visible: Theme.conf.kb_switch === "custom"
+            icon: "keyboard"
+            label: "Your shortcut"
+            description: page.recording ? "Press the keys now (with Super, Ctrl or Alt). Esc cancels."
+                : "Shortcuts lumen already uses can't be picked."
+            Btn {
+                id: recorder
+                text: page.recording ? "Press keys…" : page.customKeys !== "" ? page.prettyChord(page.customKeys) : "Set shortcut"
+                variant: page.recording ? "primary" : "normal"
+                onClicked: { page.recording = !page.recording; if (page.recording) catcher.forceActiveFocus(); }
+            }
+            Item {
+                id: catcher
+                width: 1; height: 1
+                focus: page.recording
+                onActiveFocusChanged: if (!activeFocus) page.recording = false
+                Keys.onPressed: event => {
+                    if (!page.recording) return;
+                    event.accepted = true;
+                    if (event.key === Qt.Key_Escape) { page.recording = false; return; }
+                    const c = page.chordOf(event);
+                    if (c === "") return;
+                    Theme.setValue("kb_switch_custom", c);
+                    page.recording = false;
+                }
             }
         }
 

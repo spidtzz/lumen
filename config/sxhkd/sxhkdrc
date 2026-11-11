@@ -12,8 +12,16 @@ super + Return
 	kitty
 
 # Open the app launcher
-super + space
+super + x
 	qs -c lumen ipc call launcher toggle
+
+# Emoji picker (types the emoji where you were typing)
+super + period
+	qs -c lumen ipc call emoji toggle
+
+# Switch keyboard layout (when chosen in Settings > Keyboard & Mouse)
+super + space
+	lumen-settings layout-hotkey super_space
 
 # Show keyboard shortcuts
 super + slash

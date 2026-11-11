@@ -31,6 +31,7 @@ xss-lock
 i3lock
 # The lock screen takes the keyboard and mouse with a small Python helper
 python-xlib
+xdotool
 gdk-pixbuf2
 
 # Window manager and hotkeys
@@ -57,6 +58,7 @@ fastfetch
 ttf-jetbrains-mono
 ttf-ibm-plex
 noto-fonts
+noto-fonts-emoji
 
 # Theming: GTK 3/4, Qt, cursor, live reload, light/dark for libadwaita apps
 adw-gtk-theme

@@ -52,6 +52,15 @@ Singleton {
     property bool shortcutsOpen: false
     function toggleShortcuts() { popup = ""; shortcutsOpen = !shortcutsOpen; }
 
+    // ---- emoji picker (super + .) ----
+    property bool emojiOpen: false
+    function toggleEmoji() {
+        popup = "";
+        launcherOpen = false;
+        clipboardOpen = false;
+        emojiOpen = !emojiOpen;
+    }
+
     // ---- clipboard history ----
     property bool clipboardOpen: false
     property int clipboardRevision: 0   // bumped when lumen-clipboard records something

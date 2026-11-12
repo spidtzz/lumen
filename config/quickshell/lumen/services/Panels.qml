@@ -111,17 +111,28 @@ Singleton {
     function click() {
         if (popup === "" || popupHovered || barHovered) return;
         if (Date.now() - openedAt < 300) return;   // the click that opened it
+        console.log("lumen popup: click away closes", popup);
         closePopup();
+        // This click may also land on the same popup's bar button a moment
+        // later (the input watcher is quicker); that mustn't reopen it.
+        lastClosed = lastShut;
+        lastClosedAt = Date.now();
     }
 
     function togglePopup(name, screen, anchor) {
         const scr = screen ?? focusedScreen();
         if (popup === name && popupScreen === scr) {
+            console.log("lumen popup: close", name);
             closePopup();
             return;
         }
-        if (popup === "" && lastClosed === name && Date.now() - lastClosedAt < 350)
+        // Only after a click-away close (see click()); closing with the button
+        // and opening again straight away always works.
+        if (popup === "" && lastClosed === name && Date.now() - lastClosedAt < 350) {
+            console.log("lumen popup: ignored", name, "(just closed by a click away)");
             return;
+        }
+        console.log("lumen popup: open", name);
         launcherOpen = false;
         popupScreen = scr;
         popupAnchor = anchor ?? Qt.rect(0, 0, 0, 0);
@@ -136,10 +147,11 @@ Singleton {
         popup = "traymenu";
     }
 
+    property string lastShut: ""
     function closePopup() {
         if (popup === "") return;
-        lastClosed = popup;
-        lastClosedAt = Date.now();
+        lastShut = popup;
+        lastClosed = "";
         popup = "";
     }
 

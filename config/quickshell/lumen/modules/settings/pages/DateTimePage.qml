@@ -111,6 +111,15 @@ Page {
                 onToggled: c => Theme.setValue("clock_24h", c)
             }
         }
+        SettingRow {
+            icon: "clock"
+            label: "Seconds in the bar"
+            Seg {
+                options: [{ label: "Off", value: "off" }, { label: "Show", value: "show" }, { label: "Flash :", value: "blink" }]
+                value: Theme.clockSeconds
+                onPicked: v => Theme.setValue("clock_seconds", v)
+            }
+        }
         Txt {
             Layout.fillWidth: true
             text: "After changing the time zone, the bar clock updates the next time you log in."

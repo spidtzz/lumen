@@ -160,6 +160,18 @@ Page {
             }
         }
         SettingRow {
+            icon: "clock"
+            label: "Seconds"
+            description: Theme.clockSeconds === "show" ? (Theme.clock24h ? "14:30:05" : "2:30:05 PM")
+                       : Theme.clockSeconds === "blink" ? "The colon flashes every second"
+                       : "Hours and minutes only"
+            Seg {
+                options: [{ label: "Off", value: "off" }, { label: "Show", value: "show" }, { label: "Flash :", value: "blink" }]
+                value: Theme.clockSeconds
+                onPicked: v => Theme.setValue("clock_seconds", v)
+            }
+        }
+        SettingRow {
             icon: "music"
             label: "Media controls in quick settings"
             description: "Play, pause and skip for whatever is playing. Shown only while something is open."

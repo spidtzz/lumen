@@ -27,6 +27,8 @@ Singleton {
     // Every key in settings.conf (see `lumen-settings keys`), as strings.
     property var conf: ({})
     readonly property bool clock24h: conf.clock_24h !== "false"
+    // Bar clock seconds: "off", "show" (14:30:05) or "blink" (the colon flashes).
+    readonly property string clockSeconds: conf.clock_seconds === "show" || conf.clock_seconds === "blink" ? conf.clock_seconds : "off"
     readonly property bool rounded: conf.corners !== "square"     // Settings > Appearance
     readonly property bool animations: conf.animations !== "false" // Settings > Performance
 

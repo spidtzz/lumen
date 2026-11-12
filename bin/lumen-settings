@@ -44,6 +44,7 @@ SCHEMA=(
 	"font_size~10~^([6-9]|1[0-9]|2[0-4])$~theme"
 	"mono_font~JetBrains Mono~^[A-Za-z0-9 ._-]{1,64}$~theme"
 	"clock_24h~true~^(true|false)$~-"
+	"clock_seconds~off~^(off|show|blink)$~-"
 	"compositor~true~^(true|false)$~compositor"
 	"focus_follows_mouse~true~^(true|false)$~wm"
 	"window_buttons~false~^(true|false)$~theme"

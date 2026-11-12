@@ -9,6 +9,7 @@
 #   lumen-settings display-save <args>  remember xrandr arguments for next login
 #   lumen-settings layout-next          switch to the next keyboard layout
 #   lumen-settings layout-set <code>    switch to a layout in use (e.g. ir)
+#   lumen-settings keyboard-check       put lumen's layouts back if X replaced them
 #   lumen-settings kbswitch             watch for the layout-switch keys (bspwmrc runs this)
 #   lumen-settings sysinfo              system details for the About page
 #   lumen-settings awake on|off|status  keep the screen on (Quick Settings)
@@ -168,8 +169,10 @@ apply_input() {
 	# Layout switching is done by the `kbswitch` watcher below, not XKB's
 	# grp:* options: those break when a layout (like Persian) uses Right Alt
 	# for extra characters, and they hide which layout is active.
+	# The active layout stays active (changing the switch keys, say, mustn't
+	# switch layouts).
 	if has setxkbmap; then
-		set_layouts "${CONF[kb_layouts]}"
+		set_layouts "$(wanted_layouts "$(setxkbmap -query 2>/dev/null | sed -n 's/^layout:[[:space:]]*//p')")"
 	fi
 	has xset && xset r rate "${CONF[repeat_delay]}" "${CONF[repeat_rate]}"
 	write_custom_keys
@@ -203,10 +206,55 @@ notify_keyboard() {
 	has qs && { qs -c lumen ipc call keyboard changed >/dev/null 2>&1 & } || true
 }
 
+# The layouts loaded now, active first. When they aren't the ones from
+# Settings, those instead (see keyboard_check).
 current_layouts() {
 	local cur
 	cur=$(setxkbmap -query 2>/dev/null | sed -n 's/^layout:[[:space:]]*//p')
-	printf '%s' "${cur:-${CONF[kb_layouts]}}"
+	if [[ -n $cur ]] && same_layouts "$cur" "${CONF[kb_layouts]}"; then
+		printf '%s' "$cur"
+	else
+		wanted_layouts "$cur"
+	fi
+}
+
+# Same layouts, in any order?
+same_layouts() {
+	[[ $(tr , '\n' <<<"$1" | sort | paste -sd,) == "$(tr , '\n' <<<"$2" | sort | paste -sd,)" ]]
+}
+
+# The layouts from Settings, starting from the active one ($1's first) when
+# it's one of them.
+wanted_layouts() {
+	local active=${1%%,*} list=() i
+	IFS=, read -r -a list <<<"${CONF[kb_layouts]}"
+	for i in "${!list[@]}"; do
+		[[ ${list[$i]} == "$active" ]] || continue
+		local rot=("${list[@]:$i}" "${list[@]:0:$i}") IFS=,
+		printf '%s' "${rot[*]}"
+		return 0
+	done
+	printf '%s' "${CONF[kb_layouts]}"
+}
+
+# When a keyboard is plugged in again (or a monitor's USB hub wakes up with
+# the screen), X gives it its own default layout and the layouts from
+# Settings are gone, so switching stops working. The watcher (lumen-kbswitch)
+# notices and runs this, which loads them again. Otherwise it only tells the
+# bar which layout is active.
+keyboard_check() {
+	[[ -n ${DISPLAY:-} ]] && has setxkbmap || return 0
+	load
+	local q cur caps_want=0 caps_have=0
+	q=$(setxkbmap -query 2>/dev/null)
+	cur=$(sed -n 's/^layout:[[:space:]]*//p' <<<"$q")
+	[[ ${CONF[kb_switch]} == caps && ${CONF[kb_layouts]} == *,* ]] && caps_want=1
+	[[ $q == *caps:none* ]] && caps_have=1
+	if [[ -z $cur ]] || ! same_layouts "$cur" "${CONF[kb_layouts]}" || ((caps_want != caps_have)); then
+		apply_input   # layouts, key repeat and the touchpad, all lost with the device
+	else
+		notify_keyboard
+	fi
 }
 
 # The active layout is always the first one: switching rotates the list.
@@ -654,6 +702,7 @@ case $cmd in
 	layout-next) layout_next ;;
 	layout-set) [[ -n ${1:-} ]] || die "usage: lumen-settings layout-set <layout>"; layout_set "$1" ;;
 	layout-hotkey) layout_hotkey "${1:-}" ;;
+	keyboard-check) keyboard_check ;;
 	layout-current) load; cur=$(current_layouts); printf '%s\n' "${cur%%,*}" ;;
 	kbswitch) kbswitch ;;
 	kbswitch-start) kbswitch_start ;;

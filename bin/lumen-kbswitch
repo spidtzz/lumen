@@ -90,6 +90,45 @@ class Switcher:
             self.combo = "" if not self.down else "-"
 
 
+class XkbWatch:
+    """Notices when X replaces the keyboard layouts: a keyboard plugged in
+    again (or a monitor's USB hub waking up with the screen after you've been
+    away) gets X's default layout, and switching stops working. X then
+    rewrites _XKB_RULES_NAMES on the root window; when that changes, lumen-
+    settings checks the layouts and loads the ones from Settings again. (It
+    also changes on every switch; the check is quick and then only updates
+    the bar.)"""
+
+    def __init__(self, enabled=True):
+        self.enabled = enabled
+        self.d = display.Display()
+        self.root = self.d.screen().root
+        self.atom = self.d.intern_atom("_XKB_RULES_NAMES")
+        self.last = self.read()
+        self.due = 0.0
+
+    def read(self):
+        try:
+            p = self.root.get_full_property(self.atom, X.AnyPropertyType)
+            return p.value if p else None
+        except Exception:
+            return None
+
+    def check(self):
+        """Call often; looks once a second."""
+        if not self.enabled:
+            return
+        now = time.monotonic()
+        if now < self.due:
+            return
+        self.due = now + 1.0
+        value = self.read()
+        if value != self.last:
+            self.last = value
+            subprocess.Popen([SETTINGS, "keyboard-check"],
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
 def watch_record(sw):
     """Event driven: the RECORD extension copies every key event to us."""
     # The context is made on the same connection that enables it: made on
@@ -141,7 +180,7 @@ def record_thread(sw):
     record_failed = True
 
 
-def watch_poll(sw, interval=0.02):
+def watch_poll(sw, xkb, interval=0.02):
     """Fallback: ask X which keys are down, 50 times a second."""
     d = display.Display()
 
@@ -158,6 +197,7 @@ def watch_poll(sw, interval=0.02):
         for k in sorted(before - now):
             sw.release(k)
         before = now
+        xkb.check()
         time.sleep(interval)
 
 
@@ -168,6 +208,7 @@ def main():
         # lumen doctor: show what X reports for a few seconds.
         import threading
         threading.Timer(6, lambda: os._exit(0)).start()
+    xkb = XkbWatch(enabled=not test)
     remembered = ""
     try:
         with open(MODE_FILE) as f:
@@ -175,11 +216,11 @@ def main():
     except OSError:
         pass
     if "--poll" in sys.argv or (remembered == "poll" and "--record" not in sys.argv):
-        watch_poll(sw)
+        watch_poll(sw, xkb)
         return 0
     probe = display.Display()
     if not probe.has_extension("RECORD"):
-        watch_poll(sw)
+        watch_poll(sw, xkb)
         return 0
     import threading
     threading.Thread(target=record_thread, args=(sw,), daemon=True).start()
@@ -203,6 +244,7 @@ def main():
 
     while True:
         time.sleep(0.1)
+        xkb.check()
         if record_failed:
             fallback("X RECORD stopped")
         now = keys()

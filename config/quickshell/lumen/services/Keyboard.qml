@@ -28,11 +28,23 @@ Singleton {
     function nameOf(code) { return names[code] || code; }
     function shortOf(code) { return shortNames[code] || code.toUpperCase(); }
 
-    function refresh() { query.running = true; }
+    // Asked again while a look is under way: look once more afterwards, so
+    // the last change is never missed.
+    property bool again: false
+    function refresh() {
+        if (query.running) again = true;
+        else query.running = true;
+    }
     function next() { Quickshell.execDetached(["lumen-settings", "layout-next"]); }
     function set(code) { Quickshell.execDetached(["lumen-settings", "layout-set", code]); }
 
     onLayoutsChanged: refresh()
+    // Changing the switch keys loads the layouts again.
+    readonly property string switchKeys: (Theme.conf.kb_switch || "") + (Theme.conf.kb_switch_custom || "")
+    onSwitchKeysChanged: refreshSoon.restart()
+    Timer { id: refreshSoon; interval: 600; onTriggered: root.refresh() }
+    // And now and then anyway, for changes made outside lumen.
+    Timer { interval: 10000; running: true; repeat: true; onTriggered: root.refresh() }
 
     Process {
         id: query
@@ -44,5 +56,6 @@ Singleton {
                 if (m) root.current = m[1].split(",")[0];
             }
         }
+        onExited: if (root.again) { root.again = false; Qt.callLater(() => query.running = true); }
     }
 }

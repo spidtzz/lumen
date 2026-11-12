@@ -34,10 +34,10 @@ PopupCard {
     // Quick settings is built once and kept; this runs each time it opens.
     function opened() {
         confirm = "";
-        Brightness.refresh();
+        // after the opening animation, so it can't hold it up
+        refreshLater.restart();
     }
     Component.onCompleted: {
-        Brightness.refresh();
         if (!flipped) return;
         const col = header.parent;
         for (const it of [notifHeader, notifEmpty, notifList, divider, media, volumeRow, brightnessRow, toggles, header]) {
@@ -45,6 +45,8 @@ PopupCard {
             it.parent = col;
         }
     }
+
+    Timer { id: refreshLater; interval: 400; onTriggered: Brightness.refresh() }
 
     // ---- header: you on the left; Settings and the power menu on the right ----
     RowLayout {

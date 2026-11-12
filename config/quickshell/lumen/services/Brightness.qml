@@ -17,7 +17,15 @@ Singleton {
     property real value: 1            // 0..1
     property real pending: -1
 
-    function refresh() { query.running = true; }
+    // Re-reads the level (quick settings calls this when it opens). Only for
+    // built-in screens: talking to a monitor over DDC takes a moment and can
+    // make the whole desktop hitch, so monitors are read once at login and
+    // after that lumen keeps track of the level itself (every change made
+    // from lumen goes through set()).
+    function refresh() {
+        if (method === "ddc" || ddcDetect.running) return;
+        query.running = true;
+    }
 
     // Called while dragging; applied at most every 60 ms (backlight) or
     // 350 ms (DDC, which is slow).

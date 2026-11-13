@@ -282,12 +282,9 @@ PanelWindow {
         grabFocus: false
         color: "transparent"
         visible: false
-        // Where it takes clicks: open, exactly the card, following it as it
-        // grows and shrinks (a fixed shape would leave new parts of the card
-        // click-through); closed, nowhere.
-        mask: alive ? openShape : passThrough
-        property Region openShape: Region { item: qfx }
-        property Region passThrough: Region {}
+        // No input mask: on X it also cuts the window's shape, and it doesn't
+        // follow the card as it grows (new rows were cut off and let clicks
+        // through). Parked off the screen, a closed card can't be clicked.
 
         function sync() {
             const show = ready && (alive || park);

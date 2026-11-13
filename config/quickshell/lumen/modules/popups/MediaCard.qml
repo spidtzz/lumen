@@ -25,7 +25,7 @@ Rectangle {
 
     visible: player !== null && Theme.conf.qs_media !== "false"
     Layout.fillWidth: true
-    implicitHeight: col.implicitHeight + 24
+    implicitHeight: col.implicitHeight + 20
     radius: Theme.r(12)
     color: Theme.field
     border.width: 1
@@ -49,16 +49,16 @@ Rectangle {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.margins: 12
-        spacing: 8
+        anchors.margins: 10
+        spacing: 6
 
         RowLayout {
             Layout.fillWidth: true
-            spacing: 12
+            spacing: 10
 
             ClippingRectangle {
-                implicitWidth: 52
-                implicitHeight: 52
+                implicitWidth: 44
+                implicitHeight: 44
                 radius: Theme.radiusSmall
                 color: Theme.panel
                 Icon {
@@ -74,7 +74,7 @@ Rectangle {
                     source: card.player ? (card.player.trackArtUrl || "") : ""
                     asynchronous: true
                     fillMode: Image.PreserveAspectCrop
-                    sourceSize: Qt.size(104, 104)
+                    sourceSize: Qt.size(88, 88)
                 }
             }
 
@@ -112,10 +112,36 @@ Rectangle {
                 visible: card.players.length > 1
                 icon: "refresh"
                 variant: "ghost"
-                implicitHeight: 32
+                implicitWidth: 30; implicitHeight: 30
                 onClicked: {
                     const i = card.players.indexOf(card.player);
                     card.picked = card.players[(i + 1) % card.players.length];
+                }
+            }
+
+            // Previous, play / pause, next.
+            Row {
+                spacing: 2
+                Btn {
+                    icon: "skip-back"
+                    variant: "ghost"
+                    implicitWidth: 30; implicitHeight: 30
+                    enabled: card.player !== null && card.player.canGoPrevious
+                    onClicked: card.player.previous()
+                }
+                Btn {
+                    icon: card.player && card.player.isPlaying ? "pause" : "play"
+                    variant: "primary"
+                    implicitWidth: 30; implicitHeight: 30
+                    enabled: card.player !== null && card.player.canTogglePlaying
+                    onClicked: card.player.togglePlaying()
+                }
+                Btn {
+                    icon: "skip-forward"
+                    variant: "ghost"
+                    implicitWidth: 30; implicitHeight: 30
+                    enabled: card.player !== null && card.player.canGoNext
+                    onClicked: card.player.next()
                 }
             }
         }
@@ -140,29 +166,6 @@ Rectangle {
                 muted: true
                 Layout.preferredWidth: 38
                 horizontalAlignment: Text.AlignRight
-            }
-        }
-
-        RowLayout {
-            Layout.alignment: Qt.AlignHCenter
-            spacing: 6
-            Btn {
-                icon: "skip-back"
-                variant: "ghost"
-                enabled: card.player !== null && card.player.canGoPrevious
-                onClicked: card.player.previous()
-            }
-            Btn {
-                icon: card.player && card.player.isPlaying ? "pause" : "play"
-                variant: "primary"
-                enabled: card.player !== null && card.player.canTogglePlaying
-                onClicked: card.player.togglePlaying()
-            }
-            Btn {
-                icon: "skip-forward"
-                variant: "ghost"
-                enabled: card.player !== null && card.player.canGoNext
-                onClicked: card.player.next()
             }
         }
     }

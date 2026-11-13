@@ -13,7 +13,9 @@ import qs.components
 PopupCard {
     id: qs
 
-    implicitWidth: 380
+    implicitWidth: 360
+    padding: 12
+    spacing: 10
 
     readonly property var sink: Pipewire.defaultAudioSink
     readonly property var source: Pipewire.defaultAudioSource
@@ -69,14 +71,14 @@ PopupCard {
         id: header
         Layout.fillWidth: true
         spacing: 8
-        Avatar { size: 40 }
+        Avatar { size: 34 }
 
         // Laptops: charge and how long it lasts; click for power settings.
         Rectangle {
             visible: Battery.present
             Layout.leftMargin: 4
             implicitWidth: batRow.implicitWidth + 20
-            implicitHeight: 44
+            implicitHeight: 38
             radius: Theme.r(12)
             color: batHover.hovered ? Theme.field : "transparent"
             Behavior on color { ColorAnimation { duration: Theme.animFast } }
@@ -106,10 +108,12 @@ PopupCard {
         }
 
         Item { Layout.fillWidth: true }
-        Btn { icon: "settings"; variant: "ghost"; onClicked: Panels.openSettings("appearance") }
+        Btn { icon: "settings"; variant: "ghost"; implicitWidth: 34; implicitHeight: 34; onClicked: Panels.openSettings("appearance") }
         Btn {
             id: powerBtn
             icon: "power"
+            implicitWidth: 34
+            implicitHeight: 34
             variant: qs.confirm !== "" ? "normal" : "ghost"
             onClicked: { qs.deviceList = ""; qs.confirm = qs.confirm === "" ? "menu" : ""; }
         }
@@ -120,10 +124,11 @@ PopupCard {
         id: toggles
         Layout.fillWidth: true
         columns: 2
-        rowSpacing: 8
-        columnSpacing: 8
+        rowSpacing: 6
+        columnSpacing: 6
 
         Tile {
+            implicitHeight: 48
             visible: qs.wifiDev !== null
             icon: "wifi"
             label: "Wi-Fi"
@@ -133,6 +138,7 @@ PopupCard {
             onRightClicked: Panels.openSettings("network")
         }
         Tile {
+            implicitHeight: 48
             visible: qs.wifiDev === null
             icon: "ethernet"
             label: "Wired"
@@ -141,6 +147,7 @@ PopupCard {
             onClicked: Panels.openSettings("network")
         }
         Tile {
+            implicitHeight: 48
             icon: "bluetooth"
             label: "Bluetooth"
             enabled: qs.bt !== null
@@ -157,6 +164,7 @@ PopupCard {
         // Balanced -> Performance -> Power saver (no Performance where the
         // hardware has none).
         Tile {
+            implicitHeight: 48
             readonly property var order: PowerProfiles.hasPerformanceProfile
                 ? [PowerProfile.PowerSaver, PowerProfile.Balanced, PowerProfile.Performance]
                 : [PowerProfile.PowerSaver, PowerProfile.Balanced]
@@ -169,6 +177,7 @@ PopupCard {
             onRightClicked: Panels.openSettings("performance")
         }
         Tile {
+            implicitHeight: 48
             icon: Theme.dark ? "moon" : "sun"
             label: "Dark style"
             active: Theme.dark
@@ -176,6 +185,7 @@ PopupCard {
             onClicked: Theme.setValue("mode", Theme.dark ? "light" : "dark")
         }
         Tile {
+            implicitHeight: 48
             icon: Notifs.dnd ? "bell-off" : "bell"
             label: "Do not disturb"
             active: Notifs.dnd
@@ -183,6 +193,7 @@ PopupCard {
             onClicked: Notifs.dnd = !Notifs.dnd
         }
         Tile {
+            implicitHeight: 48
             icon: "coffee"
             label: "Keep awake"
             active: Awake.on
@@ -197,8 +208,9 @@ PopupCard {
         id: volumeRow
         visible: qs.sink !== null && qs.sink.audio !== null
         Layout.fillWidth: true
-        spacing: 10
+        spacing: 8
         Btn {
+            implicitWidth: 32; implicitHeight: 32
             readonly property bool muted: qs.sink && qs.sink.audio ? qs.sink.audio.muted : false
             icon: muted ? "volume-x" : "volume"
             variant: "ghost"
@@ -231,8 +243,9 @@ PopupCard {
         id: micRow
         visible: qs.showMic && qs.source !== null && qs.source.audio !== null
         Layout.fillWidth: true
-        spacing: 10
+        spacing: 8
         Btn {
+            implicitWidth: 32; implicitHeight: 32
             readonly property bool muted: qs.source && qs.source.audio ? qs.source.audio.muted : false
             icon: muted ? "mic-off" : "mic"
             variant: "ghost"
@@ -265,10 +278,10 @@ PopupCard {
         id: brightnessRow
         visible: Brightness.available
         Layout.fillWidth: true
-        spacing: 10
+        spacing: 8
         Item {
-            implicitWidth: 38
-            implicitHeight: 38
+            implicitWidth: 32
+            implicitHeight: 32
             Icon { anchors.centerIn: parent; name: "brightness"; size: 17 }
         }
         LSlider {
@@ -301,7 +314,7 @@ PopupCard {
             visible: Notifs.list.length > 0
             text: "Clear all"
             variant: "ghost"
-            implicitHeight: 30
+            implicitHeight: 26
             onClicked: Notifs.clearAll()
         }
     }
@@ -310,12 +323,12 @@ PopupCard {
         id: notifEmpty
         visible: Notifs.list.length === 0
         Layout.fillWidth: true
-        implicitHeight: emptyCol.implicitHeight + 16
+        implicitHeight: emptyCol.implicitHeight + 8
         Column {
             id: emptyCol
             anchors.centerIn: parent
             spacing: 6
-            Icon { anchors.horizontalCenter: parent.horizontalCenter; name: "bell"; size: 26; color: Theme.muted; opacity: 0.6 }
+            Icon { anchors.horizontalCenter: parent.horizontalCenter; name: "bell"; size: 20; color: Theme.muted; opacity: 0.6 }
             Txt { anchors.horizontalCenter: parent.horizontalCenter; text: "No notifications"; muted: true; size: 13; wrapMode: Text.NoWrap }
         }
     }
@@ -358,7 +371,7 @@ PopupCard {
         height: powerCol.implicitHeight + 12
         x: qs.width - width - qs.padding
         // Under the power button, or above it when the card is flipped.
-        y: qs.flipped ? qs.padding + header.y - height - 6 : qs.padding + 46
+        y: qs.flipped ? qs.padding + header.y - height - 6 : qs.padding + 40
         radius: Theme.r(12)
         color: Theme.panel
         border.width: 1

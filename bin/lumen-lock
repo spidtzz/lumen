@@ -2,7 +2,8 @@
 # lumen-lock — lock the screen with the lumen lock screen.
 #
 # Usage:
-#   lumen-lock          lock now (also run by xss-lock on idle and suspend)
+#   lumen-lock          lock now
+#   lumen-lock --idle   lock once idle for "Lock after" (xss-lock runs this)
 #   lumen-lock --test   try the lock screen safely: Escape closes it
 #
 # The lock screen runs as its own Quickshell process, so a problem in the bar
@@ -18,6 +19,27 @@ RUNTIME=${XDG_RUNTIME_DIR:-/tmp}
 STATE=${XDG_STATE_HOME:-$HOME/.local/state}/lumen
 TEST=0
 [[ ${1:-} == --test ]] && TEST=1
+
+# --idle: started by xss-lock when the X screen saver starts. Turning the
+# screen off (Settings > Power) starts it too, and that may come long before
+# "Lock after": then wait until the computer has been idle that long, and
+# don't lock at all if someone comes back first. Before suspend
+# (XSS_SLEEP_LOCK_FD from xss-lock) and from the shortcut: lock right away.
+idle_ms() {
+	python3 -c 'from Xlib import display; print(display.Display().screen().root.screensaver_query_info().idle)' 2>/dev/null
+}
+if [[ ${1:-} == --idle && -z ${XSS_SLEEP_LOCK_FD:-} ]]; then
+	mins=$(lumen-settings get idle_lock 2>/dev/null)
+	[[ $mins =~ ^[0-9]+$ ]] || mins=10
+	((mins > 0)) || exit 0   # Lock after: never
+	want=$((mins * 60000)) last=0
+	while idle=$(idle_ms) && [[ $idle =~ ^[0-9]+$ ]]; do
+		((idle >= want)) && break
+		((idle < last)) && exit 0   # back before it was time
+		last=$idle
+		sleep 2
+	done
+fi
 
 mkdir -p "$STATE"
 

@@ -357,6 +357,10 @@ picom_config() {
 	colour=$(accent_colour)
 	rules+=("{ match = \"window_type = ${q}dock${q} || window_type = ${q}desktop${q}\"; shadow = false; corner-radius = 0; }")
 	rules+=("{ match = \"fullscreen\"; corner-radius = 0; }")
+	# lumen's own full-screen windows (the capture tool, the lock screen) never
+	# hand the screen over to the app: on some drivers that leaves the monitor
+	# blank while they're up. (Fullscreen games still get the screen.)
+	rules+=("{ match = \"name ^= ${q}lumen ${q}\"; unredir = false; }")
 	# lumen's rounded screen corners: tiny pieces drawn above everything
 	rules+=("{ match = \"override_redirect && width <= 32 && height <= 32\"; shadow = false; corner-radius = 0; fade = false; }")
 	# Menus, tooltips and dropdowns draw their own shadow and corners inside

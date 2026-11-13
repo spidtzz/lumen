@@ -132,7 +132,7 @@ password), so it applies on the login screen too.
 | Keyboard & Mouse | layouts and switch keys, key repeat, pointer, touchpad |
 | Date & Time | time zone, network time, 24-hour clock |
 | Notifications | position, Do Not Disturb |
-| Power | battery, laptop lid, power mode, visual effects, usage |
+| Power | battery, screen off and lock timers, laptop lid, power mode, visual effects, usage |
 | Users | profile picture, password, lock after idle, clipboard history |
 | About | system details |
 

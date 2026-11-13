@@ -9,7 +9,7 @@ import qs.components
 Page {
     id: page
     title: "Power & performance"
-    description: "Battery, the laptop lid, power mode, visual effects, and how busy this computer is."
+    description: "Battery, screen off, the laptop lid, power mode, visual effects, and how busy this computer is."
 
     // ---- live usage, read from /proc every 1.5 s while this page is open ----
     property real cpu: -1          // 0-1
@@ -168,6 +168,41 @@ Page {
                 : ""
             muted: true
             size: 13
+        }
+    }
+
+    Card {
+        title: "Screen"
+        SettingRow {
+            icon: "monitor"
+            label: "Turn the screen off after"
+            description: "When the computer has been idle this long. While locked, after a minute."
+            Dropdown {
+                implicitWidth: 180
+                options: [
+                    { label: "1 minute", value: "1" }, { label: "2 minutes", value: "2" },
+                    { label: "5 minutes", value: "5" }, { label: "10 minutes", value: "10" },
+                    { label: "15 minutes", value: "15" }, { label: "30 minutes", value: "30" },
+                    { label: "1 hour", value: "60" }, { label: "Never", value: "0" }
+                ]
+                value: Theme.conf.screen_off || "15"
+                onPicked: v => Theme.setValue("screen_off", v)
+            }
+        }
+        SettingRow {
+            icon: "lock"
+            label: "Lock after"
+            description: "Also in Settings › Users."
+            Dropdown {
+                implicitWidth: 180
+                options: [
+                    { label: "5 minutes", value: "5" }, { label: "10 minutes", value: "10" },
+                    { label: "15 minutes", value: "15" }, { label: "30 minutes", value: "30" },
+                    { label: "1 hour", value: "60" }, { label: "Never", value: "0" }
+                ]
+                value: Theme.conf.idle_lock || "10"
+                onPicked: v => Theme.setValue("idle_lock", v)
+            }
         }
     }
 

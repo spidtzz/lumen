@@ -31,12 +31,21 @@ cleanup() {
 	qs -c lumen ipc call panels setLocked false >/dev/null 2>&1
 	[[ -n ${old_ewmh:-} ]] && bspc config ignore_ewmh_focus "$old_ewmh" 2>/dev/null
 	pkill -CONT -x sxhkd 2>/dev/null || true
+	((TEST == 0)) && lumen-settings apply idle >/dev/null 2>&1   # the usual screen-off time again
 }
 trap cleanup EXIT
 
 if ((TEST == 0)); then
 	pkill -STOP -x sxhkd 2>/dev/null || true # no shortcuts behind the lock
 fi
+# While locked the screen goes off after a minute without input (unless
+# Settings > Power says never). The idle clock starts again from now: it's
+# usually long past a minute when idle locks the screen.
+if ((TEST == 0)) && [[ $(lumen-settings get screen_off 2>/dev/null) != 0 ]] && command -v xset >/dev/null; then
+	xset s reset 2>/dev/null
+	xset +dpms dpms 0 0 60 2>/dev/null
+fi
+
 # Hide the bar, its popups and notifications while locked.
 qs -c lumen ipc call panels setLocked true >/dev/null 2>&1
 

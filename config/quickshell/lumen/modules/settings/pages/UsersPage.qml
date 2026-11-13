@@ -85,7 +85,7 @@ Page {
         SettingRow {
             icon: "lock"
       label: "Lock after"
-            description: "Locks when the computer has been idle this long, and always before suspend. Shortcut: super + shift + L."
+            description: "Locks when the computer has been idle this long, and always before suspend. Shortcut: super + L."
             Dropdown {
                 implicitWidth: 180
                 options: [

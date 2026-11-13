@@ -61,6 +61,7 @@ SCHEMA=(
 	"tray_grouped~true~^(true|false)$~-"
 	"qs_media~true~^(true|false)$~-"
 	"idle_lock~10~^(0|5|10|15|30|60)$~idle"
+	"screen_off~15~^(0|1|2|5|10|15|30|60)$~idle"
 	"kb_layouts~us~^[a-z]{2,3}(,[a-z]{2,3}){0,3}$~input"
 	"kb_switch~alt_shift~^(alt_shift|ctrl_shift|caps|super_space|custom)$~input"
 	"kb_switch_custom~~^[A-Za-z0-9_ +]*$~input"
@@ -532,7 +533,15 @@ apply_idle() {
 	else
 		xset s off
 	fi
-	xset -dpms 2>/dev/null || true
+	# Screen off after idle minutes (0 = never), through DPMS. The lock
+	# screen turns it off sooner (lumen-lock).
+	local off=$((CONF[screen_off] * 60))
+	[[ -e $AWAKE_FLAG ]] && off=0
+	if ((off > 0)); then
+		xset +dpms dpms 0 0 "$off" 2>/dev/null || true
+	else
+		xset -dpms 2>/dev/null || true
+	fi
 }
 
 # Window manager behaviour.

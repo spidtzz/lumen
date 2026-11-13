@@ -282,8 +282,11 @@ PanelWindow {
         grabFocus: false
         color: "transparent"
         visible: false
-        // Closed: clicks and the pointer go straight through.
-        mask: alive ? null : passThrough
+        // Where it takes clicks: open, exactly the card, following it as it
+        // grows and shrinks (a fixed shape would leave new parts of the card
+        // click-through); closed, nowhere.
+        mask: alive ? openShape : passThrough
+        property Region openShape: Region { item: qfx }
         property Region passThrough: Region {}
 
         function sync() {

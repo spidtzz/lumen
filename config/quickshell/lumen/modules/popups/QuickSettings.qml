@@ -20,7 +20,16 @@ PopupCard {
     readonly property var sinks: Pipewire.nodes.values.filter(n => n.audio && n.isSink && !n.isStream)
     readonly property var sources: Pipewire.nodes.values.filter(n => n.audio && !n.isSink && !n.isStream)
     readonly property bool showMic: Theme.conf.qs_mic === "true"
-    property string deviceList: ""   // "sink" | "source": the device list that's open
+    property string deviceList: ""   // "sink" | "source": the device menu that's open
+    property real deviceBelow: 0     // the menu's button: its bottom and top edge
+    property real deviceAbove: 0
+    function openDevices(kind, btn) {
+        if (deviceList === kind) { deviceList = ""; return; }
+        confirm = "";
+        deviceBelow = btn.mapToItem(qs, 0, btn.height).y;
+        deviceAbove = btn.mapToItem(qs, 0, 0).y;
+        deviceList = kind;
+    }
     function nodeLabel(n) { return n.description || n.nickname || n.name; }
     readonly property var wifiDev: Network.devices.find(d => d.type === "wifi") ?? null
     readonly property var wiredDev: Network.devices.find(d => d.type === "ethernet") ?? null
@@ -47,7 +56,7 @@ PopupCard {
     Component.onCompleted: {
         if (!flipped) return;
         const col = header.parent;
-        for (const it of [notifHeader, notifEmpty, notifList, divider, media, volumeRow, sinkList, micRow, sourceList, brightnessRow, toggles, header]) {
+        for (const it of [notifHeader, notifEmpty, notifList, divider, media, volumeRow, micRow, brightnessRow, toggles, header]) {
             it.parent = null;
             it.parent = col;
         }
@@ -102,7 +111,7 @@ PopupCard {
             id: powerBtn
             icon: "power"
             variant: qs.confirm !== "" ? "normal" : "ghost"
-            onClicked: qs.confirm = qs.confirm === "" ? "menu" : ""
+            onClicked: { qs.deviceList = ""; qs.confirm = qs.confirm === "" ? "menu" : ""; }
         }
     }
 
@@ -209,19 +218,12 @@ PopupCard {
             horizontalAlignment: Text.AlignRight
         }
         Btn {
-            icon: qs.deviceList === "sink" ? "chevron-up" : "chevron-down"
-            variant: "ghost"
+            id: sinkBtn
+            icon: "chevron-down"
+            variant: qs.deviceList === "sink" ? "normal" : "ghost"
             implicitWidth: 32
-            onClicked: qs.deviceList = qs.deviceList === "sink" ? "" : "sink"
+            onClicked: qs.openDevices("sink", sinkBtn)
         }
-    }
-    DeviceList {
-        id: sinkList
-        shown: qs.deviceList === "sink"
-        title: "Sound output"
-        nodes: qs.sinks
-        current: qs.sink
-        onChoose: n => { Pipewire.preferredDefaultAudioSink = n; qs.deviceList = ""; }
     }
 
     // ---- microphone (Settings > Bar > Quick settings) ----
@@ -250,19 +252,12 @@ PopupCard {
             horizontalAlignment: Text.AlignRight
         }
         Btn {
-            icon: qs.deviceList === "source" ? "chevron-up" : "chevron-down"
-            variant: "ghost"
+            id: sourceBtn
+            icon: "chevron-down"
+            variant: qs.deviceList === "source" ? "normal" : "ghost"
             implicitWidth: 32
-            onClicked: qs.deviceList = qs.deviceList === "source" ? "" : "source"
+            onClicked: qs.openDevices("source", sourceBtn)
         }
-    }
-    DeviceList {
-        id: sourceList
-        shown: qs.showMic && qs.deviceList === "source"
-        title: "Microphone"
-        nodes: qs.sources
-        current: qs.source
-        onChoose: n => { Pipewire.preferredDefaultAudioSource = n; qs.deviceList = ""; }
     }
 
     // ---- brightness (built-in screens only) ----
@@ -398,33 +393,86 @@ PopupCard {
         }
     }
 
-    // A list of sound devices under a slider: the default one is ticked.
-    component DeviceList: ColumnLayout {
-        id: dl
-        property bool shown: false
-        property string title
-        property var nodes: []
-        property var current: null
-        signal choose(var node)
-        visible: shown
-        Layout.fillWidth: true
-        spacing: 2
-        Txt { text: dl.title; muted: true; size: 12; Layout.leftMargin: 11; Layout.topMargin: 2 }
-        Repeater {
-            model: dl.nodes
-            delegate: MenuRow {
-                required property var modelData
-                text: modelData.description || modelData.nickname || modelData.name
-                checked: dl.current !== null && modelData.id === dl.current.id
-                onClicked: dl.choose(modelData)
-            }
+    // ---- sound device menu: drops down under the arrow next to a slider ----
+    // A click anywhere else in the card closes it.
+    MouseArea {
+        parent: qs
+        visible: qs.deviceList !== ""
+        z: 9
+        anchors.fill: parent
+        onClicked: qs.deviceList = ""
+    }
+    Rectangle {
+        id: deviceMenu
+        parent: qs
+        readonly property bool isSink: qs.deviceList === "sink"
+        readonly property var nodes: isSink ? qs.sinks : qs.sources
+        readonly property var current: isSink ? qs.sink : qs.source
+        visible: qs.deviceList !== ""
+        z: 10
+        width: Math.min(300, qs.width - 2 * qs.padding)
+        height: Math.min(deviceCol.implicitHeight + 12, qs.height - 2 * qs.padding)
+        x: qs.width - width - qs.padding
+        // Below the arrow, or above it when there's no room below.
+        y: qs.deviceBelow + 6 + height <= qs.height - qs.padding
+            ? qs.deviceBelow + 6
+            : Math.max(qs.padding, qs.deviceAbove - 6 - height)
+        radius: Theme.r(12)
+        color: Theme.panel
+        border.width: 1
+        border.color: Theme.line
+
+        // soft shadow
+        Rectangle {
+            z: -1
+            anchors.fill: parent
+            anchors.margins: -1
+            anchors.topMargin: 3
+            radius: parent.radius
+            color: "#000000"
+            opacity: 0.18
         }
-        Txt {
-            visible: dl.nodes.length === 0
-            text: "No devices"
-            muted: true
-            size: 13
-            Layout.leftMargin: 11
+
+        Flickable {
+            anchors.fill: parent
+            anchors.margins: 6
+            contentHeight: deviceCol.implicitHeight
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
+            ColumnLayout {
+                id: deviceCol
+                width: parent.width
+                spacing: 2
+                Txt {
+                    text: deviceMenu.isSink ? "Sound output" : "Microphone"
+                    muted: true
+                    size: 12
+                    Layout.leftMargin: 11
+                    Layout.topMargin: 4
+                    Layout.bottomMargin: 2
+                }
+                Repeater {
+                    model: deviceMenu.nodes
+                    delegate: MenuRow {
+                        required property var modelData
+                        icon: deviceMenu.isSink ? "volume" : "mic"
+                        text: qs.nodeLabel(modelData)
+                        checked: deviceMenu.current !== null && modelData.id === deviceMenu.current.id
+                        onClicked: {
+                            if (deviceMenu.isSink) Pipewire.preferredDefaultAudioSink = modelData;
+                            else Pipewire.preferredDefaultAudioSource = modelData;
+                            qs.deviceList = "";
+                        }
+                    }
+                }
+                Txt {
+                    visible: deviceMenu.nodes.length === 0
+                    text: "No devices"
+                    muted: true
+                    size: 13
+                    Layout.leftMargin: 11
+                }
+            }
         }
     }
 }

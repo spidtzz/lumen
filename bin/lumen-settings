@@ -61,6 +61,7 @@ SCHEMA=(
 	"ws_style~pills~^(pills|boxes|dots|numbers)$~-"
 	"tray_grouped~true~^(true|false)$~-"
 	"qs_media~true~^(true|false)$~-"
+	"qs_mic~false~^(true|false)$~-"
 	"idle_lock~10~^(0|5|10|15|30|60)$~idle"
 	"screen_off~15~^(0|1|2|5|10|15|30|60)$~idle"
 	"sleep_after~0~^(0|10|15|20|30|45|60|90|120|180)$~-"

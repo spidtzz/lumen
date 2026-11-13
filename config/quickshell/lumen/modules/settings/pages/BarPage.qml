@@ -180,6 +180,15 @@ Page {
                 onToggled: c => Theme.setValue("qs_media", c)
             }
         }
+        SettingRow {
+            icon: "mic"
+            label: "Microphone in quick settings"
+            description: "A slider for the microphone's volume, with mute and a list of microphones."
+            Toggle {
+                checked: Theme.conf.qs_mic === "true"
+                onToggled: c => Theme.setValue("qs_mic", c)
+            }
+        }
     }
 
     Card {

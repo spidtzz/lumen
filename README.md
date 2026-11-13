@@ -93,8 +93,9 @@ Launcher and focused app · workspaces · tray, keyboard layout, clock, quick se
 - **Workspaces**: pills, boxes, dots or numbers; scroll to switch desktops.
 - **Tray**: grouped behind an arrow like Windows, or all on the bar. Right-click an
   icon to pin it; custom icons per app in Settings › Bar.
-- **Quick settings**: Wi-Fi, Bluetooth, dark style, Do Not Disturb, performance mode,
-  keep awake, volume, brightness, media controls, notifications, and the battery on
+- **Quick settings**: Wi-Fi, Bluetooth, power mode, dark style, Do Not Disturb,
+  keep awake, volume and sound output, the microphone (optional), brightness, media
+  controls, notifications, and the battery on
   laptops. Right-click a tile for its settings.
 
 The bar can sit on any edge, floating or edge to edge, and hides over fullscreen apps.

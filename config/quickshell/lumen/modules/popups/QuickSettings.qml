@@ -16,13 +16,19 @@ PopupCard {
     implicitWidth: 380
 
     readonly property var sink: Pipewire.defaultAudioSink
+    readonly property var source: Pipewire.defaultAudioSource
+    readonly property var sinks: Pipewire.nodes.values.filter(n => n.audio && n.isSink && !n.isStream)
+    readonly property var sources: Pipewire.nodes.values.filter(n => n.audio && !n.isSink && !n.isStream)
+    readonly property bool showMic: Theme.conf.qs_mic === "true"
+    property string deviceList: ""   // "sink" | "source": the device list that's open
+    function nodeLabel(n) { return n.description || n.nickname || n.name; }
     readonly property var wifiDev: Network.devices.find(d => d.type === "wifi") ?? null
     readonly property var wiredDev: Network.devices.find(d => d.type === "ethernet") ?? null
     property string confirm: ""   // "logout" | "restart" | "shutdown"
     readonly property var bt: Bluetooth.defaultAdapter
     readonly property var btConnected: bt ? bt.devices.values.filter(d => d.connected) : []
 
-    PwObjectTracker { objects: qs.sink ? [qs.sink] : [] }
+    PwObjectTracker { objects: [qs.sink, qs.source].filter(n => n) }
 
     function close() { Panels.closePopup(); }
     function run(cmd) { close(); Quickshell.execDetached(cmd); }
@@ -34,13 +40,14 @@ PopupCard {
     // Quick settings is built once and kept; this runs each time it opens.
     function opened() {
         confirm = "";
+        deviceList = "";
         // after the opening animation, so it can't hold it up
         refreshLater.restart();
     }
     Component.onCompleted: {
         if (!flipped) return;
         const col = header.parent;
-        for (const it of [notifHeader, notifEmpty, notifList, divider, media, volumeRow, brightnessRow, toggles, header]) {
+        for (const it of [notifHeader, notifEmpty, notifList, divider, media, volumeRow, sinkList, micRow, sourceList, brightnessRow, toggles, header]) {
             it.parent = null;
             it.parent = col;
         }
@@ -137,6 +144,21 @@ PopupCard {
             onClicked: qs.bt.enabled = !qs.bt.enabled
             onRightClicked: Panels.openSettings("bluetooth")
         }
+        // Power mode: each click goes on to the next, Power saver ->
+        // Balanced -> Performance -> Power saver (no Performance where the
+        // hardware has none).
+        Tile {
+            readonly property var order: PowerProfiles.hasPerformanceProfile
+                ? [PowerProfile.PowerSaver, PowerProfile.Balanced, PowerProfile.Performance]
+                : [PowerProfile.PowerSaver, PowerProfile.Balanced]
+            readonly property int mode: PowerProfiles.profile
+            icon: mode === PowerProfile.PowerSaver ? "leaf" : mode === PowerProfile.Performance ? "zap" : "gauge"
+            label: "Power mode"
+            active: mode !== PowerProfile.Balanced
+            status: mode === PowerProfile.PowerSaver ? "Power saver" : mode === PowerProfile.Performance ? "Performance" : "Balanced"
+            onClicked: PowerProfiles.profile = order[(Math.max(0, order.indexOf(mode)) + 1) % order.length]
+            onRightClicked: Panels.openSettings("performance")
+        }
         Tile {
             icon: Theme.dark ? "moon" : "sun"
             label: "Dark style"
@@ -150,16 +172,6 @@ PopupCard {
             active: Notifs.dnd
             status: Notifs.dnd ? "Notifications hidden" : "Off"
             onClicked: Notifs.dnd = !Notifs.dnd
-        }
-        Tile {
-            icon: "gauge"
-            label: "Performance"
-            enabled: PowerProfiles.hasPerformanceProfile
-            active: PowerProfiles.profile === PowerProfile.Performance
-            status: !PowerProfiles.hasPerformanceProfile ? "Not supported here"
-                  : active ? "On" : PowerProfiles.profile === PowerProfile.PowerSaver ? "Power saver" : "Balanced"
-            onClicked: PowerProfiles.profile = active ? PowerProfile.Balanced : PowerProfile.Performance
-            onRightClicked: Panels.openSettings("performance")
         }
         Tile {
             icon: "coffee"
@@ -196,6 +208,61 @@ PopupCard {
             Layout.preferredWidth: 38
             horizontalAlignment: Text.AlignRight
         }
+        Btn {
+            icon: qs.deviceList === "sink" ? "chevron-up" : "chevron-down"
+            variant: "ghost"
+            implicitWidth: 32
+            onClicked: qs.deviceList = qs.deviceList === "sink" ? "" : "sink"
+        }
+    }
+    DeviceList {
+        id: sinkList
+        shown: qs.deviceList === "sink"
+        title: "Sound output"
+        nodes: qs.sinks
+        current: qs.sink
+        onChoose: n => { Pipewire.preferredDefaultAudioSink = n; qs.deviceList = ""; }
+    }
+
+    // ---- microphone (Settings > Bar > Quick settings) ----
+    RowLayout {
+        id: micRow
+        visible: qs.showMic && qs.source !== null && qs.source.audio !== null
+        Layout.fillWidth: true
+        spacing: 10
+        Btn {
+            readonly property bool muted: qs.source && qs.source.audio ? qs.source.audio.muted : false
+            icon: muted ? "mic-off" : "mic"
+            variant: "ghost"
+            onClicked: qs.source.audio.muted = !muted
+        }
+        LSlider {
+            Layout.fillWidth: true
+            from: 0; to: 1; stepSize: 0.01
+            value: qs.source && qs.source.audio ? qs.source.audio.volume : 0
+            onMoved: qs.source.audio.volume = value
+        }
+        Txt {
+            text: Math.round((qs.source && qs.source.audio ? qs.source.audio.volume : 0) * 100) + "%"
+            muted: true
+            size: 12
+            Layout.preferredWidth: 38
+            horizontalAlignment: Text.AlignRight
+        }
+        Btn {
+            icon: qs.deviceList === "source" ? "chevron-up" : "chevron-down"
+            variant: "ghost"
+            implicitWidth: 32
+            onClicked: qs.deviceList = qs.deviceList === "source" ? "" : "source"
+        }
+    }
+    DeviceList {
+        id: sourceList
+        shown: qs.showMic && qs.deviceList === "source"
+        title: "Microphone"
+        nodes: qs.sources
+        current: qs.source
+        onChoose: n => { Pipewire.preferredDefaultAudioSource = n; qs.deviceList = ""; }
     }
 
     // ---- brightness (built-in screens only) ----
@@ -222,6 +289,7 @@ PopupCard {
             Layout.preferredWidth: 38
             horizontalAlignment: Text.AlignRight
         }
+        Item { implicitWidth: 32 }   // lines up with the device buttons above
     }
 
     // ---- media (Settings > Bar > Quick settings) ----
@@ -327,6 +395,36 @@ PopupCard {
             MenuRow { icon: "moon"; text: "Suspend"; onClicked: qs.run(["systemctl", "suspend"]) }
             MenuRow { icon: "restart"; text: "Restart\u2026"; onClicked: Panels.openSession("restart") }
             MenuRow { icon: "power"; text: "Shut down\u2026"; onClicked: Panels.openSession("shutdown") }
+        }
+    }
+
+    // A list of sound devices under a slider: the default one is ticked.
+    component DeviceList: ColumnLayout {
+        id: dl
+        property bool shown: false
+        property string title
+        property var nodes: []
+        property var current: null
+        signal choose(var node)
+        visible: shown
+        Layout.fillWidth: true
+        spacing: 2
+        Txt { text: dl.title; muted: true; size: 12; Layout.leftMargin: 11; Layout.topMargin: 2 }
+        Repeater {
+            model: dl.nodes
+            delegate: MenuRow {
+                required property var modelData
+                text: modelData.description || modelData.nickname || modelData.name
+                checked: dl.current !== null && modelData.id === dl.current.id
+                onClicked: dl.choose(modelData)
+            }
+        }
+        Txt {
+            visible: dl.nodes.length === 0
+            text: "No devices"
+            muted: true
+            size: 13
+            Layout.leftMargin: 11
         }
     }
 }

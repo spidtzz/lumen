@@ -174,6 +174,11 @@ ShellRoot {
     }
 
     // Called by lumen-settings when the keyboard layout changes.
+    // A short message on the on-screen display, e.g. "Touchpad off".
+    IpcHandler {
+        target: "osd"
+        function text(icon: string, message: string): void { Osd.flashText(icon, message); }
+    }
     IpcHandler {
         target: "keyboard"
         function changed(): void { Keyboard.refresh(); }

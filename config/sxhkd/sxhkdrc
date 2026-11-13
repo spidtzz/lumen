@@ -107,6 +107,10 @@ XF86Audio{Next,Prev}
 XF86AudioStop
 	qs -c lumen ipc call media stop
 
+# Touchpad off / on (the touchpad key on laptops)
+XF86TouchpadToggle
+	lumen-settings touchpad-toggle
+
 # @group Session
 
 # Reload keyboard shortcuts

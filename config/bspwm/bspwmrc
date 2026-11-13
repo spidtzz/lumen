@@ -109,6 +109,8 @@ pgrep -f 'lumen-clipboard daemon' >/dev/null || lumen-clipboard daemon >/dev/nul
 
 # Lock on idle (Settings > Users) and before suspend.
 pgrep -x xss-lock >/dev/null || xss-lock --transfer-sleep-lock -- lumen-lock --idle &
+# Sleep after idle (Settings > Power; off unless set).
+pgrep -f '/lumen-idle$' >/dev/null || lumen-idle >/dev/null 2>&1 &
 
 # Shell log for troubleshooting: ~/.local/state/lumen/quickshell.log
 LOGS="${XDG_STATE_HOME:-$HOME/.local/state}/lumen"

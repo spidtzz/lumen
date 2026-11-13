@@ -9,7 +9,7 @@ import qs.components
 Page {
     id: page
     title: "Power & performance"
-    description: "Battery, screen off, the laptop lid, power mode, visual effects, and how busy this computer is."
+    description: "Battery, screen off and sleep, the laptop lid, power mode, visual effects, and how busy this computer is."
 
     // ---- live usage, read from /proc every 1.5 s while this page is open ----
     property real cpu: -1          // 0-1
@@ -172,7 +172,7 @@ Page {
     }
 
     Card {
-        title: "Screen"
+        title: "Screen and sleep"
         SettingRow {
             icon: "monitor"
             label: "Turn the screen off after"
@@ -187,6 +187,23 @@ Page {
                 ]
                 value: Theme.conf.screen_off || "15"
                 onPicked: v => Theme.setValue("screen_off", v)
+            }
+        }
+        SettingRow {
+            icon: "moon"
+            label: "Sleep after"
+            description: "Not while sound plays, Keep awake is on, or an app asks to stay up (a video, a download)."
+            Dropdown {
+                implicitWidth: 180
+                options: [
+                    { label: "10 minutes", value: "10" }, { label: "15 minutes", value: "15" },
+                    { label: "20 minutes", value: "20" }, { label: "30 minutes", value: "30" },
+                    { label: "45 minutes", value: "45" }, { label: "1 hour", value: "60" },
+                    { label: "1.5 hours", value: "90" }, { label: "2 hours", value: "120" },
+                    { label: "3 hours", value: "180" }, { label: "Never", value: "0" }
+                ]
+                value: Theme.conf.sleep_after || "0"
+                onPicked: v => Theme.setValue("sleep_after", v)
             }
         }
         SettingRow {

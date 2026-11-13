@@ -129,10 +129,10 @@ password), so it applies on the login screen too.
 | Bar | position, style, workspaces, clock, media controls, tray |
 | Displays | resolution, refresh rate, rotation, arrangement |
 | Sound | devices, volume, volume key step |
-| Keyboard & Mouse | layouts and switch keys, key repeat, pointer, touchpad |
+| Keyboard & Mouse | layouts and switch keys, key repeat, pointer, touchpad (or turn it off) |
 | Date & Time | time zone, network time, 24-hour clock |
 | Notifications | position, Do Not Disturb |
-| Power | battery, screen off and lock timers, laptop lid, power mode, visual effects, usage |
+| Power | battery, screen off, sleep and lock timers, laptop lid, power mode, visual effects, usage |
 | Users | profile picture, password, lock after idle, clipboard history |
 | About | system details |
 

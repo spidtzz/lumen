@@ -18,6 +18,8 @@ ffmpegthumbnailer
 pipewire
 pipewire-pulse
 wireplumber
+# pactl: Sleep after waits while sound plays
+libpulse
 
 # Quick Settings: Bluetooth, performance mode, screen brightness
 bluez

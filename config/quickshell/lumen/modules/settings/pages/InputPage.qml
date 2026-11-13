@@ -265,6 +265,15 @@ Page {
             }
         }
         SettingRow {
+            icon: "mouse"
+            label: "Touchpad"
+            description: "Off: only a mouse moves the pointer. The touchpad key on laptops turns it off and on too."
+            Toggle {
+                checked: Theme.conf.touchpad !== "false"
+                onToggled: c => Theme.setValue("touchpad", c)
+            }
+        }
+        SettingRow {
             icon: "pointer"
       label: "Tap to click"
             description: "Touchpads only."

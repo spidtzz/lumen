@@ -10,6 +10,7 @@
 #   lumen-settings layout-next          switch to the next keyboard layout
 #   lumen-settings layout-set <code>    switch to a layout in use (e.g. ir)
 #   lumen-settings keyboard-check       put lumen's layouts back if X replaced them
+#   lumen-settings touchpad-toggle      touchpads off / on again (the touchpad key)
 #   lumen-settings kbswitch             watch for the layout-switch keys (bspwmrc runs this)
 #   lumen-settings sysinfo              system details for the About page
 #   lumen-settings awake on|off|status  keep the screen on (Quick Settings)
@@ -62,6 +63,8 @@ SCHEMA=(
 	"qs_media~true~^(true|false)$~-"
 	"idle_lock~10~^(0|5|10|15|30|60)$~idle"
 	"screen_off~15~^(0|1|2|5|10|15|30|60)$~idle"
+	"sleep_after~0~^(0|10|15|20|30|45|60|90|120|180)$~-"
+	"touchpad~true~^(true|false)$~input"
 	"kb_layouts~us~^[a-z]{2,3}(,[a-z]{2,3}){0,3}$~input"
 	"kb_switch~alt_shift~^(alt_shift|ctrl_shift|caps|super_space|custom)$~input"
 	"kb_switch_custom~~^[A-Za-z0-9_ +]*$~input"
@@ -179,17 +182,21 @@ apply_input() {
 	write_custom_keys
 
 	has xinput || return 0
-	local id props nat tap
+	local id props nat tap pad
 	[[ ${CONF[natural_scroll]} == true ]] && nat=1 || nat=0
 	[[ ${CONF[tap_to_click]} == true ]] && tap=1 || tap=0
+	[[ ${CONF[touchpad]} == false ]] && pad=0 || pad=1
 	for id in $(xinput list --id-only 2>/dev/null); do
 		props=$(xinput list-props "$id" 2>/dev/null) || continue
 		[[ $props == *"libinput Accel Speed ("* ]] &&
 			xinput set-prop "$id" "libinput Accel Speed" "${CONF[pointer_speed]}" 2>/dev/null
 		[[ $props == *"libinput Natural Scrolling Enabled ("* ]] &&
 			xinput set-prop "$id" "libinput Natural Scrolling Enabled" "$nat" 2>/dev/null
-		[[ $props == *"libinput Tapping Enabled ("* ]] &&
+		# Touchpads are the devices that can tap.
+		if [[ $props == *"libinput Tapping Enabled ("* ]]; then
 			xinput set-prop "$id" "libinput Tapping Enabled" "$tap" 2>/dev/null
+			xinput set-prop "$id" "Device Enabled" "$pad" 2>/dev/null
+		fi
 	done
 	return 0
 }
@@ -697,6 +704,13 @@ case $cmd in
 		apply_what theme
 		;;
 	apply) apply_what "${1:-session}" ;;
+	touchpad-toggle)
+		load
+		if [[ ${CONF[touchpad]} == false ]]; then new=true; else new=false; fi
+		"$0" set touchpad "$new" || exit 1
+		has qs && qs -c lumen ipc call osd text mouse "Touchpad $([[ $new == true ]] && echo on || echo off)" >/dev/null 2>&1
+		exit 0
+		;;
 	keys)
 		for row in "${SCHEMA[@]}"; do
 			IFS='~' read -r k d p _ <<<"$row"
